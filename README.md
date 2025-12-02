@@ -79,15 +79,6 @@ up-app/
 └── package.json
 ```
 
-## Next Steps
-
-- [ ] Add navigation (React Navigation)
-- [ ] Create auth screens (login/signup)
-- [ ] Build route list screen
-- [ ] Create route detail screen
-- [ ] Add photo upload functionality
-- [ ] Implement filtering by type (boulder/lead)
-
 ## Deployment
 
 When ready to deploy:
