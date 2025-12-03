@@ -6,9 +6,13 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Coordinate {
-  x: number
-  y: number
+export interface Hold {
+  order: number
+  holdX: number
+  holdY: number
+  labelX: number
+  labelY: number
+  note?: string
 }
 
 export interface Database {
@@ -62,7 +66,7 @@ export interface Database {
           description: string | null
           grade: string
           photo_id: string
-          coordinates: Coordinate[]
+          holds: Hold[]
           user_id: string
         }
         Insert: {
@@ -72,7 +76,7 @@ export interface Database {
           description?: string | null
           grade: string
           photo_id: string
-          coordinates: Coordinate[]
+          holds: Hold[]
           user_id: string
         }
         Update: {
@@ -82,7 +86,7 @@ export interface Database {
           description?: string | null
           grade?: string
           photo_id?: string
-          coordinates?: Coordinate[]
+          holds?: Hold[]
           user_id?: string
         }
       }

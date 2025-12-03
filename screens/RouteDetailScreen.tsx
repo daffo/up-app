@@ -117,7 +117,7 @@ export default function RouteDetailScreen({ route }: any) {
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Holds:</Text>
           <Text style={styles.detailValue}>
-            {routeData.coordinates.length} coordinates
+            {routeData.holds.length} holds
           </Text>
         </View>
       </View>
