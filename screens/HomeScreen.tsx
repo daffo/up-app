@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useAuth } from '../lib/auth-context';
+import RouteList from '../components/RouteList';
 
 export default function HomeScreen({ navigation }: any) {
   const { user, signOut } = useAuth();
@@ -11,6 +12,10 @@ export default function HomeScreen({ navigation }: any) {
       // TODO: Navigate to add route screen
       alert('Add route screen coming soon!');
     }
+  };
+
+  const handleRoutePress = (routeId: string) => {
+    navigation.navigate('RouteDetail', { routeId });
   };
 
   return (
@@ -34,15 +39,14 @@ export default function HomeScreen({ navigation }: any) {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.subtitle}>Spray Wall Routes</Text>
+        <View style={styles.contentHeader}>
+          <Text style={styles.subtitle}>Spray Wall Routes</Text>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddRoute}>
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
 
-        <Text style={styles.comingSoon}>
-          Route list coming soon...
-        </Text>
-
-        <TouchableOpacity style={styles.addButton} onPress={handleAddRoute}>
-          <Text style={styles.addButtonText}>+ Add Route</Text>
-        </TouchableOpacity>
+        <RouteList onRoutePress={handleRoutePress} />
       </View>
     </SafeAreaView>
   );
@@ -90,30 +94,30 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
+  },
+  contentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   subtitle: {
     fontSize: 20,
     fontWeight: '600',
-    marginBottom: 20,
-  },
-  comingSoon: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    marginTop: 40,
-    marginBottom: 40,
   },
   addButton: {
     backgroundColor: '#0066cc',
-    padding: 16,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   addButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: '600',
   },
 });
