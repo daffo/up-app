@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { View, Image, StyleSheet, LayoutChangeEvent, Dimensions } from 'react-native';
+import { View, Image, StyleSheet, LayoutChangeEvent, TouchableOpacity, Modal } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText, Rect, G, Defs, Marker, Polygon } from 'react-native-svg';
-import ImageZoom from 'react-native-image-pan-zoom';
 import { Hold } from '../types/database.types';
+import FullScreenRouteViewer from './FullScreenRouteViewer';
 
 interface RouteVisualizationProps {
   photoUrl: string;
@@ -12,7 +12,7 @@ interface RouteVisualizationProps {
 export default function RouteVisualization({ photoUrl, holds }: RouteVisualizationProps) {
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
-  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+  const [fullScreenVisible, setFullScreenVisible] = useState(false);
 
   const handleImageLoad = () => {
     Image.getSize(photoUrl, (width, height) => {
@@ -25,34 +25,26 @@ export default function RouteVisualization({ photoUrl, holds }: RouteVisualizati
     setImageDimensions({ width, height });
   };
 
-  const handleContainerLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    setContainerDimensions({ width, height });
-  };
-
   // Calculate scale factors to map hold coordinates to displayed image size
   const scaleX = imageDimensions.width / imageNaturalSize.width || 1;
   const scaleY = imageDimensions.height / imageNaturalSize.height || 1;
 
   return (
-    <View style={styles.container} onLayout={handleContainerLayout}>
-      {containerDimensions.width > 0 && (
-        <ImageZoom
-          cropWidth={containerDimensions.width}
-          cropHeight={containerDimensions.height}
-          imageWidth={containerDimensions.width}
-          imageHeight={containerDimensions.height}
-        >
-          <View style={{ width: containerDimensions.width, height: containerDimensions.height }}>
-            <Image
-              source={{ uri: photoUrl }}
-              style={styles.image}
-              resizeMode="contain"
-              onLoad={handleImageLoad}
-              onLayout={handleLayout}
-            />
+    <>
+      <TouchableOpacity
+        style={styles.container}
+        onPress={() => setFullScreenVisible(true)}
+        activeOpacity={0.9}
+      >
+        <Image
+          source={{ uri: photoUrl }}
+          style={styles.image}
+          resizeMode="contain"
+          onLoad={handleImageLoad}
+          onLayout={handleLayout}
+        />
 
-            {imageDimensions.width > 0 && (
+        {imageDimensions.width > 0 && (
         <Svg
           style={StyleSheet.absoluteFill}
           width={imageDimensions.width}
@@ -185,12 +177,17 @@ export default function RouteVisualization({ photoUrl, holds }: RouteVisualizati
               </G>
             );
           })}
-            </Svg>
-            )}
-          </View>
-        </ImageZoom>
-      )}
-    </View>
+        </Svg>
+        )}
+      </TouchableOpacity>
+
+      <FullScreenRouteViewer
+        visible={fullScreenVisible}
+        photoUrl={photoUrl}
+        holds={holds}
+        onClose={() => setFullScreenVisible(false)}
+      />
+    </>
   );
 }
 
