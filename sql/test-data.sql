@@ -15,7 +15,7 @@ INSERT INTO routes (
   description,
   grade,
   photo_id,
-  coordinates,
+  holds,
   user_id
 )
 VALUES (
@@ -24,10 +24,10 @@ VALUES (
   'V4',
   (SELECT id FROM photos ORDER BY created_at DESC LIMIT 1),
   '[
-    {"x": 100, "y": 200},
-    {"x": 150, "y": 300},
-    {"x": 200, "y": 400},
-    {"x": 250, "y": 500}
+    {"order": 1, "holdX": 100, "holdY": 200, "labelX": 80, "labelY": 180, "note": "Start - LH"},
+    {"order": 2, "holdX": 150, "holdY": 300, "labelX": 130, "labelY": 280, "note": "Crimp"},
+    {"order": 3, "holdX": 200, "holdY": 400, "labelX": 180, "labelY": 380, "note": null},
+    {"order": 4, "holdX": 250, "holdY": 500, "labelX": 230, "labelY": 480, "note": "Top"}
   ]'::jsonb,
   (SELECT id FROM auth.users LIMIT 1)
 );
@@ -38,7 +38,7 @@ INSERT INTO routes (
   description,
   grade,
   photo_id,
-  coordinates,
+  holds,
   user_id
 )
 VALUES (
@@ -47,9 +47,9 @@ VALUES (
   'V6',
   (SELECT id FROM photos ORDER BY created_at DESC LIMIT 1),
   '[
-    {"x": 120, "y": 180},
-    {"x": 180, "y": 280},
-    {"x": 240, "y": 380}
+    {"order": 1, "holdX": 120, "holdY": 180, "labelX": 100, "labelY": 160, "note": "Sloper start"},
+    {"order": 2, "holdX": 180, "holdY": 280, "labelX": 160, "labelY": 260, "note": "Big move"},
+    {"order": 3, "holdX": 240, "holdY": 380, "labelX": 220, "labelY": 360, "note": null}
   ]'::jsonb,
   (SELECT id FROM auth.users LIMIT 1)
 );
@@ -59,7 +59,7 @@ INSERT INTO routes (
   title,
   grade,
   photo_id,
-  coordinates,
+  holds,
   user_id
 )
 VALUES (
@@ -67,11 +67,11 @@ VALUES (
   'V2',
   (SELECT id FROM photos ORDER BY created_at DESC LIMIT 1),
   '[
-    {"x": 80, "y": 150},
-    {"x": 140, "y": 250},
-    {"x": 200, "y": 350},
-    {"x": 260, "y": 450},
-    {"x": 320, "y": 550}
+    {"order": 1, "holdX": 80, "holdY": 150, "labelX": 60, "labelY": 130, "note": null},
+    {"order": 2, "holdX": 140, "holdY": 250, "labelX": 120, "labelY": 230, "note": null},
+    {"order": 3, "holdX": 200, "holdY": 350, "labelX": 180, "labelY": 330, "note": null},
+    {"order": 4, "holdX": 260, "holdY": 450, "labelX": 240, "labelY": 430, "note": null},
+    {"order": 5, "holdX": 320, "holdY": 550, "labelX": 300, "labelY": 530, "note": "Finish"}
   ]'::jsonb,
   (SELECT id FROM auth.users LIMIT 1)
 );
