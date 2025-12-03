@@ -24,10 +24,11 @@ VALUES (
   'V4',
   (SELECT id FROM photos ORDER BY created_at DESC LIMIT 1),
   '[
-    {"order": 1, "holdX": 100, "holdY": 200, "labelX": 80, "labelY": 180, "note": "Start - LH"},
-    {"order": 2, "holdX": 150, "holdY": 300, "labelX": 130, "labelY": 280, "note": "Crimp"},
-    {"order": 3, "holdX": 200, "holdY": 400, "labelX": 180, "labelY": 380, "note": null},
-    {"order": 4, "holdX": 250, "holdY": 500, "labelX": 230, "labelY": 480, "note": "Top"}
+    {"order": 1, "holdX": 150, "holdY": 800, "labelX": 120, "labelY": 770, "radius": 20, "note": "Start - LH"},
+    {"order": 2, "holdX": 250, "holdY": 650, "labelX": 280, "labelY": 630, "radius": 12, "note": "Crimp"},
+    {"order": 3, "holdX": 180, "holdY": 500, "labelX": 150, "labelY": 470, "radius": 18, "note": null},
+    {"order": 4, "holdX": 300, "holdY": 350, "labelX": 330, "labelY": 330, "radius": 15, "note": null},
+    {"order": 5, "holdX": 220, "holdY": 200, "labelX": 190, "labelY": 170, "radius": 25, "note": "Top"}
   ]'::jsonb,
   (SELECT id FROM auth.users LIMIT 1)
 );
@@ -47,9 +48,10 @@ VALUES (
   'V6',
   (SELECT id FROM photos ORDER BY created_at DESC LIMIT 1),
   '[
-    {"order": 1, "holdX": 120, "holdY": 180, "labelX": 100, "labelY": 160, "note": "Sloper start"},
-    {"order": 2, "holdX": 180, "holdY": 280, "labelX": 160, "labelY": 260, "note": "Big move"},
-    {"order": 3, "holdX": 240, "holdY": 380, "labelX": 220, "labelY": 360, "note": null}
+    {"order": 1, "holdX": 350, "holdY": 750, "labelX": 380, "labelY": 730, "radius": 30, "note": "Sloper start"},
+    {"order": 2, "holdX": 280, "holdY": 550, "labelX": 250, "labelY": 520, "radius": 22, "note": "Big move"},
+    {"order": 3, "holdX": 400, "holdY": 400, "labelX": 430, "labelY": 380, "radius": 18, "note": null},
+    {"order": 4, "holdX": 320, "holdY": 250, "labelX": 290, "labelY": 220, "radius": 28, "note": "Top out"}
   ]'::jsonb,
   (SELECT id FROM auth.users LIMIT 1)
 );
@@ -67,11 +69,12 @@ VALUES (
   'V2',
   (SELECT id FROM photos ORDER BY created_at DESC LIMIT 1),
   '[
-    {"order": 1, "holdX": 80, "holdY": 150, "labelX": 60, "labelY": 130, "note": null},
-    {"order": 2, "holdX": 140, "holdY": 250, "labelX": 120, "labelY": 230, "note": null},
-    {"order": 3, "holdX": 200, "holdY": 350, "labelX": 180, "labelY": 330, "note": null},
-    {"order": 4, "holdX": 260, "holdY": 450, "labelX": 240, "labelY": 430, "note": null},
-    {"order": 5, "holdX": 320, "holdY": 550, "labelX": 300, "labelY": 530, "note": "Finish"}
+    {"order": 1, "holdX": 200, "holdY": 850, "labelX": 170, "labelY": 820, "radius": 25, "note": null},
+    {"order": 2, "holdX": 180, "holdY": 700, "labelX": 150, "labelY": 670, "radius": 20, "note": null},
+    {"order": 3, "holdX": 220, "holdY": 550, "labelX": 250, "labelY": 530, "radius": 22, "note": null},
+    {"order": 4, "holdX": 200, "holdY": 400, "labelX": 170, "labelY": 370, "radius": 18, "note": null},
+    {"order": 5, "holdX": 240, "holdY": 280, "labelX": 270, "labelY": 260, "radius": 20, "note": null},
+    {"order": 6, "holdX": 200, "holdY": 150, "labelX": 170, "labelY": 120, "radius": 30, "note": "Finish"}
   ]'::jsonb,
   (SELECT id FROM auth.users LIMIT 1)
 );
