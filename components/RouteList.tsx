@@ -1,0 +1,107 @@
+import { useState, useEffect } from 'react';
+import { View, FlatList, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { supabase } from '../lib/supabase';
+import { Database } from '../types/database.types';
+import RouteCard from './RouteCard';
+
+type Route = Database['public']['Tables']['routes']['Row'];
+
+interface RouteListProps {
+  onRoutePress: (routeId: string) => void;
+}
+
+export default function RouteList({ onRoutePress }: RouteListProps) {
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchRoutes();
+  }, []);
+
+  const fetchRoutes = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error } = await supabase
+        .from('routes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setRoutes(data || []);
+    } catch (err) {
+      console.error('Error fetching routes:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch routes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#0066cc" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+      </View>
+    );
+  }
+
+  if (routes.length === 0) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.emptyText}>No routes yet</Text>
+        <Text style={styles.emptySubtext}>
+          Be the first to add a route!
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={routes}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <RouteCard route={item} onPress={() => onRoutePress(item.id)} />
+      )}
+      contentContainerStyle={styles.listContainer}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  listContainer: {
+    padding: 16,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#dc3545',
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+  },
+});
