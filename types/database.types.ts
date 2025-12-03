@@ -12,6 +12,7 @@ export interface Hold {
   holdY: number
   labelX: number
   labelY: number
+  radius: number
   note?: string
 }
 

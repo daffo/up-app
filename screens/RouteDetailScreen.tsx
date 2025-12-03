@@ -5,10 +5,10 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Database } from '../types/database.types';
+import RouteVisualization from '../components/RouteVisualization';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -87,11 +87,10 @@ export default function RouteDetailScreen({ route }: any) {
 
       {routeData.photo && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Photo</Text>
-          <Image
-            source={{ uri: routeData.photo.image_url }}
-            style={styles.photo}
-            resizeMode="contain"
+          <Text style={styles.sectionTitle}>Route Visualization</Text>
+          <RouteVisualization
+            photoUrl={routeData.photo.image_url}
+            holds={routeData.holds}
           />
           <View style={styles.photoInfo}>
             <Text style={styles.photoDate}>
@@ -175,12 +174,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     color: '#666',
-  },
-  photo: {
-    width: '100%',
-    height: 300,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
   },
   photoInfo: {
     marginTop: 12,

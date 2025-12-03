@@ -5,5 +5,5 @@
 ALTER TABLE routes DROP COLUMN coordinates;
 
 -- Add new holds column with detailed structure
--- Structure: [{order: number, holdX: number, holdY: number, labelX: number, labelY: number, note?: string}]
+-- Structure: [{order: number, holdX: number, holdY: number, labelX: number, labelY: number, radius: number, note?: string}]
 ALTER TABLE routes ADD COLUMN holds JSONB NOT NULL DEFAULT '[]'::jsonb;
