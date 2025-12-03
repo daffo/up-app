@@ -163,6 +163,7 @@ const styles = StyleSheet.create({
   linkButton: {
     padding: 8,
     alignItems: 'center',
+    marginTop: 8,
   },
   linkText: {
     color: '#0066cc',
