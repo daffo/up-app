@@ -28,14 +28,14 @@ export default function RouteOverlay({
       <Defs>
         <Marker
           id="arrowhead"
-          markerWidth="10"
-          markerHeight="10"
-          refX="9"
-          refY="3"
+          markerWidth="6"
+          markerHeight="6"
+          refX="5"
+          refY="2"
           orient="auto"
           markerUnits="strokeWidth"
         >
-          <Polygon points="0 0, 10 3, 0 6" fill="#0066cc" />
+          <Polygon points="0 0, 6 2, 0 4" fill="#0066cc" />
         </Marker>
       </Defs>
 
@@ -210,27 +210,6 @@ export default function RouteOverlay({
           </G>
         );
       })}
-
-      {/* Draw resize handle if in resize mode */}
-      {resizingHoldIndex !== null && holds[resizingHoldIndex] && (() => {
-        const hold = holds[resizingHoldIndex];
-        const angle = -Math.PI / 4; // -45 degrees (top-right)
-        const handleX = ((hold.holdX + hold.radius * Math.cos(angle)) / 100) * width;
-        const handleY = ((hold.holdY + hold.radius * Math.sin(angle)) / 100) * height;
-        const handleRadius = (1.5 / 100) * width; // Handle size
-
-        return (
-          <Circle
-            key="resize-handle"
-            cx={handleX}
-            cy={handleY}
-            r={handleRadius}
-            fill="#0066cc"
-            stroke="#FFFFFF"
-            strokeWidth="2"
-          />
-        );
-      })()}
     </Svg>
   );
 }

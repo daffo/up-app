@@ -138,6 +138,29 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
     setHolds(updatedHolds);
   };
 
+  const handleReorderHolds = (reorderedHolds: Hold[]) => {
+    // Update order property based on new position
+    const holdsWithUpdatedOrder = reorderedHolds.map((hold, index) => ({
+      ...hold,
+      order: index + 1,
+    }));
+    setHolds(holdsWithUpdatedOrder);
+  };
+
+  const moveHoldUp = (index: number) => {
+    if (index === 0) return;
+    const newHolds = [...holds];
+    [newHolds[index - 1], newHolds[index]] = [newHolds[index], newHolds[index - 1]];
+    handleReorderHolds(newHolds);
+  };
+
+  const moveHoldDown = (index: number) => {
+    if (index === holds.length - 1) return;
+    const newHolds = [...holds];
+    [newHolds[index], newHolds[index + 1]] = [newHolds[index + 1], newHolds[index]];
+    handleReorderHolds(newHolds);
+  };
+
   const handleSave = async () => {
     if (!user) {
       Alert.alert('Error', 'You must be logged in to save a route');
@@ -302,14 +325,38 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               />
               </TouchableOpacity>
 
-            {/* Hold List - Read only */}
+            {/* Hold List - Arrow buttons to reorder */}
             {holds.length > 0 && (
               <View style={styles.holdsList}>
-                <Text style={styles.holdsListTitle}>Holds:</Text>
-                {holds.map((hold) => (
-                  <Text key={hold.order} style={styles.holdItemText}>
-                    {hold.order}. {hold.note || '(no note)'}
-                  </Text>
+                <Text style={styles.holdsListTitle}>Holds (use arrows to reorder):</Text>
+                {holds.map((hold, index) => (
+                  <View key={`hold-${hold.order}-${hold.holdX}-${hold.holdY}`} style={styles.holdItem}>
+                    <Text style={styles.holdItemText}>
+                      {hold.order}. {hold.note || '(no note)'}
+                    </Text>
+                    <View style={styles.holdItemButtons}>
+                      <TouchableOpacity
+                        onPress={() => moveHoldUp(index)}
+                        disabled={index === 0}
+                        style={[
+                          styles.holdMoveButton,
+                          index === 0 && styles.holdMoveButtonDisabled,
+                        ]}
+                      >
+                        <Text style={styles.holdMoveButtonText}>▲</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => moveHoldDown(index)}
+                        disabled={index === holds.length - 1}
+                        style={[
+                          styles.holdMoveButton,
+                          index === holds.length - 1 && styles.holdMoveButtonDisabled,
+                        ]}
+                      >
+                        <Text style={styles.holdMoveButtonText}>▼</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 ))}
               </View>
             )}
@@ -430,10 +477,41 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
+  holdItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    padding: 10,
+    marginVertical: 3,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
   holdItemText: {
     fontSize: 14,
     color: '#333',
-    paddingVertical: 4,
+    flex: 1,
+  },
+  holdItemButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  holdMoveButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 4,
+    backgroundColor: '#0066cc',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  holdMoveButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  holdMoveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   saveButton: {
     backgroundColor: '#0066cc',
