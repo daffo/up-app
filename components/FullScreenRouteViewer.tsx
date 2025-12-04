@@ -47,6 +47,9 @@ export default function FullScreenRouteViewer({
   const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
   const [resizingHoldIndex, setResizingHoldIndex] = useState<number | null>(null);
 
+  // Zoom state tracking for PanResponder coordinate transformation
+  const zoomStateRef = useRef({ scale: 1, positionX: 0, positionY: 0 });
+
   // Refs for dragging state (to avoid stale closure values in PanResponder)
   const holdsRef = useRef<Hold[]>(holds);
   const draggingHoldIndexRef = useRef<number | null>(null);
@@ -126,18 +129,21 @@ export default function FullScreenRouteViewer({
     const currentDimensions = displayedDimensionsRef.current;
     const currentOffsetX = offsetXRef.current;
     const currentOffsetY = offsetYRef.current;
+    const currentZoom = zoomStateRef.current;
     const currentResizing = resizingHoldIndexRef.current;
 
-    const imageX = touchX - currentOffsetX;
-    const imageY = touchY - currentOffsetY;
+    // Transform PanResponder coordinates to account for zoom and pan
+    // Use original offset (where SVG is positioned), not scaled offset
+    const imageX = (touchX - currentOffsetX - currentZoom.positionX) / currentZoom.scale;
+    const imageY = (touchY - currentOffsetY - currentZoom.positionY) / currentZoom.scale;
+
+    const xPercent = (imageX / currentDimensions.width) * 100;
+    const yPercent = (imageY / currentDimensions.height) * 100;
 
     if (imageX < 0 || imageX > currentDimensions.width ||
         imageY < 0 || imageY > currentDimensions.height) {
       return null;
     }
-
-    const xPercent = (imageX / currentDimensions.width) * 100;
-    const yPercent = (imageY / currentDimensions.height) * 100;
 
     const currentHolds = holdsRef.current;
 
@@ -226,8 +232,8 @@ export default function FullScreenRouteViewer({
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       if (distance < hold.radius + 2) {
-        setSelectedHoldIndex(i);
-        setEditModalVisible(true);
+        // Enter edit mode directly
+        setResizingHoldIndex(i);
         return;
       }
     }
@@ -296,6 +302,12 @@ export default function FullScreenRouteViewer({
       onPanResponderGrant: (evt, gestureState) => {
         if (!editable) return;
 
+        // Disable dragging when zoomed in
+        const currentZoom = zoomStateRef.current;
+        if (currentZoom.scale > 1) {
+          return;
+        }
+
         const currentResizing = resizingHoldIndexRef.current;
         const touched = checkIfTouchingHoldOrLabel(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
         if (!touched) {
@@ -337,12 +349,15 @@ export default function FullScreenRouteViewer({
         const currentOffsetX = offsetXRef.current;
         const currentOffsetY = offsetYRef.current;
         const currentHolds = holdsRef.current;
+        const currentZoom = zoomStateRef.current;
 
         const touchX = evt.nativeEvent.pageX;
         const touchY = evt.nativeEvent.pageY;
 
-        const imageX = touchX - currentOffsetX;
-        const imageY = touchY - currentOffsetY;
+        // Transform PanResponder coordinates to account for zoom and pan
+        // Use original offset (where SVG is positioned), not scaled offset
+        const imageX = (touchX - currentOffsetX - currentZoom.positionX) / currentZoom.scale;
+        const imageY = (touchY - currentOffsetY - currentZoom.positionY) / currentZoom.scale;
 
         if (imageX < 0 || imageX > currentDimensions.width ||
             imageY < 0 || imageY > currentDimensions.height) {
@@ -420,10 +435,9 @@ export default function FullScreenRouteViewer({
 
         const wasDragging = currentDraggingHold !== null || currentDraggingLabel !== null;
 
-        // If it was a tap (no movement), open edit modal
+        // If it was a tap (no movement), enter edit mode
         if (wasDragging && !actuallyMoved && currentDraggingHold !== null) {
-          setSelectedHoldIndex(currentDraggingHold);
-          setEditModalVisible(true);
+          setResizingHoldIndex(currentDraggingHold);
         }
 
         // Clear refs
@@ -440,36 +454,34 @@ export default function FullScreenRouteViewer({
   ).current;
 
   const handleDeleteHold = () => {
-    if (selectedHoldIndex === null) return;
+    if (resizingHoldIndex === null) return;
 
-    const updatedHolds = holds.filter((_, i) => i !== selectedHoldIndex);
+    const updatedHolds = holds.filter((_, i) => i !== resizingHoldIndex);
     const renumberedHolds = updatedHolds.map((hold, i) => ({
       ...hold,
       order: i + 1,
     }));
 
     setHolds(renumberedHolds);
-    setEditModalVisible(false);
+    setResizingHoldIndex(null);
     setSelectedHoldIndex(null);
   };
 
   const handleOpenNoteModal = () => {
-    if (selectedHoldIndex !== null) {
-      setNoteText(holds[selectedHoldIndex].note || '');
+    if (resizingHoldIndex !== null) {
+      setNoteText(holds[resizingHoldIndex].note || '');
       setNoteModalVisible(true);
-      setEditModalVisible(false);
     }
   };
 
   const handleSaveNote = () => {
-    if (selectedHoldIndex !== null) {
+    if (resizingHoldIndex !== null) {
       const updatedHolds = holds.map((hold, i) =>
-        i === selectedHoldIndex ? { ...hold, note: noteText } : hold
+        i === resizingHoldIndex ? { ...hold, note: noteText } : hold
       );
       setHolds(updatedHolds);
     }
     setNoteModalVisible(false);
-    setSelectedHoldIndex(null);
   };
 
   const handleOpenRadiusModal = () => {
@@ -519,6 +531,14 @@ export default function FullScreenRouteViewer({
           minScale={1}
           maxScale={4}
           onClick={editable ? handleImageTap : undefined}
+          onMove={(position) => {
+            // Track zoom state for PanResponder coordinate transformation
+            zoomStateRef.current = {
+              scale: position.scale,
+              positionX: position.positionX,
+              positionY: position.positionY,
+            };
+          }}
         >
           <View
             style={{ width: windowDimensions.width, height: windowDimensions.height }}
@@ -557,6 +577,139 @@ export default function FullScreenRouteViewer({
         >
           <Text style={styles.closeButtonText}>{editable ? '✓' : '✕'}</Text>
         </TouchableOpacity>
+
+        {/* Edit controls (shown when editing a hold) */}
+        {editable && resizingHoldIndex !== null && (
+          <View style={styles.editControls}>
+            {/* Top row: Movement and Size controls */}
+            <View style={styles.controlsRow}>
+              {/* Movement controls */}
+              <View style={styles.movementGrid}>
+                {/* Up button */}
+                <View style={styles.movementRow}>
+                  <TouchableOpacity
+                    style={styles.moveButton}
+                    onPress={() => {
+                      const hold = holds[resizingHoldIndex];
+                      const deltaY = -0.25;
+                      const newHoldY = Math.max(0, hold.holdY + deltaY);
+                      const newLabelY = Math.max(0, hold.labelY + deltaY);
+                      const updatedHolds = holds.map((h, i) =>
+                        i === resizingHoldIndex ? { ...h, holdY: newHoldY, labelY: newLabelY } : h
+                      );
+                      setHolds(updatedHolds);
+                    }}
+                  >
+                    <Text style={styles.moveButtonText}>▲</Text>
+                  </TouchableOpacity>
+                </View>
+                {/* Left, Down, Right buttons */}
+                <View style={styles.movementRow}>
+                  <TouchableOpacity
+                    style={styles.moveButton}
+                    onPress={() => {
+                      const hold = holds[resizingHoldIndex];
+                      const deltaX = -0.25;
+                      const newHoldX = Math.max(0, hold.holdX + deltaX);
+                      const newLabelX = Math.max(0, hold.labelX + deltaX);
+                      const updatedHolds = holds.map((h, i) =>
+                        i === resizingHoldIndex ? { ...h, holdX: newHoldX, labelX: newLabelX } : h
+                      );
+                      setHolds(updatedHolds);
+                    }}
+                  >
+                    <Text style={styles.moveButtonText}>◄</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.moveButton}
+                    onPress={() => {
+                      const hold = holds[resizingHoldIndex];
+                      const deltaY = 0.25;
+                      const newHoldY = Math.min(100, hold.holdY + deltaY);
+                      const newLabelY = Math.min(100, hold.labelY + deltaY);
+                      const updatedHolds = holds.map((h, i) =>
+                        i === resizingHoldIndex ? { ...h, holdY: newHoldY, labelY: newLabelY } : h
+                      );
+                      setHolds(updatedHolds);
+                    }}
+                  >
+                    <Text style={styles.moveButtonText}>▼</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.moveButton}
+                    onPress={() => {
+                      const hold = holds[resizingHoldIndex];
+                      const deltaX = 0.25;
+                      const newHoldX = Math.min(100, hold.holdX + deltaX);
+                      const newLabelX = Math.min(100, hold.labelX + deltaX);
+                      const updatedHolds = holds.map((h, i) =>
+                        i === resizingHoldIndex ? { ...h, holdX: newHoldX, labelX: newLabelX } : h
+                      );
+                      setHolds(updatedHolds);
+                    }}
+                  >
+                    <Text style={styles.moveButtonText}>►</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Size controls */}
+              <View style={styles.sizeControls}>
+                <TouchableOpacity
+                  style={styles.adjustButton}
+                  onPress={() => {
+                    const hold = holds[resizingHoldIndex];
+                    const newRadius = Math.max(0.1, hold.radius - 0.1);
+                    const updatedHolds = holds.map((h, i) =>
+                      i === resizingHoldIndex ? { ...h, radius: newRadius } : h
+                    );
+                    setHolds(updatedHolds);
+                  }}
+                >
+                  <Text style={styles.adjustButtonText}>−</Text>
+                </TouchableOpacity>
+                <Text style={styles.sizeValue}>
+                  {holds[resizingHoldIndex]?.radius.toFixed(1)}
+                </Text>
+                <TouchableOpacity
+                  style={styles.adjustButton}
+                  onPress={() => {
+                    const hold = holds[resizingHoldIndex];
+                    const newRadius = Math.min(10, hold.radius + 0.1);
+                    const updatedHolds = holds.map((h, i) =>
+                      i === resizingHoldIndex ? { ...h, radius: newRadius } : h
+                    );
+                    setHolds(updatedHolds);
+                  }}
+                >
+                  <Text style={styles.adjustButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Bottom row: Action buttons */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleOpenNoteModal}
+              >
+                <Text style={styles.actionButtonText}>📝 Note</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.deleteButton]}
+                onPress={handleDeleteHold}
+              >
+                <Text style={styles.actionButtonText}>🗑️ Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.doneButton]}
+                onPress={() => setResizingHoldIndex(null)}
+              >
+                <Text style={styles.actionButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Edit Hold Modal */}
         {editable && (
@@ -758,5 +911,93 @@ const styles = StyleSheet.create({
     minHeight: 80,
     marginBottom: 16,
     textAlignVertical: 'top',
+  },
+  editControls: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  movementGrid: {
+    alignItems: 'center',
+  },
+  movementRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: 2,
+  },
+  moveButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: '#0066cc',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  sizeControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  adjustButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#0066cc',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  adjustButtonText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  sizeValue: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+    minWidth: 50,
+    textAlign: 'center',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  actionButton: {
+    flex: 1,
+    backgroundColor: '#0066cc',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545',
+  },
+  doneButton: {
+    backgroundColor: '#28a745',
   },
 });
