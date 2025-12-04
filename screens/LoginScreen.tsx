@@ -12,11 +12,20 @@ import {
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../lib/auth-context';
 
-export default function LoginScreen({ navigation }: any) {
+export default function LoginScreen({ navigation, route }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signInWithGoogle } = useAuth();
+  const { redirectTo } = route.params || {};
+
+  const handleLoginSuccess = () => {
+    if (redirectTo) {
+      navigation.replace(redirectTo);
+    } else {
+      navigation.goBack();
+    }
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -30,6 +39,8 @@ export default function LoginScreen({ navigation }: any) {
 
     if (error) {
       Alert.alert('Login Failed', error.message);
+    } else {
+      handleLoginSuccess();
     }
   };
 
@@ -40,6 +51,8 @@ export default function LoginScreen({ navigation }: any) {
 
     if (error) {
       Alert.alert('Login Failed', error.message);
+    } else {
+      handleLoginSuccess();
     }
   };
 

@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
@@ -57,27 +59,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    const redirectTo = Platform.OS === 'web'
+      ? window.location.origin
+      : 'exp://192.168.31.167:8081'; // Expo app URL
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo,
       },
     });
     return { error };
   };
 
   const signInWithFacebook = async () => {
+    const redirectTo = Platform.OS === 'web'
+      ? window.location.origin
+      : 'exp://192.168.31.167:8081'; // Expo app URL
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo,
       },
     });
     return { error };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Try to sign out normally
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      // Ignore errors - just clear local state
+      console.log('Sign out error (ignoring):', error);
+    }
+
+    // Always clear local storage and state regardless of API result
+    try {
+      await AsyncStorage.removeItem('supabase.auth.token');
+      await AsyncStorage.clear(); // Clear all storage to be safe
+    } catch (storageError) {
+      console.log('Storage clear error:', storageError);
+    }
+
+    // Force update local state
+    setSession(null);
+    setUser(null);
   };
 
   return (

@@ -7,15 +7,18 @@ export default function HomeScreen({ navigation }: any) {
 
   const handleAddRoute = () => {
     if (!user) {
-      navigation.navigate('Login');
+      navigation.navigate('Login', { redirectTo: 'CreateEditRoute' });
     } else {
-      // TODO: Navigate to add route screen
-      alert('Add route screen coming soon!');
+      navigation.navigate('CreateEditRoute');
     }
   };
 
   const handleRoutePress = (routeId: string) => {
     navigation.navigate('RouteDetail', { routeId });
+  };
+
+  const handleLogout = async () => {
+    await signOut();
   };
 
   return (
@@ -24,7 +27,7 @@ export default function HomeScreen({ navigation }: any) {
       <View style={styles.header}>
         <Text style={styles.title}>🧗 Up App</Text>
         {user ? (
-          <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         ) : (
