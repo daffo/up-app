@@ -5,10 +5,12 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Database } from '../types/database.types';
 import RouteVisualization from '../components/RouteVisualization';
+import { useAuth } from '../lib/auth-context';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -17,8 +19,9 @@ interface RouteWithPhoto extends Route {
   photo?: Photo;
 }
 
-export default function RouteDetailScreen({ route }: any) {
+export default function RouteDetailScreen({ route, navigation }: any) {
   const { routeId } = route.params;
+  const { user } = useAuth();
   const [routeData, setRouteData] = useState<RouteWithPhoto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +29,24 @@ export default function RouteDetailScreen({ route }: any) {
   useEffect(() => {
     fetchRouteDetail();
   }, [routeId]);
+
+  useEffect(() => {
+    // Set edit button in navigation header if user owns the route
+    if (routeData && user && routeData.user_id === user.id) {
+      navigation.setOptions({
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('CreateEditRoute', { routeId })}
+            style={{ marginRight: 10 }}
+          >
+            <Text style={{ color: '#0066cc', fontSize: 16, fontWeight: '600' }}>
+              Edit
+            </Text>
+          </TouchableOpacity>
+        ),
+      });
+    }
+  }, [routeData, user, navigation, routeId]);
 
   const fetchRouteDetail = async () => {
     try {
