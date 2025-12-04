@@ -45,17 +45,24 @@ export default function FullScreenRouteViewer({
   const [draggingLabelIndex, setDraggingLabelIndex] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [resizingHoldIndex, setResizingHoldIndex] = useState<number | null>(null);
 
   // Refs for dragging state (to avoid stale closure values in PanResponder)
   const holdsRef = useRef<Hold[]>(holds);
   const draggingHoldIndexRef = useRef<number | null>(null);
   const draggingLabelIndexRef = useRef<number | null>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const resizingHoldIndexRef = useRef<number | null>(null);
 
   // Keep holdsRef in sync with holds state
   useEffect(() => {
     holdsRef.current = holds;
   }, [holds]);
+
+  // Keep resizingHoldIndexRef in sync
+  useEffect(() => {
+    resizingHoldIndexRef.current = resizingHoldIndex;
+  }, [resizingHoldIndex]);
 
   useEffect(() => {
     setHolds(initialHolds);
@@ -63,25 +70,15 @@ export default function FullScreenRouteViewer({
 
   useEffect(() => {
     if (visible) {
-      console.log('[Dimensions] Getting image size for:', photoUrl);
       Image.getSize(photoUrl, (width, height) => {
-        console.log('[Dimensions] Got natural size:', width, 'x', height);
         setImageNaturalSize({ width, height });
       });
     }
   }, [visible, photoUrl]);
 
-  useEffect(() => {
-    console.log('[Dimensions] displayedDimensions updated:', displayedDimensions.width, 'x', displayedDimensions.height);
-  }, [displayedDimensions]);
-
   // Calculate actual displayed image dimensions based on contain mode
   const getDisplayedImageDimensions = () => {
-    console.log('[Calc] imageNaturalSize:', imageNaturalSize.width, 'x', imageNaturalSize.height);
-    console.log('[Calc] windowDimensions:', windowDimensions.width, 'x', windowDimensions.height);
-
     if (!imageNaturalSize.width || !imageNaturalSize.height) {
-      console.log('[Calc] Returning 0x0 - no natural size');
       return { width: 0, height: 0 };
     }
 
@@ -100,7 +97,6 @@ export default function FullScreenRouteViewer({
       displayWidth = windowDimensions.height * imageAspect;
     }
 
-    console.log('[Calc] Calculated dimensions:', displayWidth, 'x', displayHeight);
     return { width: displayWidth, height: displayHeight };
   };
 
@@ -130,25 +126,38 @@ export default function FullScreenRouteViewer({
     const currentDimensions = displayedDimensionsRef.current;
     const currentOffsetX = offsetXRef.current;
     const currentOffsetY = offsetYRef.current;
+    const currentResizing = resizingHoldIndexRef.current;
 
     const imageX = touchX - currentOffsetX;
     const imageY = touchY - currentOffsetY;
 
-    console.log('[Check] Touch:', touchX, touchY, '-> Image coords:', imageX, imageY, '(offset:', currentOffsetX, currentOffsetY, ')');
-    console.log('[Check] Image dimensions:', currentDimensions.width, 'x', currentDimensions.height);
-
     if (imageX < 0 || imageX > currentDimensions.width ||
         imageY < 0 || imageY > currentDimensions.height) {
-      console.log('[Check] Touch outside image bounds');
       return null;
     }
 
     const xPercent = (imageX / currentDimensions.width) * 100;
     const yPercent = (imageY / currentDimensions.height) * 100;
-    console.log('[Check] Touch percent:', xPercent, yPercent);
 
     const currentHolds = holdsRef.current;
-    console.log('[Check] Holds count:', currentHolds.length);
+
+    // Check resize handle first if in resize mode
+    if (currentResizing !== null) {
+      const hold = currentHolds[currentResizing];
+      // Handle is at 45 degrees (top-right)
+      const angle = -Math.PI / 4; // -45 degrees (top-right)
+      const handleX = hold.holdX + hold.radius * Math.cos(angle);
+      const handleY = hold.holdY + hold.radius * Math.sin(angle);
+      const handleRadius = 1.5; // Handle size in percent
+
+      const dx = xPercent - handleX;
+      const dy = yPercent - handleY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < handleRadius + 1) {
+        return { type: 'resize-handle', index: currentResizing, offsetX: 0, offsetY: 0 };
+      }
+    }
 
     // Check holds first (smaller hit area, higher priority)
     for (let i = 0; i < currentHolds.length; i++) {
@@ -157,10 +166,7 @@ export default function FullScreenRouteViewer({
       const dy = yPercent - hold.holdY;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      console.log('[Check] Hold', i, 'at', hold.holdX, hold.holdY, 'radius:', hold.radius, 'distance:', distance);
-
       if (distance < hold.radius + 2) {
-        console.log('[Check] HIT on hold', i);
         return { type: 'hold', index: i, offsetX: dx, offsetY: dy };
       }
     }
@@ -169,23 +175,24 @@ export default function FullScreenRouteViewer({
     for (let i = 0; i < currentHolds.length; i++) {
       const hold = currentHolds[i];
       const labelText = hold.note ? `${hold.order}. ${hold.note}` : `${hold.order}`;
-      const textWidth = (labelText.length * 8) / currentDimensions.width * 100;
-      const textHeight = 18 / currentDimensions.height * 100;
-      const padding = 4 / currentDimensions.width * 100;
+      const lines = labelText.split('\n');
+      const maxLineLength = Math.max(...lines.map(line => line.length));
+      const textWidth = (maxLineLength * 6.5) / currentDimensions.width * 100;
+      const lineHeight = 13 / currentDimensions.height * 100;
+      const totalTextHeight = lines.length * lineHeight;
+      const padding = 1 / currentDimensions.width * 100; // Minimal padding
 
-      const labelLeft = hold.labelX - padding;
-      const labelRight = hold.labelX + textWidth + padding;
-      const labelTop = hold.labelY - textHeight + padding;
+      const labelLeft = hold.labelX;
+      const labelRight = hold.labelX + textWidth + padding * 2;
+      const labelTop = hold.labelY - totalTextHeight - padding;
       const labelBottom = hold.labelY + padding;
 
       if (xPercent >= labelLeft && xPercent <= labelRight &&
           yPercent >= labelTop && yPercent <= labelBottom) {
-        console.log('[Check] HIT on label', i);
         return { type: 'label', index: i, offsetX: xPercent - hold.labelX, offsetY: yPercent - hold.labelY };
       }
     }
 
-    console.log('[Check] No hit');
     return null;
   };
 
@@ -246,49 +253,65 @@ export default function FullScreenRouteViewer({
     PanResponder.create({
       onStartShouldSetPanResponderCapture: (evt) => {
         const currentDimensions = displayedDimensionsRef.current;
-        const currentOffsetX = offsetXRef.current;
-        const currentOffsetY = offsetYRef.current;
+        const currentResizing = resizingHoldIndexRef.current;
 
         if (!editable || currentDimensions.width === 0) {
-          console.log('[PanResponder] onStartCapture - early return, editable:', editable, 'dimensions:', currentDimensions.width, 'x', currentDimensions.height);
           return false;
         }
 
         const touchX = evt.nativeEvent.pageX;
         const touchY = evt.nativeEvent.pageY;
-        console.log('[PanResponder] onStartCapture - touch at', touchX, touchY, 'offsets:', currentOffsetX, currentOffsetY);
 
-        // Capture if starting on a hold or label (blocks ImageZoom)
+        // Check what was touched
         const touched = checkIfTouchingHoldOrLabel(touchX, touchY);
+
+        // If in resize mode, only capture if touching the resize handle
+        if (currentResizing !== null) {
+          return touched?.type === 'resize-handle';
+        }
+
+        // Otherwise capture if starting on a hold or label (blocks ImageZoom)
         const shouldCapture = touched !== null;
-        console.log('[PanResponder] onStartCapture - touched:', touched ? `${touched.type} #${touched.index}` : 'nothing', '- capturing:', shouldCapture);
         return shouldCapture;
       },
       onStartShouldSetPanResponder: (evt) => {
         // Don't claim if dimensions aren't ready
         const currentDimensions = displayedDimensionsRef.current;
         if (!editable || currentDimensions.width === 0) {
-          console.log('[PanResponder] onStart - early return, editable:', editable, 'dimensions:', currentDimensions.width, 'x', currentDimensions.height);
           return false;
         }
 
         // Only claim if touching a hold/label
         const touched = checkIfTouchingHoldOrLabel(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
-        console.log('[PanResponder] onStart - shouldClaim:', touched !== null);
         return touched !== null;
       },
       onMoveShouldSetPanResponder: () => false,
+      onPanResponderTerminationRequest: () => {
+        // Never let ImageZoom steal our gesture once we've claimed it
+        const currentDragging = draggingHoldIndexRef.current !== null ||
+                               draggingLabelIndexRef.current !== null ||
+                               resizingHoldIndexRef.current !== null;
+        return !currentDragging;
+      },
       onPanResponderGrant: (evt, gestureState) => {
-        console.log('[PanResponder] onGrant - gesture claimed');
         if (!editable) return;
 
+        const currentResizing = resizingHoldIndexRef.current;
         const touched = checkIfTouchingHoldOrLabel(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
         if (!touched) {
-          console.log('[PanResponder] onGrant - no touched item found');
           return;
         }
 
-        console.log('[PanResponder] onGrant - setting drag state for', touched.type, '#', touched.index);
+        // If touching resize handle, don't set up drag state (we're resizing)
+        if (touched.type === 'resize-handle') {
+          return;
+        }
+
+        // Skip drag state setup if in resize mode (and not on handle)
+        if (currentResizing !== null) {
+          return;
+        }
+
         if (touched.type === 'hold') {
           draggingHoldIndexRef.current = touched.index;
           dragOffsetRef.current = { x: touched.offsetX, y: touched.offsetY };
@@ -302,16 +325,18 @@ export default function FullScreenRouteViewer({
         }
       },
       onPanResponderMove: (evt, gestureState) => {
+        const currentResizing = resizingHoldIndexRef.current;
         const currentDraggingHold = draggingHoldIndexRef.current;
         const currentDraggingLabel = draggingLabelIndexRef.current;
         const currentDragOffset = dragOffsetRef.current;
 
-        if (!editable || (currentDraggingHold === null && currentDraggingLabel === null)) return;
+        if (!editable) return;
 
         // Use refs to get current values
         const currentDimensions = displayedDimensionsRef.current;
         const currentOffsetX = offsetXRef.current;
         const currentOffsetY = offsetYRef.current;
+        const currentHolds = holdsRef.current;
 
         const touchX = evt.nativeEvent.pageX;
         const touchY = evt.nativeEvent.pageY;
@@ -327,7 +352,25 @@ export default function FullScreenRouteViewer({
         const xPercent = (imageX / currentDimensions.width) * 100;
         const yPercent = (imageY / currentDimensions.height) * 100;
 
-        const currentHolds = holdsRef.current;
+        // Handle resize mode
+        if (currentResizing !== null) {
+          const hold = currentHolds[currentResizing];
+          const dx = xPercent - hold.holdX;
+          const dy = yPercent - hold.holdY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          // Clamp radius between 0.5 and 10 percent
+          const newRadius = Math.max(0.5, Math.min(10, distance));
+
+          const updatedHolds = currentHolds.map((h, i) =>
+            i === currentResizing ? { ...h, radius: newRadius } : h
+          );
+          setHolds(updatedHolds);
+          return;
+        }
+
+        // Handle normal drag mode
+        if (currentDraggingHold === null && currentDraggingLabel === null) return;
 
         if (currentDraggingHold !== null) {
           const hold = currentHolds[currentDraggingHold];
@@ -363,16 +406,22 @@ export default function FullScreenRouteViewer({
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
+        const currentResizing = resizingHoldIndexRef.current;
         const currentDraggingHold = draggingHoldIndexRef.current;
         const currentDraggingLabel = draggingLabelIndexRef.current;
 
-        const wasDragging = currentDraggingHold !== null || currentDraggingLabel !== null;
         const actuallyMoved = Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
-        console.log('[PanResponder] onRelease - wasDragging:', wasDragging, 'actuallyMoved:', actuallyMoved, 'dx:', gestureState.dx, 'dy:', gestureState.dy);
+
+        // If in resize mode and didn't move (tapped handle), exit resize mode
+        if (currentResizing !== null && !actuallyMoved) {
+          setResizingHoldIndex(null);
+          return;
+        }
+
+        const wasDragging = currentDraggingHold !== null || currentDraggingLabel !== null;
 
         // If it was a tap (no movement), open edit modal
         if (wasDragging && !actuallyMoved && currentDraggingHold !== null) {
-          console.log('[PanResponder] onRelease - opening edit modal for hold', currentDraggingHold);
           setSelectedHoldIndex(currentDraggingHold);
           setEditModalVisible(true);
         }
@@ -425,9 +474,10 @@ export default function FullScreenRouteViewer({
 
   const handleOpenRadiusModal = () => {
     if (selectedHoldIndex !== null) {
-      setRadiusText(holds[selectedHoldIndex].radius.toString());
-      setRadiusModalVisible(true);
+      // Enter resize mode instead of showing text input modal
+      setResizingHoldIndex(selectedHoldIndex);
       setEditModalVisible(false);
+      setSelectedHoldIndex(null);
     }
   };
 
@@ -493,6 +543,7 @@ export default function FullScreenRouteViewer({
                   width={displayedDimensions.width}
                   height={displayedDimensions.height}
                   pointerEvents="none"
+                  resizingHoldIndex={resizingHoldIndex}
                 />
               </View>
             )}

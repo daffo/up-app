@@ -7,6 +7,7 @@ interface RouteOverlayProps {
   height: number;
   pointerEvents?: 'none' | 'box-none' | 'auto';
   onHoldPress?: (index: number) => void;
+  resizingHoldIndex?: number | null;
 }
 
 export default function RouteOverlay({
@@ -15,6 +16,7 @@ export default function RouteOverlay({
   height,
   pointerEvents = 'none',
   onHoldPress,
+  resizingHoldIndex = null,
 }: RouteOverlayProps) {
   return (
     <Svg
@@ -81,48 +83,54 @@ export default function RouteOverlay({
 
         // Calculate label background dimensions
         const labelText = hold.note ? `${hold.order}. ${hold.note}` : `${hold.order}`;
-        const textWidth = labelText.length * 8;
-        const textHeight = 18;
-        const padding = 4;
+        const lines = labelText.split('\n');
+        const maxLineLength = Math.max(...lines.map(line => line.length));
+        const textWidth = maxLineLength * 6.5; // Approximate width per character
+        const totalTextHeight = lines.length * 13; // Height per line
+        const padding = 1; // Minimal padding
 
-        // Label rectangle bounds
-        const rectLeft = labelX - padding;
-        const rectRight = labelX + textWidth + padding;
-        const rectTop = labelY - textHeight + padding;
+        // Label rectangle bounds (matching actual rendered rectangle)
+        const rectLeft = labelX;
+        const rectRight = labelX + textWidth + padding * 2;
+        const rectTop = labelY - totalTextHeight - padding;
         const rectBottom = labelY + padding;
 
-        // Calculate angle from label center to hold
-        const angle = Math.atan2(holdYCenter - labelY, holdXCenter - labelX);
+        // Label center for arrow calculation
+        const labelCenterX = (rectLeft + rectRight) / 2;
+        const labelCenterY = (rectTop + rectBottom) / 2;
+
+        // Calculate angle from label center to hold center
+        const angle = Math.atan2(holdYCenter - labelCenterY, holdXCenter - labelCenterX);
 
         // Find intersection point with label rectangle edge
-        let startX = labelX;
-        let startY = labelY;
+        let startX = labelCenterX;
+        let startY = labelCenterY;
 
         // Determine which edge the line exits from based on angle
-        const dx = holdXCenter - labelX;
-        const dy = holdYCenter - labelY;
+        const dx = holdXCenter - labelCenterX;
+        const dy = holdYCenter - labelCenterY;
 
         if (Math.abs(dx) > Math.abs(dy)) {
           // Line exits from left or right edge
           if (dx > 0) {
             // Right edge
             startX = rectRight;
-            startY = labelY + (dy / dx) * (rectRight - labelX);
+            startY = labelCenterY + (dy / dx) * (rectRight - labelCenterX);
           } else {
             // Left edge
             startX = rectLeft;
-            startY = labelY + (dy / dx) * (rectLeft - labelX);
+            startY = labelCenterY + (dy / dx) * (rectLeft - labelCenterX);
           }
         } else {
           // Line exits from top or bottom edge
           if (dy > 0) {
             // Bottom edge
             startY = rectBottom;
-            startX = labelX + (dx / dy) * (rectBottom - labelY);
+            startX = labelCenterX + (dx / dy) * (rectBottom - labelCenterY);
           } else {
             // Top edge
             startY = rectTop;
-            startX = labelX + (dx / dy) * (rectTop - labelY);
+            startX = labelCenterX + (dx / dy) * (rectTop - labelCenterY);
           }
         }
 
@@ -168,34 +176,61 @@ export default function RouteOverlay({
         const labelX = (hold.labelX / 100) * width;
         const labelY = (hold.labelY / 100) * height;
         const labelText = hold.note ? `${hold.order}. ${hold.note}` : `${hold.order}`;
-        const textWidth = labelText.length * 8;
-        const textHeight = 18;
-        const padding = 4;
+        const lines = labelText.split('\n');
+        const maxLineLength = Math.max(...lines.map(line => line.length));
+        const textWidth = maxLineLength * 6.5;
+        const lineHeight = 13;
+        const totalTextHeight = lines.length * lineHeight;
+        const padding = 1; // Minimal padding
 
         return (
           <G key={`label-${index}`}>
             <Rect
-              x={labelX - padding}
-              y={labelY - textHeight + padding}
+              x={labelX}
+              y={labelY - totalTextHeight - padding}
               width={textWidth + padding * 2}
-              height={textHeight + padding}
+              height={totalTextHeight + padding * 2}
               fill="rgba(255, 255, 255, 0.9)"
               stroke="#000000"
               strokeWidth={1}
               rx={3}
             />
-            <SvgText
-              x={labelX}
-              y={labelY}
-              fontSize={14}
-              fontWeight="bold"
-              fill="#000000"
-            >
-              {labelText}
-            </SvgText>
+            {lines.map((line, lineIndex) => (
+              <SvgText
+                key={`line-${lineIndex}`}
+                x={labelX + padding}
+                y={labelY - totalTextHeight + lineHeight * (lineIndex + 1)}
+                fontSize={14}
+                fontWeight="bold"
+                fill="#000000"
+              >
+                {line}
+              </SvgText>
+            ))}
           </G>
         );
       })}
+
+      {/* Draw resize handle if in resize mode */}
+      {resizingHoldIndex !== null && holds[resizingHoldIndex] && (() => {
+        const hold = holds[resizingHoldIndex];
+        const angle = -Math.PI / 4; // -45 degrees (top-right)
+        const handleX = ((hold.holdX + hold.radius * Math.cos(angle)) / 100) * width;
+        const handleY = ((hold.holdY + hold.radius * Math.sin(angle)) / 100) * height;
+        const handleRadius = (1.5 / 100) * width; // Handle size
+
+        return (
+          <Circle
+            key="resize-handle"
+            cx={handleX}
+            cy={handleY}
+            r={handleRadius}
+            fill="#0066cc"
+            stroke="#FFFFFF"
+            strokeWidth="2"
+          />
+        );
+      })()}
     </Svg>
   );
 }
