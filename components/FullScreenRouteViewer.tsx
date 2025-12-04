@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Image,
@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   StatusBar,
   TextInput,
+  PanResponder,
 } from 'react-native';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { Hold } from '../types/database.types';
@@ -38,9 +39,23 @@ export default function FullScreenRouteViewer({
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [noteText, setNoteText] = useState('');
-  const [movingMode, setMovingMode] = useState<'hold' | 'label' | null>(null);
   const [radiusModalVisible, setRadiusModalVisible] = useState(false);
   const [radiusText, setRadiusText] = useState('');
+  const [draggingHoldIndex, setDraggingHoldIndex] = useState<number | null>(null);
+  const [draggingLabelIndex, setDraggingLabelIndex] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Refs for dragging state (to avoid stale closure values in PanResponder)
+  const holdsRef = useRef<Hold[]>(holds);
+  const draggingHoldIndexRef = useRef<number | null>(null);
+  const draggingLabelIndexRef = useRef<number | null>(null);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+
+  // Keep holdsRef in sync with holds state
+  useEffect(() => {
+    holdsRef.current = holds;
+  }, [holds]);
 
   useEffect(() => {
     setHolds(initialHolds);
@@ -48,15 +63,25 @@ export default function FullScreenRouteViewer({
 
   useEffect(() => {
     if (visible) {
+      console.log('[Dimensions] Getting image size for:', photoUrl);
       Image.getSize(photoUrl, (width, height) => {
+        console.log('[Dimensions] Got natural size:', width, 'x', height);
         setImageNaturalSize({ width, height });
       });
     }
   }, [visible, photoUrl]);
 
+  useEffect(() => {
+    console.log('[Dimensions] displayedDimensions updated:', displayedDimensions.width, 'x', displayedDimensions.height);
+  }, [displayedDimensions]);
+
   // Calculate actual displayed image dimensions based on contain mode
   const getDisplayedImageDimensions = () => {
+    console.log('[Calc] imageNaturalSize:', imageNaturalSize.width, 'x', imageNaturalSize.height);
+    console.log('[Calc] windowDimensions:', windowDimensions.width, 'x', windowDimensions.height);
+
     if (!imageNaturalSize.width || !imageNaturalSize.height) {
+      console.log('[Calc] Returning 0x0 - no natural size');
       return { width: 0, height: 0 };
     }
 
@@ -75,10 +100,15 @@ export default function FullScreenRouteViewer({
       displayWidth = windowDimensions.height * imageAspect;
     }
 
+    console.log('[Calc] Calculated dimensions:', displayWidth, 'x', displayHeight);
     return { width: displayWidth, height: displayHeight };
   };
 
   const displayedDimensions = getDisplayedImageDimensions();
+
+  // Store dimensions in ref so PanResponder can access current value
+  const displayedDimensionsRef = useRef(displayedDimensions);
+  displayedDimensionsRef.current = displayedDimensions;
 
   // Calculate scale factors to map hold coordinates to displayed image size
   const scaleX = displayedDimensions.width / imageNaturalSize.width || 1;
@@ -88,52 +118,106 @@ export default function FullScreenRouteViewer({
   const offsetX = (windowDimensions.width - displayedDimensions.width) / 2;
   const offsetY = (windowDimensions.height - displayedDimensions.height) / 2;
 
-  const handleImagePress = (event: any) => {
-    if (!editable || displayedDimensions.width === 0) return;
+  // Store offsets in ref too
+  const offsetXRef = useRef(offsetX);
+  const offsetYRef = useRef(offsetY);
+  offsetXRef.current = offsetX;
+  offsetYRef.current = offsetY;
 
-    const { locationX, locationY } = event;
+  // Pan responder for dragging holds and labels
+  const checkIfTouchingHoldOrLabel = (touchX: number, touchY: number) => {
+    // Use refs to get current values instead of stale closure values
+    const currentDimensions = displayedDimensionsRef.current;
+    const currentOffsetX = offsetXRef.current;
+    const currentOffsetY = offsetYRef.current;
 
-    // Convert screen coordinates to image-relative coordinates
-    const imageX = locationX - offsetX;
-    const imageY = locationY - offsetY;
+    const imageX = touchX - currentOffsetX;
+    const imageY = touchY - currentOffsetY;
 
-    // Check if tap is outside the image bounds
-    if (imageX < 0 || imageX > displayedDimensions.width ||
-        imageY < 0 || imageY > displayedDimensions.height) {
+    console.log('[Check] Touch:', touchX, touchY, '-> Image coords:', imageX, imageY, '(offset:', currentOffsetX, currentOffsetY, ')');
+    console.log('[Check] Image dimensions:', currentDimensions.width, 'x', currentDimensions.height);
+
+    if (imageX < 0 || imageX > currentDimensions.width ||
+        imageY < 0 || imageY > currentDimensions.height) {
+      console.log('[Check] Touch outside image bounds');
+      return null;
+    }
+
+    const xPercent = (imageX / currentDimensions.width) * 100;
+    const yPercent = (imageY / currentDimensions.height) * 100;
+    console.log('[Check] Touch percent:', xPercent, yPercent);
+
+    const currentHolds = holdsRef.current;
+    console.log('[Check] Holds count:', currentHolds.length);
+
+    // Check holds first (smaller hit area, higher priority)
+    for (let i = 0; i < currentHolds.length; i++) {
+      const hold = currentHolds[i];
+      const dx = xPercent - hold.holdX;
+      const dy = yPercent - hold.holdY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      console.log('[Check] Hold', i, 'at', hold.holdX, hold.holdY, 'radius:', hold.radius, 'distance:', distance);
+
+      if (distance < hold.radius + 2) {
+        console.log('[Check] HIT on hold', i);
+        return { type: 'hold', index: i, offsetX: dx, offsetY: dy };
+      }
+    }
+
+    // Check labels
+    for (let i = 0; i < currentHolds.length; i++) {
+      const hold = currentHolds[i];
+      const labelText = hold.note ? `${hold.order}. ${hold.note}` : `${hold.order}`;
+      const textWidth = (labelText.length * 8) / currentDimensions.width * 100;
+      const textHeight = 18 / currentDimensions.height * 100;
+      const padding = 4 / currentDimensions.width * 100;
+
+      const labelLeft = hold.labelX - padding;
+      const labelRight = hold.labelX + textWidth + padding;
+      const labelTop = hold.labelY - textHeight + padding;
+      const labelBottom = hold.labelY + padding;
+
+      if (xPercent >= labelLeft && xPercent <= labelRight &&
+          yPercent >= labelTop && yPercent <= labelBottom) {
+        console.log('[Check] HIT on label', i);
+        return { type: 'label', index: i, offsetX: xPercent - hold.labelX, offsetY: yPercent - hold.labelY };
+      }
+    }
+
+    console.log('[Check] No hit');
+    return null;
+  };
+
+  const handleImageTap = (event: any) => {
+    // Use refs to get current values
+    const currentDimensions = displayedDimensionsRef.current;
+    const currentOffsetX = offsetXRef.current;
+    const currentOffsetY = offsetYRef.current;
+
+    if (!editable || currentDimensions.width === 0) return;
+
+    const touchX = event.locationX || event.nativeEvent?.pageX || 0;
+    const touchY = event.locationY || event.nativeEvent?.pageY || 0;
+
+    const imageX = touchX - currentOffsetX;
+    const imageY = touchY - currentOffsetY;
+
+    if (imageX < 0 || imageX > currentDimensions.width ||
+        imageY < 0 || imageY > currentDimensions.height) {
       return;
     }
 
-    // Convert to percentages relative to displayed image
-    const xPercent = (imageX / displayedDimensions.width) * 100;
-    const yPercent = (imageY / displayedDimensions.height) * 100;
+    const xPercent = (imageX / currentDimensions.width) * 100;
+    const yPercent = (imageY / currentDimensions.height) * 100;
 
-    // If in moving mode, update position
-    if (movingMode && selectedHoldIndex !== null) {
-      const updatedHolds = holds.map((hold, i) => {
-        if (i === selectedHoldIndex) {
-          if (movingMode === 'hold') {
-            return { ...hold, holdX: xPercent, holdY: yPercent };
-          } else if (movingMode === 'label') {
-            return { ...hold, labelX: xPercent, labelY: yPercent };
-          }
-        }
-        return hold;
-      });
-
-      setHolds(updatedHolds);
-      setMovingMode(null);
-      setSelectedHoldIndex(null);
-      return;
-    }
-
-    // Check if tapped on an existing hold
+    // Check if tapped on a hold
     for (let i = 0; i < holds.length; i++) {
       const hold = holds[i];
       const dx = xPercent - hold.holdX;
       const dy = yPercent - hold.holdY;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      // Check if tap is within hold radius (with some padding)
       if (distance < hold.radius + 2) {
         setSelectedHoldIndex(i);
         setEditModalVisible(true);
@@ -155,6 +239,157 @@ export default function FullScreenRouteViewer({
     setHolds([...holds, newHold]);
   };
 
+  // Note: We don't use ImageZoom's onMove because it doesn't provide touch coordinates
+  // Drag-to-move is handled entirely by PanResponder below
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponderCapture: (evt) => {
+        const currentDimensions = displayedDimensionsRef.current;
+        const currentOffsetX = offsetXRef.current;
+        const currentOffsetY = offsetYRef.current;
+
+        if (!editable || currentDimensions.width === 0) {
+          console.log('[PanResponder] onStartCapture - early return, editable:', editable, 'dimensions:', currentDimensions.width, 'x', currentDimensions.height);
+          return false;
+        }
+
+        const touchX = evt.nativeEvent.pageX;
+        const touchY = evt.nativeEvent.pageY;
+        console.log('[PanResponder] onStartCapture - touch at', touchX, touchY, 'offsets:', currentOffsetX, currentOffsetY);
+
+        // Capture if starting on a hold or label (blocks ImageZoom)
+        const touched = checkIfTouchingHoldOrLabel(touchX, touchY);
+        const shouldCapture = touched !== null;
+        console.log('[PanResponder] onStartCapture - touched:', touched ? `${touched.type} #${touched.index}` : 'nothing', '- capturing:', shouldCapture);
+        return shouldCapture;
+      },
+      onStartShouldSetPanResponder: (evt) => {
+        // Don't claim if dimensions aren't ready
+        const currentDimensions = displayedDimensionsRef.current;
+        if (!editable || currentDimensions.width === 0) {
+          console.log('[PanResponder] onStart - early return, editable:', editable, 'dimensions:', currentDimensions.width, 'x', currentDimensions.height);
+          return false;
+        }
+
+        // Only claim if touching a hold/label
+        const touched = checkIfTouchingHoldOrLabel(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
+        console.log('[PanResponder] onStart - shouldClaim:', touched !== null);
+        return touched !== null;
+      },
+      onMoveShouldSetPanResponder: () => false,
+      onPanResponderGrant: (evt, gestureState) => {
+        console.log('[PanResponder] onGrant - gesture claimed');
+        if (!editable) return;
+
+        const touched = checkIfTouchingHoldOrLabel(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
+        if (!touched) {
+          console.log('[PanResponder] onGrant - no touched item found');
+          return;
+        }
+
+        console.log('[PanResponder] onGrant - setting drag state for', touched.type, '#', touched.index);
+        if (touched.type === 'hold') {
+          draggingHoldIndexRef.current = touched.index;
+          dragOffsetRef.current = { x: touched.offsetX, y: touched.offsetY };
+          setDraggingHoldIndex(touched.index);
+          setDragOffset({ x: touched.offsetX, y: touched.offsetY });
+        } else if (touched.type === 'label') {
+          draggingLabelIndexRef.current = touched.index;
+          dragOffsetRef.current = { x: touched.offsetX, y: touched.offsetY };
+          setDraggingLabelIndex(touched.index);
+          setDragOffset({ x: touched.offsetX, y: touched.offsetY });
+        }
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        const currentDraggingHold = draggingHoldIndexRef.current;
+        const currentDraggingLabel = draggingLabelIndexRef.current;
+        const currentDragOffset = dragOffsetRef.current;
+
+        if (!editable || (currentDraggingHold === null && currentDraggingLabel === null)) return;
+
+        // Use refs to get current values
+        const currentDimensions = displayedDimensionsRef.current;
+        const currentOffsetX = offsetXRef.current;
+        const currentOffsetY = offsetYRef.current;
+
+        const touchX = evt.nativeEvent.pageX;
+        const touchY = evt.nativeEvent.pageY;
+
+        const imageX = touchX - currentOffsetX;
+        const imageY = touchY - currentOffsetY;
+
+        if (imageX < 0 || imageX > currentDimensions.width ||
+            imageY < 0 || imageY > currentDimensions.height) {
+          return;
+        }
+
+        const xPercent = (imageX / currentDimensions.width) * 100;
+        const yPercent = (imageY / currentDimensions.height) * 100;
+
+        const currentHolds = holdsRef.current;
+
+        if (currentDraggingHold !== null) {
+          const hold = currentHolds[currentDraggingHold];
+          const newHoldX = xPercent - currentDragOffset.x;
+          const newHoldY = yPercent - currentDragOffset.y;
+
+          // Calculate label offset to maintain relative position
+          const labelOffsetX = hold.labelX - hold.holdX;
+          const labelOffsetY = hold.labelY - hold.holdY;
+
+          const updatedHolds = currentHolds.map((h, i) =>
+            i === currentDraggingHold
+              ? {
+                  ...h,
+                  holdX: newHoldX,
+                  holdY: newHoldY,
+                  labelX: newHoldX + labelOffsetX,
+                  labelY: newHoldY + labelOffsetY,
+                }
+              : h
+          );
+          setHolds(updatedHolds);
+        } else if (currentDraggingLabel !== null) {
+          const newLabelX = xPercent - currentDragOffset.x;
+          const newLabelY = yPercent - currentDragOffset.y;
+
+          const updatedHolds = currentHolds.map((h, i) =>
+            i === currentDraggingLabel
+              ? { ...h, labelX: newLabelX, labelY: newLabelY }
+              : h
+          );
+          setHolds(updatedHolds);
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const currentDraggingHold = draggingHoldIndexRef.current;
+        const currentDraggingLabel = draggingLabelIndexRef.current;
+
+        const wasDragging = currentDraggingHold !== null || currentDraggingLabel !== null;
+        const actuallyMoved = Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+        console.log('[PanResponder] onRelease - wasDragging:', wasDragging, 'actuallyMoved:', actuallyMoved, 'dx:', gestureState.dx, 'dy:', gestureState.dy);
+
+        // If it was a tap (no movement), open edit modal
+        if (wasDragging && !actuallyMoved && currentDraggingHold !== null) {
+          console.log('[PanResponder] onRelease - opening edit modal for hold', currentDraggingHold);
+          setSelectedHoldIndex(currentDraggingHold);
+          setEditModalVisible(true);
+        }
+
+        // Clear refs
+        draggingHoldIndexRef.current = null;
+        draggingLabelIndexRef.current = null;
+        dragOffsetRef.current = { x: 0, y: 0 };
+
+        // Clear state
+        setDraggingHoldIndex(null);
+        setDraggingLabelIndex(null);
+        setDragOffset({ x: 0, y: 0 });
+      },
+    })
+  ).current;
+
   const handleDeleteHold = () => {
     if (selectedHoldIndex === null) return;
 
@@ -167,16 +402,6 @@ export default function FullScreenRouteViewer({
     setHolds(renumberedHolds);
     setEditModalVisible(false);
     setSelectedHoldIndex(null);
-  };
-
-  const handleMoveHold = () => {
-    setMovingMode('hold');
-    setEditModalVisible(false);
-  };
-
-  const handleMoveLabel = () => {
-    setMovingMode('label');
-    setEditModalVisible(false);
   };
 
   const handleOpenNoteModal = () => {
@@ -236,15 +461,6 @@ export default function FullScreenRouteViewer({
     >
       <StatusBar hidden />
       <View style={styles.container}>
-        {/* Moving mode helper */}
-        {editable && movingMode && (
-          <View style={styles.helperBanner}>
-            <Text style={styles.helperText}>
-              {movingMode === 'hold' ? 'Tap to move hold position' : 'Tap to move label position'}
-            </Text>
-          </View>
-        )}
-
         <ImageZoom
           cropWidth={windowDimensions.width}
           cropHeight={windowDimensions.height}
@@ -252,9 +468,12 @@ export default function FullScreenRouteViewer({
           imageHeight={windowDimensions.height}
           minScale={1}
           maxScale={4}
-          onClick={editable ? handleImagePress : undefined}
+          onClick={editable ? handleImageTap : undefined}
         >
-          <View style={{ width: windowDimensions.width, height: windowDimensions.height }}>
+          <View
+            style={{ width: windowDimensions.width, height: windowDimensions.height }}
+            {...(editable ? panResponder.panHandlers : {})}
+          >
             <Image
               source={{ uri: photoUrl }}
               style={styles.image}
@@ -282,14 +501,10 @@ export default function FullScreenRouteViewer({
 
         {/* Close/Done button */}
         <TouchableOpacity
-          style={editable ? styles.doneButton : styles.closeButton}
+          style={styles.closeButton}
           onPress={handleDone}
         >
-          {editable ? (
-            <Text style={styles.doneButtonText}>Done ({holds.length})</Text>
-          ) : (
-            <Text style={styles.closeButtonText}>✕</Text>
-          )}
+          <Text style={styles.closeButtonText}>{editable ? '✓' : '✕'}</Text>
         </TouchableOpacity>
 
         {/* Edit Hold Modal */}
@@ -316,14 +531,6 @@ export default function FullScreenRouteViewer({
 
                 <TouchableOpacity style={styles.modalButton} onPress={handleOpenRadiusModal}>
                   <Text style={styles.modalButtonText}>⭕ Change Size</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.modalButton} onPress={handleMoveHold}>
-                  <Text style={styles.modalButtonText}>📍 Move Hold Position</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.modalButton} onPress={handleMoveLabel}>
-                  <Text style={styles.modalButtonText}>🏷️ Move Label Position</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -449,37 +656,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
-  },
-  doneButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#0066cc',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  doneButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  helperBanner: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#0066cc',
-    padding: 12,
-    zIndex: 10,
-  },
-  helperText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,

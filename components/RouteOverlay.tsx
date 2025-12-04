@@ -157,7 +157,7 @@ export default function RouteOverlay({
             r={r}
             fill="rgba(255, 0, 0, 0.2)"
             stroke="#FF0000"
-            strokeWidth="3"
+            strokeWidth="2"
             onPress={onHoldPress ? () => onHoldPress(index) : undefined}
           />
         );
