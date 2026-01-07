@@ -6,13 +6,20 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export interface DetectedHold {
+  id: string
+  photo_id: string
+  polygon: Array<{ x: number; y: number }>
+  center: { x: number; y: number }
+  dominant_color?: string
+  created_at: string
+}
+
 export interface Hold {
   order: number
-  holdX: number
-  holdY: number
+  detected_hold_id: string
   labelX: number
   labelY: number
-  radius: number
   note?: string
 }
 
@@ -30,6 +37,32 @@ export interface Database {
         }
         Update: {
           user_id?: string
+          created_at?: string
+        }
+      }
+      detected_holds: {
+        Row: {
+          id: string
+          photo_id: string
+          polygon: Json
+          center: Json
+          dominant_color: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          photo_id: string
+          polygon: Json
+          center: Json
+          dominant_color?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          photo_id?: string
+          polygon?: Json
+          center?: Json
+          dominant_color?: string | null
           created_at?: string
         }
       }

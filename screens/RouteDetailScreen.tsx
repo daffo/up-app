@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { Database } from '../types/database.types';
+import { Database, DetectedHold } from '../types/database.types';
 import RouteVisualization from '../components/RouteVisualization';
 import { useAuth } from '../lib/auth-context';
 
@@ -23,6 +23,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
   const { routeId } = route.params;
   const { user } = useAuth();
   const [routeData, setRouteData] = useState<RouteWithPhoto | null>(null);
+  const [detectedHolds, setDetectedHolds] = useState<DetectedHold[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +67,20 @@ export default function RouteDetailScreen({ route, navigation }: any) {
       if (routeError) throw routeError;
 
       setRouteData(routeData as RouteWithPhoto);
+
+      // Fetch detected holds for the photo
+      if (routeData?.photo_id) {
+        const { data: detectedHoldsData, error: holdsError } = await supabase
+          .from('detected_holds')
+          .select('*')
+          .eq('photo_id', routeData.photo_id);
+
+        if (holdsError) {
+          console.error('Error fetching detected holds:', holdsError);
+        } else {
+          setDetectedHolds(detectedHoldsData || []);
+        }
+      }
     } catch (err) {
       console.error('Error fetching route:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch route');
@@ -112,6 +127,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
           <RouteVisualization
             photoUrl={routeData.photo.image_url}
             holds={routeData.holds}
+            detectedHolds={detectedHolds}
           />
           <View style={styles.photoInfo}>
             <Text style={styles.photoDate}>

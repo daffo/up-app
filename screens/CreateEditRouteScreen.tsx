@@ -13,8 +13,8 @@ import {
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth-context';
-import { Database, Hold } from '../types/database.types';
-import FullScreenRouteViewer from '../components/FullScreenRouteViewer';
+import { Database, Hold, DetectedHold } from '../types/database.types';
+import FullScreenHoldEditor from '../components/FullScreenHoldEditor';
 import RouteOverlay from '../components/RouteOverlay';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -42,6 +42,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
   // Data
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [detectedHolds, setDetectedHolds] = useState<DetectedHold[]>([]);
   const [existingRoute, setExistingRoute] = useState<Route | null>(null);
 
   // Image dimensions for scaling
@@ -133,6 +134,31 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
       );
     }
   }, [selectedPhoto]);
+
+  // Fetch detected holds when photo changes
+  useEffect(() => {
+    const fetchDetectedHolds = async () => {
+      if (!selectedPhotoId) {
+        setDetectedHolds([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('detected_holds')
+          .select('*')
+          .eq('photo_id', selectedPhotoId);
+
+        if (error) throw error;
+        setDetectedHolds(data || []);
+      } catch (err) {
+        console.error('Error fetching detected holds:', err);
+        setDetectedHolds([]);
+      }
+    };
+
+    fetchDetectedHolds();
+  }, [selectedPhotoId]);
 
   const handleUpdateHolds = (updatedHolds: Hold[]) => {
     setHolds(updatedHolds);
@@ -319,6 +345,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               />
               <RouteOverlay
                 holds={holds}
+                detectedHolds={detectedHolds}
                 width={displayWidth}
                 height={displayHeight}
                 pointerEvents="none"
@@ -330,7 +357,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               <View style={styles.holdsList}>
                 <Text style={styles.holdsListTitle}>Holds (use arrows to reorder):</Text>
                 {holds.map((hold, index) => (
-                  <View key={`hold-${hold.order}-${hold.holdX}-${hold.holdY}`} style={styles.holdItem}>
+                  <View key={`hold-${hold.order}-${hold.detected_hold_id}`} style={styles.holdItem}>
                     <Text style={styles.holdItemText}>
                       {hold.order}. {hold.note || '(no note)'}
                     </Text>
@@ -381,12 +408,12 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
       {/* Fullscreen Hold Editor */}
       {selectedPhoto && (
-        <FullScreenRouteViewer
+        <FullScreenHoldEditor
           visible={editorVisible}
           photoUrl={selectedPhoto.image_url}
           holds={holds}
+          detectedHolds={detectedHolds}
           onClose={() => setEditorVisible(false)}
-          editable={true}
           onUpdateHolds={handleUpdateHolds}
         />
       )}

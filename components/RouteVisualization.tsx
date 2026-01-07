@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { View, Image, StyleSheet, LayoutChangeEvent, TouchableOpacity, Modal } from 'react-native';
-import { Hold } from '../types/database.types';
+import { Hold, DetectedHold } from '../types/database.types';
 import FullScreenRouteViewer from './FullScreenRouteViewer';
 import RouteOverlay from './RouteOverlay';
 
 interface RouteVisualizationProps {
   photoUrl: string;
   holds: Hold[];
+  detectedHolds: DetectedHold[];
 }
 
-export default function RouteVisualization({ photoUrl, holds }: RouteVisualizationProps) {
+export default function RouteVisualization({ photoUrl, holds, detectedHolds }: RouteVisualizationProps) {
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
   const [fullScreenVisible, setFullScreenVisible] = useState(false);
@@ -84,6 +85,7 @@ export default function RouteVisualization({ photoUrl, holds }: RouteVisualizati
             >
               <RouteOverlay
                 holds={holds}
+                detectedHolds={detectedHolds}
                 width={displayedDimensions.width}
                 height={displayedDimensions.height}
                 pointerEvents="none"
@@ -97,6 +99,7 @@ export default function RouteVisualization({ photoUrl, holds }: RouteVisualizati
         visible={fullScreenVisible}
         photoUrl={photoUrl}
         holds={holds}
+        detectedHolds={detectedHolds}
         onClose={() => setFullScreenVisible(false)}
       />
     </>
