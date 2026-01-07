@@ -12,13 +12,14 @@ import {
   PanResponder,
 } from 'react-native';
 import ImageZoom from 'react-native-image-pan-zoom';
-import { Hold } from '../types/database.types';
+import { Hold, DetectedHold } from '../types/database.types';
 import RouteOverlay from './RouteOverlay';
 
 interface FullScreenRouteViewerProps {
   visible: boolean;
   photoUrl: string;
   holds: Hold[];
+  detectedHolds: DetectedHold[];
   onClose: () => void;
   editable?: boolean;
   onUpdateHolds?: (holds: Hold[]) => void;
@@ -28,6 +29,7 @@ export default function FullScreenRouteViewer({
   visible,
   photoUrl,
   holds: initialHolds,
+  detectedHolds,
   onClose,
   editable = false,
   onUpdateHolds,
@@ -560,6 +562,7 @@ export default function FullScreenRouteViewer({
               >
                 <RouteOverlay
                   holds={holds}
+                  detectedHolds={detectedHolds}
                   width={displayedDimensions.width}
                   height={displayedDimensions.height}
                   pointerEvents="none"

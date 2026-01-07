@@ -1,8 +1,9 @@
 import Svg, { Circle, Line, Defs, Marker, Polygon, G, Rect, Text as SvgText } from 'react-native-svg';
-import { Hold } from '../types/database.types';
+import { Hold, DetectedHold } from '../types/database.types';
 
 interface RouteOverlayProps {
   holds: Hold[];
+  detectedHolds: DetectedHold[]; // All detected holds for this photo
   width: number;
   height: number;
   pointerEvents?: 'none' | 'box-none' | 'auto';
@@ -12,12 +13,18 @@ interface RouteOverlayProps {
 
 export default function RouteOverlay({
   holds,
+  detectedHolds,
   width,
   height,
   pointerEvents = 'none',
   onHoldPress,
   resizingHoldIndex = null,
 }: RouteOverlayProps) {
+  // Create a map for quick lookup of detected holds by ID
+  const detectedHoldsMap = new Map(
+    detectedHolds.map(dh => [dh.id, dh])
+  );
+
   return (
     <Svg
       style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
@@ -44,27 +51,24 @@ export default function RouteOverlay({
         if (index === holds.length - 1) return null;
         const nextHold = holds[index + 1];
 
-        const x1Center = (hold.holdX / 100) * width;
-        const y1Center = (hold.holdY / 100) * height;
-        const x2Center = (nextHold.holdX / 100) * width;
-        const y2Center = (nextHold.holdY / 100) * height;
-        const r1 = (hold.radius / 100) * width;
-        const r2 = (nextHold.radius / 100) * width;
+        const detectedHold = detectedHoldsMap.get(hold.detected_hold_id);
+        const nextDetectedHold = detectedHoldsMap.get(nextHold.detected_hold_id);
 
-        // Calculate angle and offset points to circle perimeter
-        const angle = Math.atan2(y2Center - y1Center, x2Center - x1Center);
-        const x1 = x1Center + r1 * Math.cos(angle);
-        const y1 = y1Center + r1 * Math.sin(angle);
-        const x2 = x2Center - r2 * Math.cos(angle);
-        const y2 = y2Center - r2 * Math.sin(angle);
+        if (!detectedHold || !nextDetectedHold) return null;
 
+        const x1Center = (detectedHold.center.x / 100) * width;
+        const y1Center = (detectedHold.center.y / 100) * height;
+        const x2Center = (nextDetectedHold.center.x / 100) * width;
+        const y2Center = (nextDetectedHold.center.y / 100) * height;
+
+        // Draw line from center to center (no offset needed with polygons)
         return (
           <Line
             key={`sequence-${index}`}
-            x1={x1}
-            y1={y1}
-            x2={x2}
-            y2={y2}
+            x1={x1Center}
+            y1={y1Center}
+            x2={x2Center}
+            y2={y2Center}
             stroke="#0066cc"
             strokeWidth="2"
             strokeDasharray="5,5"
@@ -75,11 +79,13 @@ export default function RouteOverlay({
 
       {/* Draw arrows from labels to holds */}
       {holds.map((hold, index) => {
-        const holdXCenter = (hold.holdX / 100) * width;
-        const holdYCenter = (hold.holdY / 100) * height;
+        const detectedHold = detectedHoldsMap.get(hold.detected_hold_id);
+        if (!detectedHold) return null;
+
+        const holdXCenter = (detectedHold.center.x / 100) * width;
+        const holdYCenter = (detectedHold.center.y / 100) * height;
         const labelX = (hold.labelX / 100) * width;
         const labelY = (hold.labelY / 100) * height;
-        const radius = (hold.radius / 100) * width;
 
         // Calculate label background dimensions
         const labelText = hold.note ? `${hold.order}. ${hold.note}` : `${hold.order}`;
@@ -134,38 +140,37 @@ export default function RouteOverlay({
           }
         }
 
-        // Calculate end point at circle perimeter
-        const holdX = holdXCenter - radius * Math.cos(angle);
-        const holdY = holdYCenter - radius * Math.sin(angle);
-
+        // Arrow points to hold center (polygon shape will be visible around it)
         return (
           <Line
             key={`arrow-${index}`}
             x1={startX}
             y1={startY}
-            x2={holdX}
-            y2={holdY}
+            x2={holdXCenter}
+            y2={holdYCenter}
             stroke="#FF0000"
             strokeWidth="2"
           />
         );
       })}
 
-      {/* Draw hold circles */}
+      {/* Draw hold polygons */}
       {holds.map((hold, index) => {
-        const x = (hold.holdX / 100) * width;
-        const y = (hold.holdY / 100) * height;
-        const r = (hold.radius / 100) * width;
+        const detectedHold = detectedHoldsMap.get(hold.detected_hold_id);
+        if (!detectedHold) return null;
+
+        // Convert polygon points from percentages to pixels
+        const points = detectedHold.polygon
+          .map(p => `${(p.x / 100) * width},${(p.y / 100) * height}`)
+          .join(' ');
 
         return (
-          <Circle
-            key={`circle-${index}`}
-            cx={x}
-            cy={y}
-            r={r}
+          <Polygon
+            key={`polygon-${index}`}
+            points={points}
             fill="rgba(255, 0, 0, 0.2)"
             stroke="#FF0000"
-            strokeWidth="2"
+            strokeWidth="1"
             onPress={onHoldPress ? () => onHoldPress(index) : undefined}
           />
         );
