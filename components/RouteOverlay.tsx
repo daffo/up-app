@@ -64,10 +64,11 @@ const polygonToPixels = (
   }));
 };
 
-// Helper function to expand polygon outward by a given number of pixels
+// Helper function to expand polygon outward by a given number of pixels and optional scale
 const expandPolygon = (
   polygon: Array<{ x: number; y: number }>,
-  expandBy: number
+  expandBy: number,
+  scaleFactor: number = 1.0
 ): Array<{ x: number; y: number }> => {
   if (polygon.length < 3) return polygon;
 
@@ -82,12 +83,134 @@ const expandPolygon = (
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist === 0) return p;
 
-    const scale = (dist + expandBy) / dist;
+    const scale = ((dist + expandBy) / dist) * scaleFactor;
     return {
       x: centroidX + dx * scale,
       y: centroidY + dy * scale
     };
   });
+};
+
+// Douglas-Peucker algorithm to simplify polygon by reducing points
+const simplifyPolygon = (
+  polygon: Array<{ x: number; y: number }>,
+  tolerance: number = 2
+): Array<{ x: number; y: number }> => {
+  if (polygon.length < 3) return polygon;
+
+  // Find perpendicular distance from point to line
+  const perpendicularDistance = (
+    point: { x: number; y: number },
+    lineStart: { x: number; y: number },
+    lineEnd: { x: number; y: number }
+  ): number => {
+    const dx = lineEnd.x - lineStart.x;
+    const dy = lineEnd.y - lineStart.y;
+    const lineLenSq = dx * dx + dy * dy;
+
+    if (lineLenSq === 0) {
+      return Math.sqrt((point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2);
+    }
+
+    const t = Math.max(0, Math.min(1, ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / lineLenSq));
+    const projX = lineStart.x + t * dx;
+    const projY = lineStart.y + t * dy;
+
+    return Math.sqrt((point.x - projX) ** 2 + (point.y - projY) ** 2);
+  };
+
+  const simplifySection = (
+    points: Array<{ x: number; y: number }>,
+    start: number,
+    end: number,
+    tolerance: number,
+    result: Set<number>
+  ) => {
+    let maxDist = 0;
+    let maxIndex = start;
+
+    for (let i = start + 1; i < end; i++) {
+      const dist = perpendicularDistance(points[i], points[start], points[end]);
+      if (dist > maxDist) {
+        maxDist = dist;
+        maxIndex = i;
+      }
+    }
+
+    if (maxDist > tolerance) {
+      result.add(maxIndex);
+      simplifySection(points, start, maxIndex, tolerance, result);
+      simplifySection(points, maxIndex, end, tolerance, result);
+    }
+  };
+
+  // For closed polygon, we need to handle it specially
+  const result = new Set<number>();
+  result.add(0);
+  result.add(polygon.length - 1);
+
+  simplifySection(polygon, 0, polygon.length - 1, tolerance, result);
+
+  // Return simplified polygon maintaining order
+  return polygon.filter((_, i) => result.has(i));
+};
+
+// Chaikin's corner cutting algorithm for smoothing polygons
+const smoothPolygonChaikin = (
+  polygon: Array<{ x: number; y: number }>,
+  iterations: number = 2
+): Array<{ x: number; y: number }> => {
+  if (polygon.length < 3) return polygon;
+
+  let points = polygon;
+
+  for (let iter = 0; iter < iterations; iter++) {
+    const newPoints: Array<{ x: number; y: number }> = [];
+    const n = points.length;
+
+    for (let i = 0; i < n; i++) {
+      const p0 = points[i];
+      const p1 = points[(i + 1) % n];
+
+      // Q = 3/4 * P0 + 1/4 * P1
+      newPoints.push({
+        x: 0.75 * p0.x + 0.25 * p1.x,
+        y: 0.75 * p0.y + 0.25 * p1.y,
+      });
+
+      // R = 1/4 * P0 + 3/4 * P1
+      newPoints.push({
+        x: 0.25 * p0.x + 0.75 * p1.x,
+        y: 0.25 * p0.y + 0.75 * p1.y,
+      });
+    }
+
+    points = newPoints;
+  }
+
+  return points;
+};
+
+// Simplify then smooth a polygon
+const smoothPolygon = (
+  polygon: Array<{ x: number; y: number }>,
+  simplifyTolerance: number = 3,
+  chaikinIterations: number = 3
+): Array<{ x: number; y: number }> => {
+  const simplified = simplifyPolygon(polygon, simplifyTolerance);
+  return smoothPolygonChaikin(simplified, chaikinIterations);
+};
+
+// Convert polygon to SVG path string
+const polygonToPath = (polygon: Array<{ x: number; y: number }>): string => {
+  if (polygon.length < 3) return '';
+
+  let path = `M ${polygon[0].x} ${polygon[0].y} `;
+  for (let i = 1; i < polygon.length; i++) {
+    path += `L ${polygon[i].x} ${polygon[i].y} `;
+  }
+  path += 'Z';
+  return path;
 };
 
 // Helper function to find intersection point between a line and polygon perimeter
@@ -152,7 +275,7 @@ export default function RouteOverlay({
     const detectedHold = detectedHoldsMap.get(hold.detected_hold_id);
     if (detectedHold) {
       const pixels = polygonToPixels(detectedHold.polygon, width, height);
-      const expanded = expandPolygon(pixels, 3);
+      const expanded = expandPolygon(pixels, 3, 1.05);
       expandedPolygonsMap.set(hold.detected_hold_id, expanded);
     }
   });
@@ -184,17 +307,15 @@ export default function RouteOverlay({
           // Start with outer rectangle
           let pathData = `M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z `;
 
-          // Add each hold polygon as a hole (reverse winding)
+          // Add each hold polygon as a smooth hole (reverse winding)
           holds.forEach(hold => {
             const expandedPixels = expandedPolygonsMap.get(hold.detected_hold_id);
             if (!expandedPixels || expandedPixels.length === 0) return;
 
-            // Add polygon in reverse order to create a hole
-            pathData += `M ${expandedPixels[expandedPixels.length - 1].x} ${expandedPixels[expandedPixels.length - 1].y} `;
-            for (let i = expandedPixels.length - 2; i >= 0; i--) {
-              pathData += `L ${expandedPixels[i].x} ${expandedPixels[i].y} `;
-            }
-            pathData += 'Z ';
+            // Reverse the polygon for hole winding, then simplify and smooth it
+            const reversed = [...expandedPixels].reverse();
+            const smoothed = smoothPolygon(reversed, 3, 3);
+            pathData += polygonToPath(smoothed) + ' ';
           });
 
           return pathData;
@@ -316,15 +437,14 @@ export default function RouteOverlay({
         const expandedPixels = expandedPolygonsMap.get(hold.detected_hold_id);
         if (!expandedPixels) return null;
 
-        // Convert expanded polygon to points string
-        const points = expandedPixels
-          .map(p => `${p.x},${p.y}`)
-          .join(' ');
+        // Simplify and smooth the polygon, then convert to path
+        const smoothed = smoothPolygon(expandedPixels, 3, 3);
+        const smoothPath = polygonToPath(smoothed);
 
         return (
-          <Polygon
+          <Path
             key={`polygon-${index}`}
-            points={points}
+            d={smoothPath}
             fill="none"
             stroke="#FFFFFF"
             strokeWidth="0.5"
