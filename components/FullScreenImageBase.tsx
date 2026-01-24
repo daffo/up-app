@@ -293,8 +293,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 50,
     right: 20,
-    width: 44,
-    height: 44,
+    minWidth: 44,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 22,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
@@ -302,8 +304,8 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
   },
   header: {
     position: 'absolute',

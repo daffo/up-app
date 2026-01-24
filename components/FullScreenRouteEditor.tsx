@@ -6,7 +6,6 @@ import {
   Text,
   Alert,
   TextInput,
-  StyleSheet,
 } from 'react-native';
 import { Hold, DetectedHold } from '../types/database.types';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
@@ -179,12 +178,7 @@ export default function FullScreenRouteEditor({
       detectedHolds={detectedHolds}
       onClose={handleDone}
       showLabels={true}
-      headerTitle={`Edit Holds (${holds.length})`}
-      headerRight={
-        <TouchableOpacity onPress={handleDone} style={styles.doneButton}>
-          <Text style={styles.doneButtonText}>Done</Text>
-        </TouchableOpacity>
-      }
+      closeButtonText="Done"
       helperBanner={movingMode ? (
         <View style={baseStyles.helperBanner}>
           <Text style={baseStyles.helperText}>
@@ -277,17 +271,3 @@ export default function FullScreenRouteEditor({
     </FullScreenImageBase>
   );
 }
-
-const styles = StyleSheet.create({
-  doneButton: {
-    backgroundColor: '#0066cc',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  doneButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
