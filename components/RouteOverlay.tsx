@@ -466,13 +466,13 @@ export default function RouteOverlay({
 
           return (
             <G key={`polygon-${index}`}>
-              {/* Tappable area with transparent fill */}
+              {/* Tappable area - use onPressIn for immediate response */}
               {onHoldPress && (
                 <Path
                   d={smoothPath}
                   fill="rgba(255, 255, 255, 0.01)"
                   stroke="transparent"
-                  onPress={() => onHoldPress(index)}
+                  onPressIn={() => onHoldPress(index)}
                 />
               )}
               {/* Visible border - highlighted when selected */}
