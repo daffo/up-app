@@ -5,6 +5,8 @@ import SignupScreen from '../screens/SignupScreen';
 import HomeScreen from '../screens/HomeScreen';
 import RouteDetailScreen from '../screens/RouteDetailScreen';
 import CreateEditRouteScreen from '../screens/CreateEditRouteScreen';
+import AdminPhotosScreen from '../screens/AdminPhotosScreen';
+import AdminPhotoDetailScreen from '../screens/AdminPhotoDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -44,6 +46,24 @@ export default function AppNavigator() {
             title: route.params?.routeId ? 'Edit Route' : 'Create Route',
             headerBackTitle: 'Back',
           })}
+        />
+        <Stack.Screen
+          name="AdminPhotos"
+          component={AdminPhotosScreen}
+          options={{
+            headerShown: true,
+            title: 'Manage Photos',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="AdminPhotoDetail"
+          component={AdminPhotoDetailScreen}
+          options={{
+            headerShown: true,
+            title: 'Photo Details',
+            headerBackTitle: 'Back',
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -8,9 +8,10 @@ interface RouteVisualizationProps {
   photoUrl: string;
   holds: Hold[];
   detectedHolds: DetectedHold[];
+  showLabels?: boolean;
 }
 
-export default function RouteVisualization({ photoUrl, holds, detectedHolds }: RouteVisualizationProps) {
+export default function RouteVisualization({ photoUrl, holds, detectedHolds, showLabels = true }: RouteVisualizationProps) {
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
   const [fullScreenVisible, setFullScreenVisible] = useState(false);
@@ -89,6 +90,7 @@ export default function RouteVisualization({ photoUrl, holds, detectedHolds }: R
                 width={displayedDimensions.width}
                 height={displayedDimensions.height}
                 pointerEvents="none"
+                showLabels={showLabels}
               />
             </View>
           )}
@@ -101,6 +103,7 @@ export default function RouteVisualization({ photoUrl, holds, detectedHolds }: R
         holds={holds}
         detectedHolds={detectedHolds}
         onClose={() => setFullScreenVisible(false)}
+        showLabels={showLabels}
       />
     </>
   );
