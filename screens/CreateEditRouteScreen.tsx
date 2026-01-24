@@ -270,8 +270,9 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.form}>
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.form}>
         {/* Title */}
         <View style={styles.field}>
           <Text style={styles.label}>Title *</Text>
@@ -389,8 +390,11 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
             )}
           </View>
         )}
+        </View>
+      </ScrollView>
 
-        {/* Save Button */}
+      {/* Sticky Save Button */}
+      <View style={styles.stickyFooter}>
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
           onPress={handleSave}
@@ -400,7 +404,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.saveButtonText}>
-              {isEditMode ? 'Update Route' : 'Create Route'}
+              {isEditMode ? 'Save Changes' : 'Create Route'}
             </Text>
           )}
         </TouchableOpacity>
@@ -417,7 +421,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
           onUpdateHolds={handleUpdateHolds}
         />
       )}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -425,6 +429,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   centerContainer: {
     flex: 1,
@@ -434,6 +444,13 @@ const styles = StyleSheet.create({
   },
   form: {
     padding: 20,
+  },
+  stickyFooter: {
+    padding: 20,
+    paddingTop: 12,
+    backgroundColor: '#f5f5f5',
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
   },
   field: {
     marginBottom: 20,
@@ -545,7 +562,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 20,
   },
   saveButtonDisabled: {
     opacity: 0.6,
