@@ -11,6 +11,7 @@ interface RouteOverlayProps {
   onHoldPress?: (index: number) => void;
   resizingHoldIndex?: number | null;
   showLabels?: boolean; // Whether to show labels and arrows (default: true)
+  selectedHoldId?: string | null; // ID of currently selected hold for highlighting
 }
 
 // Helper function to calculate label dimensions
@@ -267,6 +268,7 @@ export default function RouteOverlay({
   onHoldPress,
   resizingHoldIndex = null,
   showLabels = true,
+  selectedHoldId = null,
 }: RouteOverlayProps) {
   // Create a map for quick lookup of detected holds by ID
   const detectedHoldsMap = new Map(
@@ -455,6 +457,8 @@ export default function RouteOverlay({
           const smoothed = smoothPolygon(expandedPixels, 3, 3);
           const smoothPath = polygonToPath(smoothed);
 
+          const isSelected = hold.detected_hold_id === selectedHoldId;
+
           return (
             <G key={`polygon-${index}`}>
               {/* Tappable area with transparent fill */}
@@ -466,12 +470,12 @@ export default function RouteOverlay({
                   onPress={() => onHoldPress(index)}
                 />
               )}
-              {/* Visible border */}
+              {/* Visible border - highlighted when selected */}
               <Path
                 d={smoothPath}
-                fill="none"
-                stroke="#FFFFFF"
-                strokeWidth="0.5"
+                fill={isSelected ? "rgba(0, 170, 255, 0.3)" : "none"}
+                stroke={isSelected ? "#00AAFF" : "#FFFFFF"}
+                strokeWidth={isSelected ? 3 : 0.5}
                 pointerEvents="none"
               />
             </G>

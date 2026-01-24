@@ -6,6 +6,7 @@ import {
   Text,
   Alert,
   TextInput,
+  StyleSheet,
 } from 'react-native';
 import { Hold, DetectedHold } from '../types/database.types';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
@@ -48,6 +49,9 @@ export default function FullScreenRouteEditor({
     setImageOffset(offset);
   };
 
+  // Get the selected hold's detected_hold_id for highlighting
+  const selectedHoldId = selectedHoldIndex !== null ? holds[selectedHoldIndex]?.detected_hold_id : null;
+
   const handleImageTap = (event: any) => {
     if (imageDimensions.width === 0) return;
 
@@ -60,6 +64,7 @@ export default function FullScreenRouteEditor({
     // Check if tap is outside the image bounds
     if (imageX < 0 || imageX > imageDimensions.width ||
         imageY < 0 || imageY > imageDimensions.height) {
+      setSelectedHoldIndex(null); // Deselect on tap outside
       return;
     }
 
@@ -95,8 +100,14 @@ export default function FullScreenRouteEditor({
     // Check if tapped on an existing hold in the route (prioritize smallest)
     const smallestRouteHold = findSmallestPolygonAtPoint(xPercent, yPercent, routeHoldsWithPolygons);
     if (smallestRouteHold) {
-      setSelectedHoldIndex(smallestRouteHold.index);
-      setEditModalVisible(true);
+      // Toggle selection (or select if different hold)
+      setSelectedHoldIndex(smallestRouteHold.index === selectedHoldIndex ? null : smallestRouteHold.index);
+      return;
+    }
+
+    // Deselect if we have a selection and tapped elsewhere
+    if (selectedHoldIndex !== null) {
+      setSelectedHoldIndex(null);
       return;
     }
 
@@ -125,6 +136,12 @@ export default function FullScreenRouteEditor({
 
     // No hold detected at tap location
     Alert.alert('No Hold', 'Tap on a detected hold to add it to the route.');
+  };
+
+  const handleEditSelected = () => {
+    if (selectedHoldIndex !== null) {
+      setEditModalVisible(true);
+    }
   };
 
   const handleDeleteHold = () => {
@@ -189,7 +206,15 @@ export default function FullScreenRouteEditor({
       overlayPointerEvents="none"
       onImageTap={handleImageTap}
       onDimensionsReady={handleDimensionsReady}
+      selectedHoldId={selectedHoldId}
     >
+      {/* Edit button - show when a hold is selected */}
+      {selectedHoldIndex !== null && !movingMode && (
+        <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
+          <Text style={styles.editButtonText}>Edit Hold {holds[selectedHoldIndex]?.order}</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Edit Hold Modal */}
       <Modal
         visible={editModalVisible}
@@ -271,3 +296,21 @@ export default function FullScreenRouteEditor({
     </FullScreenImageBase>
   );
 }
+
+const styles = StyleSheet.create({
+  editButton: {
+    position: 'absolute',
+    bottom: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(0, 102, 204, 0.95)',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+});
