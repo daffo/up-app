@@ -15,6 +15,7 @@ import { Hold, DetectedHold } from '../types/database.types';
 import { supabase } from '../lib/supabase';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import RouteOverlay from './RouteOverlay';
+import { findSmallestPolygonAtPoint } from '../utils/polygon';
 
 interface FullScreenHoldEditorProps {
   visible: boolean;
@@ -59,10 +60,30 @@ export default function FullScreenHoldEditor({
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
 
-  const handleHoldPress = (index: number) => {
-    const hold = detectedHolds[index];
-    if (hold) {
-      setSelectedHoldId(hold.id);
+  // Handle tap on image - same pattern as FullScreenRouteEditor
+  const handleImageTap = (event: any) => {
+    if (imageDimensions.width === 0) return;
+
+    const { locationX, locationY } = event;
+
+    // Convert screen coordinates to image-relative coordinates
+    const imageX = locationX - imageOffset.x;
+    const imageY = locationY - imageOffset.y;
+
+    // Check if tap is outside the image bounds
+    if (imageX < 0 || imageX > imageDimensions.width ||
+        imageY < 0 || imageY > imageDimensions.height) {
+      return;
+    }
+
+    // Convert to percentages
+    const xPercent = (imageX / imageDimensions.width) * 100;
+    const yPercent = (imageY / imageDimensions.height) * 100;
+
+    // Find smallest hold at tap point
+    const tappedHold = findSmallestPolygonAtPoint(xPercent, yPercent, detectedHolds);
+    if (tappedHold) {
+      setSelectedHoldId(tappedHold.id);
       setDeleteModalVisible(true);
     }
   };
@@ -342,18 +363,19 @@ export default function FullScreenHoldEditor({
               overflow: 'hidden',
             }}
           >
-            <Image
-              source={{ uri: photoUrl }}
-              style={{
-                position: 'absolute',
-                left: props.imageX - props.offsetX,
-                top: props.imageY - props.offsetY,
-                width: props.scaledImageWidth,
-                height: props.scaledImageHeight,
-              }}
-              resizeMode="cover"
-              pointerEvents="none"
-            />
+            <View pointerEvents="none">
+              <Image
+                source={{ uri: photoUrl }}
+                style={{
+                  position: 'absolute',
+                  left: props.imageX - props.offsetX,
+                  top: props.imageY - props.offsetY,
+                  width: props.scaledImageWidth,
+                  height: props.scaledImageHeight,
+                }}
+                resizeMode="cover"
+              />
+            </View>
             {/* Overlay for holds in this region */}
             <RouteOverlay
               holds={fakeHolds}
@@ -448,9 +470,8 @@ export default function FullScreenHoldEditor({
       onClose={focusMode === 'selecting' ? cancelSelection : onClose}
       showLabels={false}
       closeButtonText={focusMode === 'selecting' ? 'Cancel' : '✕'}
-      overlayPointerEvents={focusMode === 'selecting' ? 'none' : 'auto'}
-      onHoldPress={focusMode === 'selecting' ? undefined : handleHoldPress}
-      onImageTap={focusMode === 'selecting' ? handleSelectingTap : undefined}
+      overlayPointerEvents="none"
+      onImageTap={focusMode === 'selecting' ? handleSelectingTap : handleImageTap}
       onDimensionsReady={handleDimensionsReady}
     >
       {/* Focus Area button - only show when not in selecting mode */}
