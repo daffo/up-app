@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Modal,
@@ -10,6 +10,9 @@ import {
   Image,
   useWindowDimensions,
   StatusBar,
+  PanResponder,
+  GestureResponderEvent,
+  PanResponderGestureState,
 } from 'react-native';
 import { Hold, DetectedHold } from '../types/database.types';
 import { supabase } from '../lib/supabase';
@@ -25,6 +28,7 @@ interface FullScreenHoldEditorProps {
   onClose: () => void;
   photoId: string;
   onDeleteDetectedHold?: (holdId: string) => void;
+  onUpdateDetectedHold?: (holdId: string, updates: Partial<DetectedHold>) => void;
 }
 
 type FocusMode = 'none' | 'selecting' | 'focused';
@@ -44,6 +48,7 @@ export default function FullScreenHoldEditor({
   onClose,
   photoId,
   onDeleteDetectedHold,
+  onUpdateDetectedHold,
 }: FullScreenHoldEditorProps) {
   const windowDimensions = useWindowDimensions();
   const [selectedHoldId, setSelectedHoldId] = useState<string | null>(null);
@@ -59,6 +64,146 @@ export default function FullScreenHoldEditor({
   const [imageDimensions, setImageDimensions] = useState<ImageDimensions>({ width: 0, height: 0 });
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
+
+  // Moving mode state
+  const [movingHoldId, setMovingHoldId] = useState<string | null>(null);
+  const [movingDelta, setMovingDelta] = useState({ x: 0, y: 0 });
+  const [isSavingMove, setIsSavingMove] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const movingDeltaRef = useRef({ x: 0, y: 0 });
+  const imageDimensionsRef = useRef({ width: 0, height: 0 });
+  const focusRegionRef = useRef<FocusRegion | null>(null);
+  const focusedViewDimensionsRef = useRef({ width: 0, height: 0 });
+
+  // Keep refs in sync with state
+  React.useEffect(() => {
+    movingDeltaRef.current = movingDelta;
+  }, [movingDelta]);
+
+  React.useEffect(() => {
+    imageDimensionsRef.current = imageDimensions;
+  }, [imageDimensions]);
+
+  React.useEffect(() => {
+    focusRegionRef.current = focusRegion;
+  }, [focusRegion]);
+
+  // PanResponder for move gesture - works in both normal and focused view
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        dragStartRef.current = { x: movingDeltaRef.current.x, y: movingDeltaRef.current.y };
+      },
+      onPanResponderMove: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+        const focus = focusRegionRef.current;
+        const sensitivity = 0.4; // Lower = less sensitive
+
+        if (focus && focusedViewDimensionsRef.current.width > 0) {
+          // In focused view: delta is relative to focused view dimensions
+          // but needs to be converted to original image percentage
+          const deltaXPercent = (gestureState.dx / focusedViewDimensionsRef.current.width) * focus.width * sensitivity;
+          const deltaYPercent = (gestureState.dy / focusedViewDimensionsRef.current.height) * focus.height * sensitivity;
+          setMovingDelta({
+            x: dragStartRef.current.x + deltaXPercent,
+            y: dragStartRef.current.y + deltaYPercent,
+          });
+        } else if (imageDimensionsRef.current.width > 0) {
+          // In normal view: delta is relative to full image dimensions
+          const deltaXPercent = (gestureState.dx / imageDimensionsRef.current.width) * 100 * sensitivity;
+          const deltaYPercent = (gestureState.dy / imageDimensionsRef.current.height) * 100 * sensitivity;
+          setMovingDelta({
+            x: dragStartRef.current.x + deltaXPercent,
+            y: dragStartRef.current.y + deltaYPercent,
+          });
+        }
+      },
+      onPanResponderRelease: () => {
+        // Keep the delta - user will explicitly save or cancel
+      },
+    })
+  ).current;
+
+  // Start moving mode
+  const startMoveHold = () => {
+    setMovingHoldId(selectedHoldId);
+    setMovingDelta({ x: 0, y: 0 });
+    setDeleteModalVisible(false);
+  };
+
+  // Cancel move
+  const cancelMove = () => {
+    setMovingHoldId(null);
+    setMovingDelta({ x: 0, y: 0 });
+  };
+
+  // Save move to database
+  const saveMove = async () => {
+    if (!movingHoldId || (movingDelta.x === 0 && movingDelta.y === 0)) {
+      cancelMove();
+      return;
+    }
+
+    const holdToMove = detectedHolds.find(h => h.id === movingHoldId);
+    if (!holdToMove) {
+      cancelMove();
+      return;
+    }
+
+    setIsSavingMove(true);
+
+    // Calculate new polygon and center
+    const newPolygon = holdToMove.polygon.map(p => ({
+      x: p.x + movingDelta.x,
+      y: p.y + movingDelta.y,
+    }));
+    const newCenter = {
+      x: holdToMove.center.x + movingDelta.x,
+      y: holdToMove.center.y + movingDelta.y,
+    };
+
+    // Update in database
+    const { error } = await supabase
+      .from('detected_holds')
+      .update({ polygon: newPolygon, center: newCenter })
+      .eq('id', movingHoldId);
+
+    setIsSavingMove(false);
+
+    if (error) {
+      Alert.alert('Error', 'Failed to move hold: ' + error.message);
+      return;
+    }
+
+    // Notify parent to update state
+    if (onUpdateDetectedHold) {
+      onUpdateDetectedHold(movingHoldId, { polygon: newPolygon, center: newCenter });
+    }
+
+    setMovingHoldId(null);
+    setMovingDelta({ x: 0, y: 0 });
+    setSelectedHoldId(null);
+  };
+
+  // Get detected holds with moving delta applied
+  const getDisplayedDetectedHolds = () => {
+    if (!movingHoldId) return detectedHolds;
+    return detectedHolds.map(hold => {
+      if (hold.id !== movingHoldId) return hold;
+      return {
+        ...hold,
+        polygon: hold.polygon.map(p => ({
+          x: p.x + movingDelta.x,
+          y: p.y + movingDelta.y,
+        })),
+        center: {
+          x: hold.center.x + movingDelta.x,
+          y: hold.center.y + movingDelta.y,
+        },
+      };
+    });
+  };
 
   // Handle tap on image - select hold on tap, deselect if tapping elsewhere
   const handleImageTap = (event: any) => {
@@ -259,6 +404,7 @@ export default function FullScreenHoldEditor({
   const exitFocusMode = () => {
     setFocusMode('none');
     setFocusRegion(null);
+    focusedViewDimensionsRef.current = { width: 0, height: 0 };
   };
 
   // Cancel selection
@@ -350,8 +496,21 @@ export default function FullScreenHoldEditor({
     const props = getFocusedViewProps();
     if (!props || !focusRegion) return null;
 
-    // Get holds in region
-    const holdsInRegion = getHoldsInRegion();
+    // Store focused view dimensions for PanResponder
+    focusedViewDimensionsRef.current = { width: props.displayWidth, height: props.displayHeight };
+
+    // Get holds in region (use displayed holds which include moving delta)
+    const displayedHolds = getDisplayedDetectedHolds();
+    const holdsInRegion = displayedHolds.filter(hold => {
+      const centerX = hold.polygon.reduce((sum, p) => sum + p.x, 0) / hold.polygon.length;
+      const centerY = hold.polygon.reduce((sum, p) => sum + p.y, 0) / hold.polygon.length;
+      return (
+        centerX >= focusRegion.x &&
+        centerX <= focusRegion.x + focusRegion.width &&
+        centerY >= focusRegion.y &&
+        centerY <= focusRegion.y + focusRegion.height
+      );
+    });
 
     // Map detected holds to new coordinate system (relative to focus region)
     const mappedDetectedHolds = holdsInRegion.map(hold => ({
@@ -375,10 +534,12 @@ export default function FullScreenHoldEditor({
       note: '',
     }));
 
+    const isMoving = !!movingHoldId;
+
     return (
       <Modal visible={true} animationType="fade" statusBarTranslucent>
         <StatusBar hidden />
-        <View style={styles.focusedContainer}>
+        <View style={styles.focusedContainer} {...(isMoving ? panResponder.panHandlers : {})}>
           {/* Clipped image container */}
           <View
             style={{
@@ -409,28 +570,59 @@ export default function FullScreenHoldEditor({
               detectedHolds={mappedDetectedHolds}
               width={props.displayWidth}
               height={props.displayHeight}
-              pointerEvents="auto"
+              pointerEvents={isMoving ? 'none' : 'auto'}
               showLabels={false}
-              onHoldPress={handleFocusedHoldPress}
-              selectedHoldId={selectedHoldId}
+              onHoldPress={isMoving ? undefined : handleFocusedHoldPress}
+              selectedHoldId={movingHoldId || selectedHoldId}
               zoomScale={100 / (focusRegion?.width || 100)}
             />
           </View>
 
-          {/* Back button */}
-          <TouchableOpacity style={styles.backButton} onPress={exitFocusMode}>
-            <Text style={styles.backButtonText}>← Back</Text>
+          {/* Back/Cancel button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={isMoving ? cancelMove : exitFocusMode}
+          >
+            <Text style={styles.backButtonText}>{isMoving ? 'Cancel' : '← Back'}</Text>
           </TouchableOpacity>
 
-          {/* Edit button - show when a hold is selected */}
-          {selectedHoldId && (
+          {/* Moving mode UI */}
+          {isMoving && (
+            <>
+              <View style={styles.movingHelper}>
+                <Text style={styles.movingHelperText}>Drag to move hold</Text>
+              </View>
+              <View style={styles.movingButtons}>
+                <TouchableOpacity
+                  style={[styles.movingButton, styles.movingButtonCancel]}
+                  onPress={cancelMove}
+                >
+                  <Text style={styles.movingButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.movingButton, styles.movingButtonSave]}
+                  onPress={saveMove}
+                  disabled={isSavingMove}
+                >
+                  {isSavingMove ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.movingButtonText}>Save</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {/* Edit button - show when a hold is selected and not moving */}
+          {selectedHoldId && !isMoving && (
             <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
               <Text style={styles.editButtonText}>Edit Hold</Text>
             </TouchableOpacity>
           )}
 
-          {/* Region info - only show when no hold selected */}
-          {!selectedHoldId && (
+          {/* Region info - only show when no hold selected and not moving */}
+          {!selectedHoldId && !isMoving && (
             <View style={styles.focusInfo}>
               <Text style={styles.focusInfoText}>
                 Focused Area • Tap hold to select
@@ -442,59 +634,73 @@ export default function FullScreenHoldEditor({
     );
   };
 
+  // Handle move - works in both normal and focused view
+  const handleMoveHold = () => {
+    startMoveHold();
+  };
+
+  // Render the edit modal (shared between normal and focused view)
+  const renderEditModal = () => (
+    <Modal
+      visible={deleteModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={closeModal}
+    >
+      <TouchableOpacity
+        style={baseStyles.modalOverlay}
+        activeOpacity={1}
+        onPress={closeModal}
+      >
+        <TouchableOpacity activeOpacity={1} style={baseStyles.modalContent}>
+          <Text style={baseStyles.modalTitle}>Edit Hold</Text>
+
+          {routesUsingHold.length > 0 && (
+            <>
+              <Text style={styles.warningText}>
+                Cannot delete - used in {routesUsingHold.length} route(s):
+              </Text>
+              {routesUsingHold.map((title, i) => (
+                <Text key={i} style={styles.routeListItem}>• {title}</Text>
+              ))}
+            </>
+          )}
+
+          <TouchableOpacity
+            style={baseStyles.modalButton}
+            onPress={handleMoveHold}
+          >
+            <Text style={baseStyles.modalButtonText}>Move Hold</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[baseStyles.modalButton, baseStyles.modalButtonDanger]}
+            onPress={handleDeleteHold}
+            disabled={isDeleting || routesUsingHold.length > 0}
+          >
+            {isDeleting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={baseStyles.modalButtonText}>Delete Hold</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
+            onPress={closeModal}
+          >
+            <Text style={baseStyles.modalButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+
   // If in focused mode, render the focused view instead
   if (focusMode === 'focused' && focusRegion) {
     return (
       <>
         {renderFocusedView()}
-        {/* Delete modal still needs to work */}
-        <Modal
-          visible={deleteModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={closeModal}
-        >
-          <TouchableOpacity
-            style={baseStyles.modalOverlay}
-            activeOpacity={1}
-            onPress={closeModal}
-          >
-            <TouchableOpacity activeOpacity={1} style={baseStyles.modalContent}>
-              <Text style={baseStyles.modalTitle}>
-                Edit Hold
-              </Text>
-
-              {routesUsingHold.length > 0 && (
-                <>
-                  <Text style={styles.warningText}>
-                    Cannot delete - used in {routesUsingHold.length} route(s):
-                  </Text>
-                  {routesUsingHold.map((title, i) => (
-                    <Text key={i} style={styles.routeListItem}>• {title}</Text>
-                  ))}
-                </>
-              )}
-
-              <TouchableOpacity
-                style={[baseStyles.modalButton, baseStyles.modalButtonDanger]}
-                onPress={handleDeleteHold}
-                disabled={isDeleting || routesUsingHold.length > 0}
-              >
-                {isDeleting ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={baseStyles.modalButtonText}>Delete Hold</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
-                onPress={closeModal}
-              >
-                <Text style={baseStyles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </Modal>
+        {renderEditModal()}
       </>
     );
   }
@@ -504,27 +710,59 @@ export default function FullScreenHoldEditor({
       visible={visible}
       photoUrl={photoUrl}
       holds={holds}
-      detectedHolds={detectedHolds}
-      onClose={focusMode === 'selecting' ? cancelSelection : onClose}
+      detectedHolds={getDisplayedDetectedHolds()}
+      onClose={movingHoldId ? cancelMove : (focusMode === 'selecting' ? cancelSelection : onClose)}
       showLabels={false}
-      closeButtonText={focusMode === 'selecting' ? 'Cancel' : '✕'}
+      closeButtonText={movingHoldId ? 'Cancel' : (focusMode === 'selecting' ? 'Cancel' : '✕')}
       overlayPointerEvents="none"
-      onImageTap={focusMode === 'selecting' ? handleSelectingTap : handleImageTap}
+      onImageTap={movingHoldId ? undefined : (focusMode === 'selecting' ? handleSelectingTap : handleImageTap)}
       onDimensionsReady={handleDimensionsReady}
-      selectedHoldId={selectedHoldId}
+      selectedHoldId={movingHoldId || selectedHoldId}
+      lockZoom={!!movingHoldId}
+      panHandlers={movingHoldId ? panResponder.panHandlers : undefined}
     >
-      {/* Focus Area button - only show when not in selecting mode and no hold selected */}
-      {focusMode === 'none' && !selectedHoldId && (
+      {/* Focus Area button - only show when not in selecting mode, no hold selected, and not moving */}
+      {focusMode === 'none' && !selectedHoldId && !movingHoldId && (
         <TouchableOpacity style={styles.focusButton} onPress={startFocusSelection}>
           <Text style={styles.focusButtonText}>Focus Area</Text>
         </TouchableOpacity>
       )}
 
-      {/* Edit button - show when a hold is selected */}
-      {selectedHoldId && focusMode === 'none' && (
+      {/* Edit button - show when a hold is selected and not moving */}
+      {selectedHoldId && focusMode === 'none' && !movingHoldId && (
         <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
           <Text style={styles.editButtonText}>Edit Hold</Text>
         </TouchableOpacity>
+      )}
+
+      {/* Moving mode UI */}
+      {movingHoldId && (
+        <>
+          <View style={styles.movingHelper}>
+            <Text style={styles.movingHelperText}>
+              Drag to move hold
+            </Text>
+          </View>
+          <View style={styles.movingButtons}>
+            <TouchableOpacity
+              style={[styles.movingButton, styles.movingButtonCancel]}
+              onPress={cancelMove}
+            >
+              <Text style={styles.movingButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.movingButton, styles.movingButtonSave]}
+              onPress={saveMove}
+              disabled={isSavingMove}
+            >
+              {isSavingMove ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.movingButtonText}>Save</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
       {/* Selection mode helper */}
@@ -536,54 +774,7 @@ export default function FullScreenHoldEditor({
         </View>
       )}
 
-      {/* Delete Hold Modal */}
-      <Modal
-        visible={deleteModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={closeModal}
-      >
-        <TouchableOpacity
-          style={baseStyles.modalOverlay}
-          activeOpacity={1}
-          onPress={closeModal}
-        >
-          <TouchableOpacity activeOpacity={1} style={baseStyles.modalContent}>
-            <Text style={baseStyles.modalTitle}>
-              Edit Hold
-            </Text>
-
-            {routesUsingHold.length > 0 && (
-              <>
-                <Text style={styles.warningText}>
-                  Cannot delete - used in {routesUsingHold.length} route(s):
-                </Text>
-                {routesUsingHold.map((title, i) => (
-                  <Text key={i} style={styles.routeListItem}>• {title}</Text>
-                ))}
-              </>
-            )}
-
-            <TouchableOpacity
-              style={[baseStyles.modalButton, baseStyles.modalButtonDanger]}
-              onPress={handleDeleteHold}
-              disabled={isDeleting || routesUsingHold.length > 0}
-            >
-              {isDeleting ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={baseStyles.modalButtonText}>Delete Hold</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
-              onPress={closeModal}
-            >
-              <Text style={baseStyles.modalButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+      {renderEditModal()}
     </FullScreenImageBase>
   );
 }
@@ -677,5 +868,46 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     fontSize: 14,
+  },
+  movingHelper: {
+    position: 'absolute',
+    top: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  movingHelperText: {
+    backgroundColor: 'rgba(0, 102, 204, 0.9)',
+    color: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  movingButtons: {
+    position: 'absolute',
+    bottom: 50,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  movingButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  movingButtonCancel: {
+    backgroundColor: 'rgba(108, 117, 125, 0.95)',
+  },
+  movingButtonSave: {
+    backgroundColor: 'rgba(0, 102, 204, 0.95)',
+  },
+  movingButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });

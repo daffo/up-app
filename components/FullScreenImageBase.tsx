@@ -53,6 +53,8 @@ export interface FullScreenImageBaseProps {
   helperBanner?: ReactNode;
   // Selected hold for highlighting
   selectedHoldId?: string | null;
+  // Lock pan/zoom (for move mode)
+  lockZoom?: boolean;
 }
 
 export default function FullScreenImageBase({
@@ -75,6 +77,7 @@ export default function FullScreenImageBase({
   headerRight,
   helperBanner,
   selectedHoldId = null,
+  lockZoom = false,
 }: FullScreenImageBaseProps) {
   const windowDimensions = useWindowDimensions();
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
@@ -151,7 +154,8 @@ export default function FullScreenImageBase({
           imageWidth={windowDimensions.width}
           imageHeight={windowDimensions.height}
           minScale={1}
-          maxScale={4}
+          maxScale={lockZoom ? 1 : 4}
+          enableSwipeDown={!lockZoom}
           onClick={onImageTap}
           onMove={handleZoomChange}
         >
