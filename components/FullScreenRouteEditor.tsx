@@ -2,24 +2,21 @@ import React, { useState } from 'react';
 import {
   View,
   Modal,
-  StyleSheet,
   TouchableOpacity,
   Text,
-  Image,
-  Dimensions,
   Alert,
   TextInput,
+  StyleSheet,
 } from 'react-native';
-import ImageZoom from 'react-native-image-pan-zoom';
 import { Hold, DetectedHold } from '../types/database.types';
-import RouteOverlay from './RouteOverlay';
-import { isPointInPolygon, findSmallestPolygonAtPoint } from '../utils/polygon';
+import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
+import { findSmallestPolygonAtPoint } from '../utils/polygon';
 
 interface FullScreenRouteEditorProps {
   visible: boolean;
   photoUrl: string;
   holds: Hold[];
-  detectedHolds: DetectedHold[]; // All detected holds for this photo
+  detectedHolds: DetectedHold[];
   onClose: () => void;
   onUpdateHolds: (holds: Hold[]) => void;
 }
@@ -33,77 +30,43 @@ export default function FullScreenRouteEditor({
   onUpdateHolds,
 }: FullScreenRouteEditorProps) {
   const [holds, setHolds] = useState<Hold[]>(initialHolds);
-  const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
   const [selectedHoldIndex, setSelectedHoldIndex] = useState<number | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [noteText, setNoteText] = useState('');
-  const [movingMode, setMovingMode] = useState<'hold' | 'label' | null>(null);
+  const [movingMode, setMovingMode] = useState<'label' | null>(null);
 
-  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-  const availableHeight = screenHeight - 100; // Account for header
+  // Image dimensions from base component
+  const [imageDimensions, setImageDimensions] = useState<ImageDimensions>({ width: 0, height: 0 });
+  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
 
   React.useEffect(() => {
     setHolds(initialHolds);
   }, [initialHolds]);
 
-  React.useEffect(() => {
-    if (photoUrl) {
-      Image.getSize(photoUrl, (width, height) => {
-        setImageNaturalSize({ width, height });
-      });
-    }
-  }, [photoUrl]);
-
-  // Calculate actual displayed image dimensions based on contain mode
-  const getDisplayedImageDimensions = () => {
-    if (!imageNaturalSize.width || !imageNaturalSize.height) {
-      return { width: 0, height: 0 };
-    }
-
-    const imageAspect = imageNaturalSize.width / imageNaturalSize.height;
-    const containerAspect = screenWidth / availableHeight;
-
-    let displayWidth, displayHeight;
-
-    if (imageAspect > containerAspect) {
-      // Image is wider - constrained by width
-      displayWidth = screenWidth;
-      displayHeight = screenWidth / imageAspect;
-    } else {
-      // Image is taller - constrained by height
-      displayHeight = availableHeight;
-      displayWidth = availableHeight * imageAspect;
-    }
-
-    return { width: displayWidth, height: displayHeight };
+  const handleDimensionsReady = (dimensions: ImageDimensions, offset: { x: number; y: number }) => {
+    setImageDimensions(dimensions);
+    setImageOffset(offset);
   };
 
-  const displayedDimensions = getDisplayedImageDimensions();
-
-  // Calculate centering offsets for overlay
-  const offsetX = (screenWidth - displayedDimensions.width) / 2;
-  const offsetY = (availableHeight - displayedDimensions.height) / 2;
-
-
-  const handleImagePress = (event: any) => {
-    if (displayedDimensions.width === 0) return;
+  const handleImageTap = (event: any) => {
+    if (imageDimensions.width === 0) return;
 
     const { locationX, locationY } = event;
 
     // Convert screen coordinates to image-relative coordinates
-    const imageX = locationX - offsetX;
-    const imageY = locationY - offsetY;
+    const imageX = locationX - imageOffset.x;
+    const imageY = locationY - imageOffset.y;
 
     // Check if tap is outside the image bounds
-    if (imageX < 0 || imageX > displayedDimensions.width ||
-        imageY < 0 || imageY > displayedDimensions.height) {
+    if (imageX < 0 || imageX > imageDimensions.width ||
+        imageY < 0 || imageY > imageDimensions.height) {
       return;
     }
 
     // Convert to percentages relative to displayed image
-    const xPercent = (imageX / displayedDimensions.width) * 100;
-    const yPercent = (imageY / displayedDimensions.height) * 100;
+    const xPercent = (imageX / imageDimensions.width) * 100;
+    const yPercent = (imageY / imageDimensions.height) * 100;
 
     // If in moving mode, update position
     if (movingMode && selectedHoldIndex !== null) {
@@ -209,164 +172,113 @@ export default function FullScreenRouteEditor({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={handleDone}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Edit Holds ({holds.length})</Text>
-          <TouchableOpacity onPress={handleDone} style={styles.doneButton}>
-            <Text style={styles.doneButtonText}>Done</Text>
-          </TouchableOpacity>
+    <FullScreenImageBase
+      visible={visible}
+      photoUrl={photoUrl}
+      holds={holds}
+      detectedHolds={detectedHolds}
+      onClose={handleDone}
+      showLabels={true}
+      headerTitle={`Edit Holds (${holds.length})`}
+      headerRight={
+        <TouchableOpacity onPress={handleDone} style={styles.doneButton}>
+          <Text style={styles.doneButtonText}>Done</Text>
+        </TouchableOpacity>
+      }
+      helperBanner={movingMode ? (
+        <View style={baseStyles.helperBanner}>
+          <Text style={baseStyles.helperText}>
+            Tap to move label position
+          </Text>
         </View>
-
-        {/* Moving mode helper */}
-        {movingMode && (
-          <View style={styles.helperBanner}>
-            <Text style={styles.helperText}>
-              Tap to move label position
+      ) : undefined}
+      overlayPointerEvents="none"
+      onImageTap={handleImageTap}
+      onDimensionsReady={handleDimensionsReady}
+    >
+      {/* Edit Hold Modal */}
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={baseStyles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setEditModalVisible(false)}
+        >
+          <View style={baseStyles.modalContent}>
+            <Text style={baseStyles.modalTitle}>
+              Edit Hold {selectedHoldIndex !== null ? holds[selectedHoldIndex]?.order : ''}
             </Text>
-          </View>
-        )}
 
-        {/* Image with zoom */}
-        <ImageZoom
-          cropWidth={screenWidth}
-          cropHeight={availableHeight}
-          imageWidth={screenWidth}
-          imageHeight={availableHeight}
-          minScale={1}
-          maxScale={4}
-          onClick={handleImagePress}
-        >
-          <View style={{ width: screenWidth, height: availableHeight }}>
-            <Image
-              source={{ uri: photoUrl }}
-              style={{ width: screenWidth, height: availableHeight }}
-              resizeMode="contain"
-            />
-            {displayedDimensions.width > 0 && (
-              <View
-                style={{
-                  position: 'absolute',
-                  left: offsetX,
-                  top: offsetY,
-                  width: displayedDimensions.width,
-                  height: displayedDimensions.height,
-                }}
-                pointerEvents="none"
-              >
-                <RouteOverlay
-                  holds={holds}
-                  detectedHolds={detectedHolds}
-                  width={displayedDimensions.width}
-                  height={displayedDimensions.height}
-                  pointerEvents="none"
-                />
-              </View>
-            )}
-          </View>
-        </ImageZoom>
+            <TouchableOpacity style={baseStyles.modalButton} onPress={handleOpenNoteModal}>
+              <Text style={baseStyles.modalButtonText}>Edit Note</Text>
+            </TouchableOpacity>
 
-        {/* Edit Hold Modal */}
-        <Modal
-          visible={editModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setEditModalVisible(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setEditModalVisible(false)}
-          >
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>
-                Edit Hold {selectedHoldIndex !== null ? holds[selectedHoldIndex]?.order : ''}
+            <TouchableOpacity style={baseStyles.modalButton} onPress={handleMoveLabel}>
+              <Text style={baseStyles.modalButtonText}>Move Label Position</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[baseStyles.modalButton, baseStyles.modalButtonDanger]}
+              onPress={handleDeleteHold}
+            >
+              <Text style={baseStyles.modalButtonText}>
+                Delete Hold
               </Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity style={styles.modalButton} onPress={handleOpenNoteModal}>
-                <Text style={styles.modalButtonText}>📝 Edit Note</Text>
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
+              onPress={() => setEditModalVisible(false)}
+            >
+              <Text style={baseStyles.modalButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
-              <TouchableOpacity style={styles.modalButton} onPress={handleMoveLabel}>
-                <Text style={styles.modalButtonText}>🏷️ Move Label Position</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonDanger]}
-                onPress={handleDeleteHold}
-              >
-                <Text style={[styles.modalButtonText, styles.modalButtonDangerText]}>
-                  🗑️ Delete Hold
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={() => setEditModalVisible(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </Modal>
-
-        {/* Note Edit Modal */}
-        <Modal
-          visible={noteModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setNoteModalVisible(false)}
+      {/* Note Edit Modal */}
+      <Modal
+        visible={noteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNoteModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={baseStyles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setNoteModalVisible(false)}
         >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setNoteModalVisible(false)}
-          >
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Add Note</Text>
-              <TextInput
-                style={styles.noteInput}
-                value={noteText}
-                onChangeText={setNoteText}
-                placeholder="Enter note (optional)"
-                multiline
-                autoFocus
-              />
-              <TouchableOpacity style={styles.modalButton} onPress={handleSaveNote}>
-                <Text style={styles.modalButtonText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={() => setNoteModalVisible(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </Modal>
-      </View>
-    </Modal>
+          <View style={baseStyles.modalContent}>
+            <Text style={baseStyles.modalTitle}>Add Note</Text>
+            <TextInput
+              style={baseStyles.noteInput}
+              value={noteText}
+              onChangeText={setNoteText}
+              placeholder="Enter note (optional)"
+              multiline
+              autoFocus
+            />
+            <TouchableOpacity style={baseStyles.modalButton} onPress={handleSaveNote}>
+              <Text style={baseStyles.modalButtonText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
+              onPress={() => setNoteModalVisible(false)}
+            >
+              <Text style={baseStyles.modalButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </FullScreenImageBase>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#000',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
   doneButton: {
     backgroundColor: '#0066cc',
     paddingHorizontal: 20,
@@ -377,66 +289,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  helperBanner: {
-    backgroundColor: '#0066cc',
-    padding: 12,
-  },
-  helperText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  modalButton: {
-    backgroundColor: '#0066cc',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalButtonDanger: {
-    backgroundColor: '#dc3545',
-  },
-  modalButtonDangerText: {
-    color: '#fff',
-  },
-  modalButtonCancel: {
-    backgroundColor: '#6c757d',
-  },
-  noteInput: {
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 80,
-    marginBottom: 16,
-    textAlignVertical: 'top',
   },
 });

@@ -46,6 +46,11 @@ export interface FullScreenImageBaseProps {
   // Expose refs for advanced usage
   onZoomChange?: (zoomState: ZoomState) => void;
   onDimensionsReady?: (dimensions: ImageDimensions, offset: { x: number; y: number }) => void;
+  // Optional header configuration
+  headerTitle?: string;
+  headerRight?: ReactNode;
+  // Optional helper banner (shown below header)
+  helperBanner?: ReactNode;
 }
 
 export default function FullScreenImageBase({
@@ -64,6 +69,9 @@ export default function FullScreenImageBase({
   overlayPointerEvents = 'none',
   onZoomChange,
   onDimensionsReady,
+  headerTitle,
+  headerRight,
+  helperBanner,
 }: FullScreenImageBaseProps) {
   const windowDimensions = useWindowDimensions();
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
@@ -177,13 +185,27 @@ export default function FullScreenImageBase({
           </View>
         </ImageZoom>
 
-        {/* Close button */}
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={onClose}
-        >
-          <Text style={styles.closeButtonText}>{closeButtonText}</Text>
-        </TouchableOpacity>
+        {/* Header or Close button */}
+        {headerTitle ? (
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>{headerTitle}</Text>
+            {headerRight || (
+              <TouchableOpacity onPress={onClose} style={styles.headerButton}>
+                <Text style={styles.headerButtonText}>{closeButtonText}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={onClose}
+          >
+            <Text style={styles.closeButtonText}>{closeButtonText}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Helper banner */}
+        {helperBanner}
 
         {/* Additional content (modals, controls, etc.) */}
         {children}
@@ -231,6 +253,31 @@ export const baseStyles = StyleSheet.create({
   modalButtonCancel: {
     backgroundColor: '#6c757d',
   },
+  helperBanner: {
+    position: 'absolute',
+    top: 110,
+    left: 0,
+    right: 0,
+    backgroundColor: '#0066cc',
+    padding: 12,
+  },
+  helperText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  noteInput: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 80,
+    marginBottom: 16,
+    textAlignVertical: 'top',
+  },
 });
 
 const styles = StyleSheet.create({
@@ -257,5 +304,33 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    paddingTop: 50,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  headerButton: {
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  headerButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
