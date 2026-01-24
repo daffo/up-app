@@ -14,6 +14,7 @@ import {
   GestureResponderEvent,
   PanResponderGestureState,
 } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { Hold, DetectedHold } from '../types/database.types';
 import { supabase } from '../lib/supabase';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
@@ -75,6 +76,14 @@ export default function FullScreenHoldEditor({
   const focusRegionRef = useRef<FocusRegion | null>(null);
   const focusedViewDimensionsRef = useRef({ width: 0, height: 0 });
 
+  // Redraw mode state
+  const [redrawHoldId, setRedrawHoldId] = useState<string | null>(null);
+  const [brushStrokes, setBrushStrokes] = useState<Array<{ x: number; y: number }>>([]);
+  const [isSavingRedraw, setIsSavingRedraw] = useState(false);
+  const brushRadius = 4; // percentage of focused view width
+  const brushStrokesRef = useRef<Array<{ x: number; y: number }>>([]);
+  const focusedViewOffsetRef = useRef({ x: 0, y: 0 });
+
   // Keep refs in sync with state
   React.useEffect(() => {
     movingDeltaRef.current = movingDelta;
@@ -88,8 +97,12 @@ export default function FullScreenHoldEditor({
     focusRegionRef.current = focusRegion;
   }, [focusRegion]);
 
-  // PanResponder for move gesture - works in both normal and focused view
-  const panResponder = useRef(
+  React.useEffect(() => {
+    brushStrokesRef.current = brushStrokes;
+  }, [brushStrokes]);
+
+  // PanResponder for move gesture - only works in focused view
+  const movePanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
@@ -109,14 +122,6 @@ export default function FullScreenHoldEditor({
             x: dragStartRef.current.x + deltaXPercent,
             y: dragStartRef.current.y + deltaYPercent,
           });
-        } else if (imageDimensionsRef.current.width > 0) {
-          // In normal view: delta is relative to full image dimensions
-          const deltaXPercent = (gestureState.dx / imageDimensionsRef.current.width) * 100 * sensitivity;
-          const deltaYPercent = (gestureState.dy / imageDimensionsRef.current.height) * 100 * sensitivity;
-          setMovingDelta({
-            x: dragStartRef.current.x + deltaXPercent,
-            y: dragStartRef.current.y + deltaYPercent,
-          });
         }
       },
       onPanResponderRelease: () => {
@@ -124,6 +129,44 @@ export default function FullScreenHoldEditor({
       },
     })
   ).current;
+
+  // PanResponder for redraw brush - only works in focused view
+  // Uses refs to avoid stale closure issues
+  const redrawPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt: GestureResponderEvent) => {
+        const { locationX, locationY } = evt.nativeEvent;
+        addBrushPointFromRef(locationX, locationY);
+      },
+      onPanResponderMove: (evt: GestureResponderEvent) => {
+        const { locationX, locationY } = evt.nativeEvent;
+        addBrushPointFromRef(locationX, locationY);
+      },
+      onPanResponderRelease: () => {
+        // Keep strokes - user will explicitly save or cancel
+      },
+    })
+  ).current;
+
+  // Add brush point using refs (called from PanResponder)
+  // locationX/Y are already relative to the image container since pan handlers are there
+  const addBrushPointFromRef = (localX: number, localY: number) => {
+    const dims = focusedViewDimensionsRef.current;
+    if (dims.width === 0) return;
+
+    // Convert to percentage within focused view (0-100)
+    const xPercent = (localX / dims.width) * 100;
+    const yPercent = (localY / dims.height) * 100;
+
+    // Only add if within bounds
+    if (xPercent >= 0 && xPercent <= 100 && yPercent >= 0 && yPercent <= 100) {
+      const newStrokes = [...brushStrokesRef.current, { x: xPercent, y: yPercent }];
+      brushStrokesRef.current = newStrokes;
+      setBrushStrokes(newStrokes);
+    }
+  };
 
   // Start moving mode
   const startMoveHold = () => {
@@ -184,6 +227,246 @@ export default function FullScreenHoldEditor({
     setMovingHoldId(null);
     setMovingDelta({ x: 0, y: 0 });
     setSelectedHoldId(null);
+  };
+
+  // Start redraw mode
+  const startRedraw = () => {
+    setRedrawHoldId(selectedHoldId);
+    setBrushStrokes([]);
+    setDeleteModalVisible(false);
+  };
+
+  // Cancel redraw
+  const cancelRedraw = () => {
+    setRedrawHoldId(null);
+    setBrushStrokes([]);
+  };
+
+  // Save redrawn shape
+  const saveRedraw = async () => {
+    if (!redrawHoldId || brushStrokes.length < 3) {
+      Alert.alert('Error', 'Please draw more to define the hold shape');
+      return;
+    }
+
+    const holdToRedraw = detectedHolds.find(h => h.id === redrawHoldId);
+    if (!holdToRedraw || !focusRegion) {
+      cancelRedraw();
+      return;
+    }
+
+    setIsSavingRedraw(true);
+
+    // Convert brush strokes to a polygon using the outline extraction algorithm
+    const newPolygonInFocusCoords = extractOutlineFromBrushStrokes(brushStrokes, brushRadius);
+
+    // Convert from focus region coordinates back to original image coordinates
+    const newPolygon = newPolygonInFocusCoords.map(p => ({
+      x: focusRegion.x + (p.x / 100) * focusRegion.width,
+      y: focusRegion.y + (p.y / 100) * focusRegion.height,
+    }));
+
+    // Calculate new center
+    const newCenter = {
+      x: newPolygon.reduce((sum, p) => sum + p.x, 0) / newPolygon.length,
+      y: newPolygon.reduce((sum, p) => sum + p.y, 0) / newPolygon.length,
+    };
+
+    // Update in database
+    const { error } = await supabase
+      .from('detected_holds')
+      .update({ polygon: newPolygon, center: newCenter })
+      .eq('id', redrawHoldId);
+
+    setIsSavingRedraw(false);
+
+    if (error) {
+      Alert.alert('Error', 'Failed to save redrawn hold: ' + error.message);
+      return;
+    }
+
+    // Notify parent to update state
+    if (onUpdateDetectedHold) {
+      onUpdateDetectedHold(redrawHoldId, { polygon: newPolygon, center: newCenter });
+    }
+
+    setRedrawHoldId(null);
+    setBrushStrokes([]);
+    setSelectedHoldId(null);
+  };
+
+  // Extract outline from brush strokes using a grid-based approach
+  const extractOutlineFromBrushStrokes = (
+    strokes: Array<{ x: number; y: number }>,
+    radius: number
+  ): Array<{ x: number; y: number }> => {
+    // Create a grid to represent the painted area
+    const gridSize = 100; // 100x100 grid for 0-100% coordinate space
+    const grid: boolean[][] = Array(gridSize).fill(null).map(() => Array(gridSize).fill(false));
+
+    // Mark cells that are within brush radius of any stroke point
+    const radiusCells = Math.ceil(radius);
+    for (const point of strokes) {
+      const centerX = Math.floor(point.x);
+      const centerY = Math.floor(point.y);
+
+      for (let dy = -radiusCells; dy <= radiusCells; dy++) {
+        for (let dx = -radiusCells; dx <= radiusCells; dx++) {
+          const gx = centerX + dx;
+          const gy = centerY + dy;
+          if (gx >= 0 && gx < gridSize && gy >= 0 && gy < gridSize) {
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist <= radius) {
+              grid[gy][gx] = true;
+            }
+          }
+        }
+      }
+    }
+
+    // Extract contour using marching squares (simplified)
+    const contourPoints: Array<{ x: number; y: number }> = [];
+
+    // Find edge cells (filled cells adjacent to empty cells or boundary)
+    for (let y = 0; y < gridSize; y++) {
+      for (let x = 0; x < gridSize; x++) {
+        if (grid[y][x]) {
+          // Check if this is an edge cell
+          const isEdge =
+            x === 0 || x === gridSize - 1 || y === 0 || y === gridSize - 1 ||
+            !grid[y - 1]?.[x] || !grid[y + 1]?.[x] ||
+            !grid[y]?.[x - 1] || !grid[y]?.[x + 1];
+
+          if (isEdge) {
+            contourPoints.push({ x, y });
+          }
+        }
+      }
+    }
+
+    if (contourPoints.length < 3) {
+      // Fallback: return convex hull of stroke points
+      return computeConvexHull(strokes);
+    }
+
+    // Order contour points to form a proper polygon
+    const orderedContour = orderContourPoints(contourPoints);
+
+    // Simplify the contour to reduce point count
+    const simplified = simplifyPolygon(orderedContour, 1.5);
+
+    return simplified;
+  };
+
+  // Order contour points by walking around the perimeter
+  const orderContourPoints = (points: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> => {
+    if (points.length < 3) return points;
+
+    // Find centroid
+    const centroid = {
+      x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+      y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
+    };
+
+    // Sort by angle from centroid
+    const sorted = [...points].sort((a, b) => {
+      const angleA = Math.atan2(a.y - centroid.y, a.x - centroid.x);
+      const angleB = Math.atan2(b.y - centroid.y, b.x - centroid.x);
+      return angleA - angleB;
+    });
+
+    return sorted;
+  };
+
+  // Douglas-Peucker polygon simplification
+  const simplifyPolygon = (
+    points: Array<{ x: number; y: number }>,
+    epsilon: number
+  ): Array<{ x: number; y: number }> => {
+    if (points.length <= 2) return points;
+
+    // Find the point with maximum distance from line between first and last
+    let maxDist = 0;
+    let maxIndex = 0;
+    const first = points[0];
+    const last = points[points.length - 1];
+
+    for (let i = 1; i < points.length - 1; i++) {
+      const dist = perpendicularDistance(points[i], first, last);
+      if (dist > maxDist) {
+        maxDist = dist;
+        maxIndex = i;
+      }
+    }
+
+    // If max distance is greater than epsilon, recursively simplify
+    if (maxDist > epsilon) {
+      const left = simplifyPolygon(points.slice(0, maxIndex + 1), epsilon);
+      const right = simplifyPolygon(points.slice(maxIndex), epsilon);
+      return [...left.slice(0, -1), ...right];
+    } else {
+      return [first, last];
+    }
+  };
+
+  // Calculate perpendicular distance from point to line
+  const perpendicularDistance = (
+    point: { x: number; y: number },
+    lineStart: { x: number; y: number },
+    lineEnd: { x: number; y: number }
+  ): number => {
+    const dx = lineEnd.x - lineStart.x;
+    const dy = lineEnd.y - lineStart.y;
+    const mag = Math.sqrt(dx * dx + dy * dy);
+    if (mag === 0) return Math.sqrt((point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2);
+
+    const u = ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / (mag * mag);
+    const closestX = lineStart.x + u * dx;
+    const closestY = lineStart.y + u * dy;
+    return Math.sqrt((point.x - closestX) ** 2 + (point.y - closestY) ** 2);
+  };
+
+  // Compute convex hull using Graham scan
+  const computeConvexHull = (points: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> => {
+    if (points.length < 3) return points;
+
+    // Find bottom-most point (or left-most in case of tie)
+    let start = 0;
+    for (let i = 1; i < points.length; i++) {
+      if (points[i].y < points[start].y ||
+          (points[i].y === points[start].y && points[i].x < points[start].x)) {
+        start = i;
+      }
+    }
+
+    const pivot = points[start];
+
+    // Sort by polar angle with pivot
+    const sorted = points
+      .filter((_, i) => i !== start)
+      .sort((a, b) => {
+        const angleA = Math.atan2(a.y - pivot.y, a.x - pivot.x);
+        const angleB = Math.atan2(b.y - pivot.y, b.x - pivot.x);
+        return angleA - angleB;
+      });
+
+    const hull: Array<{ x: number; y: number }> = [pivot];
+
+    for (const point of sorted) {
+      while (hull.length > 1) {
+        const top = hull[hull.length - 1];
+        const second = hull[hull.length - 2];
+        const cross = (top.x - second.x) * (point.y - second.y) - (top.y - second.y) * (point.x - second.x);
+        if (cross <= 0) {
+          hull.pop();
+        } else {
+          break;
+        }
+      }
+      hull.push(point);
+    }
+
+    return hull;
   };
 
   // Get detected holds with moving delta applied
@@ -405,6 +688,7 @@ export default function FullScreenHoldEditor({
     setFocusMode('none');
     setFocusRegion(null);
     focusedViewDimensionsRef.current = { width: 0, height: 0 };
+    focusedViewOffsetRef.current = { x: 0, y: 0 };
   };
 
   // Cancel selection
@@ -496,8 +780,9 @@ export default function FullScreenHoldEditor({
     const props = getFocusedViewProps();
     if (!props || !focusRegion) return null;
 
-    // Store focused view dimensions for PanResponder
+    // Store focused view dimensions and offset for PanResponder
     focusedViewDimensionsRef.current = { width: props.displayWidth, height: props.displayHeight };
+    focusedViewOffsetRef.current = { x: props.offsetX, y: props.offsetY };
 
     // Get holds in region (use displayed holds which include moving delta)
     const displayedHolds = getDisplayedDetectedHolds();
@@ -535,12 +820,21 @@ export default function FullScreenHoldEditor({
     }));
 
     const isMoving = !!movingHoldId;
+    const isRedrawing = !!redrawHoldId;
+    const isEditing = isMoving || isRedrawing;
+
+    // Determine which pan responder to use
+    const activePanHandlers = isMoving
+      ? movePanResponder.panHandlers
+      : isRedrawing
+      ? redrawPanResponder.panHandlers
+      : {};
 
     return (
       <Modal visible={true} animationType="fade" statusBarTranslucent>
         <StatusBar hidden />
-        <View style={styles.focusedContainer} {...(isMoving ? panResponder.panHandlers : {})}>
-          {/* Clipped image container */}
+        <View style={styles.focusedContainer}>
+          {/* Clipped image container - pan handlers here so buttons work */}
           <View
             style={{
               position: 'absolute',
@@ -550,6 +844,7 @@ export default function FullScreenHoldEditor({
               height: props.displayHeight,
               overflow: 'hidden',
             }}
+            {...(isEditing ? activePanHandlers : {})}
           >
             <View pointerEvents="none">
               <Image
@@ -564,26 +859,46 @@ export default function FullScreenHoldEditor({
                 resizeMode="cover"
               />
             </View>
-            {/* Overlay for holds in this region */}
-            <RouteOverlay
-              holds={fakeHolds}
-              detectedHolds={mappedDetectedHolds}
-              width={props.displayWidth}
-              height={props.displayHeight}
-              pointerEvents={isMoving ? 'none' : 'auto'}
-              showLabels={false}
-              onHoldPress={isMoving ? undefined : handleFocusedHoldPress}
-              selectedHoldId={movingHoldId || selectedHoldId}
-              zoomScale={100 / (focusRegion?.width || 100)}
-            />
+            {/* Overlay for holds in this region - hide during redraw */}
+            {!isRedrawing && (
+              <RouteOverlay
+                holds={fakeHolds}
+                detectedHolds={mappedDetectedHolds}
+                width={props.displayWidth}
+                height={props.displayHeight}
+                pointerEvents={isMoving ? 'none' : 'auto'}
+                showLabels={false}
+                onHoldPress={isMoving ? undefined : handleFocusedHoldPress}
+                selectedHoldId={movingHoldId || selectedHoldId}
+                zoomScale={100 / (focusRegion?.width || 100)}
+              />
+            )}
+            {/* Brush strokes overlay during redraw */}
+            {isRedrawing && (
+              <Svg
+                width={props.displayWidth}
+                height={props.displayHeight}
+                style={StyleSheet.absoluteFill}
+              >
+                {brushStrokes.map((point, index) => (
+                  <Circle
+                    key={index}
+                    cx={(point.x / 100) * props.displayWidth}
+                    cy={(point.y / 100) * props.displayHeight}
+                    r={(brushRadius / 100) * props.displayWidth}
+                    fill="rgba(0, 200, 100, 0.6)"
+                  />
+                ))}
+              </Svg>
+            )}
           </View>
 
           {/* Back/Cancel button */}
           <TouchableOpacity
             style={styles.backButton}
-            onPress={isMoving ? cancelMove : exitFocusMode}
+            onPress={isMoving ? cancelMove : isRedrawing ? cancelRedraw : exitFocusMode}
           >
-            <Text style={styles.backButtonText}>{isMoving ? 'Cancel' : '← Back'}</Text>
+            <Text style={styles.backButtonText}>{isEditing ? 'Cancel' : '← Back'}</Text>
           </TouchableOpacity>
 
           {/* Moving mode UI */}
@@ -614,15 +929,43 @@ export default function FullScreenHoldEditor({
             </>
           )}
 
-          {/* Edit button - show when a hold is selected and not moving */}
-          {selectedHoldId && !isMoving && (
+          {/* Redraw mode UI */}
+          {isRedrawing && (
+            <>
+              <View style={styles.movingHelper}>
+                <Text style={styles.movingHelperText}>Paint over the hold shape</Text>
+              </View>
+              <View style={styles.movingButtons}>
+                <TouchableOpacity
+                  style={[styles.movingButton, styles.movingButtonCancel]}
+                  onPress={cancelRedraw}
+                >
+                  <Text style={styles.movingButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.movingButton, styles.movingButtonSave]}
+                  onPress={saveRedraw}
+                  disabled={isSavingRedraw || brushStrokes.length < 3}
+                >
+                  {isSavingRedraw ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.movingButtonText}>Save</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {/* Edit button - show when a hold is selected and not editing */}
+          {selectedHoldId && !isEditing && (
             <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
               <Text style={styles.editButtonText}>Edit Hold</Text>
             </TouchableOpacity>
           )}
 
-          {/* Region info - only show when no hold selected and not moving */}
-          {!selectedHoldId && !isMoving && (
+          {/* Region info - only show when no hold selected and not editing */}
+          {!selectedHoldId && !isEditing && (
             <View style={styles.focusInfo}>
               <Text style={styles.focusInfoText}>
                 Focused Area • Tap hold to select
@@ -634,10 +977,8 @@ export default function FullScreenHoldEditor({
     );
   };
 
-  // Handle move - works in both normal and focused view
-  const handleMoveHold = () => {
-    startMoveHold();
-  };
+  // Check if we're in focused mode
+  const inFocusedMode = focusMode === 'focused' && focusRegion;
 
   // Render the edit modal (shared between normal and focused view)
   const renderEditModal = () => (
@@ -666,12 +1007,28 @@ export default function FullScreenHoldEditor({
             </>
           )}
 
-          <TouchableOpacity
-            style={baseStyles.modalButton}
-            onPress={handleMoveHold}
-          >
-            <Text style={baseStyles.modalButtonText}>Move Hold</Text>
-          </TouchableOpacity>
+          {/* Move and Redraw only available in focused mode */}
+          {inFocusedMode ? (
+            <>
+              <TouchableOpacity
+                style={baseStyles.modalButton}
+                onPress={startMoveHold}
+              >
+                <Text style={baseStyles.modalButtonText}>Move Hold</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={baseStyles.modalButton}
+                onPress={startRedraw}
+              >
+                <Text style={baseStyles.modalButtonText}>Redraw Shape</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <Text style={styles.hintText}>
+              Use Focus Area for move/redraw options
+            </Text>
+          )}
 
           <TouchableOpacity
             style={[baseStyles.modalButton, baseStyles.modalButtonDanger]}
@@ -710,59 +1067,27 @@ export default function FullScreenHoldEditor({
       visible={visible}
       photoUrl={photoUrl}
       holds={holds}
-      detectedHolds={getDisplayedDetectedHolds()}
-      onClose={movingHoldId ? cancelMove : (focusMode === 'selecting' ? cancelSelection : onClose)}
+      detectedHolds={detectedHolds}
+      onClose={focusMode === 'selecting' ? cancelSelection : onClose}
       showLabels={false}
-      closeButtonText={movingHoldId ? 'Cancel' : (focusMode === 'selecting' ? 'Cancel' : '✕')}
+      closeButtonText={focusMode === 'selecting' ? 'Cancel' : '✕'}
       overlayPointerEvents="none"
-      onImageTap={movingHoldId ? undefined : (focusMode === 'selecting' ? handleSelectingTap : handleImageTap)}
+      onImageTap={focusMode === 'selecting' ? handleSelectingTap : handleImageTap}
       onDimensionsReady={handleDimensionsReady}
-      selectedHoldId={movingHoldId || selectedHoldId}
-      lockZoom={!!movingHoldId}
-      panHandlers={movingHoldId ? panResponder.panHandlers : undefined}
+      selectedHoldId={selectedHoldId}
     >
-      {/* Focus Area button - only show when not in selecting mode, no hold selected, and not moving */}
-      {focusMode === 'none' && !selectedHoldId && !movingHoldId && (
+      {/* Focus Area button - only show when not in selecting mode and no hold selected */}
+      {focusMode === 'none' && !selectedHoldId && (
         <TouchableOpacity style={styles.focusButton} onPress={startFocusSelection}>
           <Text style={styles.focusButtonText}>Focus Area</Text>
         </TouchableOpacity>
       )}
 
-      {/* Edit button - show when a hold is selected and not moving */}
-      {selectedHoldId && focusMode === 'none' && !movingHoldId && (
+      {/* Edit button - show when a hold is selected */}
+      {selectedHoldId && focusMode === 'none' && (
         <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
           <Text style={styles.editButtonText}>Edit Hold</Text>
         </TouchableOpacity>
-      )}
-
-      {/* Moving mode UI */}
-      {movingHoldId && (
-        <>
-          <View style={styles.movingHelper}>
-            <Text style={styles.movingHelperText}>
-              Drag to move hold
-            </Text>
-          </View>
-          <View style={styles.movingButtons}>
-            <TouchableOpacity
-              style={[styles.movingButton, styles.movingButtonCancel]}
-              onPress={cancelMove}
-            >
-              <Text style={styles.movingButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.movingButton, styles.movingButtonSave]}
-              onPress={saveMove}
-              disabled={isSavingMove}
-            >
-              {isSavingMove ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.movingButtonText}>Save</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </>
       )}
 
       {/* Selection mode helper */}
@@ -790,6 +1115,13 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 8,
     marginBottom: 4,
+  },
+  hintText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 12,
+    fontStyle: 'italic',
   },
   focusButton: {
     position: 'absolute',
