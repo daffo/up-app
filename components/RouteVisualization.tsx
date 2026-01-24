@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, Image, StyleSheet, LayoutChangeEvent, TouchableOpacity, Modal } from 'react-native';
+import { View, Image, StyleSheet, LayoutChangeEvent, TouchableOpacity } from 'react-native';
 import { Hold, DetectedHold } from '../types/database.types';
 import FullScreenRouteViewer from './FullScreenRouteViewer';
+import FullScreenHoldEditor from './FullScreenHoldEditor';
 import RouteOverlay from './RouteOverlay';
 
 interface RouteVisualizationProps {
@@ -109,17 +110,26 @@ export default function RouteVisualization({
         </TouchableOpacity>
       </View>
 
-      <FullScreenRouteViewer
-        visible={fullScreenVisible}
-        photoUrl={photoUrl}
-        holds={holds}
-        detectedHolds={detectedHolds}
-        onClose={() => setFullScreenVisible(false)}
-        showLabels={showLabels}
-        adminMode={adminMode}
-        photoId={photoId}
-        onDeleteDetectedHold={onDeleteDetectedHold}
-      />
+      {adminMode && photoId ? (
+        <FullScreenHoldEditor
+          visible={fullScreenVisible}
+          photoUrl={photoUrl}
+          holds={holds}
+          detectedHolds={detectedHolds}
+          onClose={() => setFullScreenVisible(false)}
+          photoId={photoId}
+          onDeleteDetectedHold={onDeleteDetectedHold}
+        />
+      ) : (
+        <FullScreenRouteViewer
+          visible={fullScreenVisible}
+          photoUrl={photoUrl}
+          holds={holds}
+          detectedHolds={detectedHolds}
+          onClose={() => setFullScreenVisible(false)}
+          showLabels={showLabels}
+        />
+      )}
     </>
   );
 }

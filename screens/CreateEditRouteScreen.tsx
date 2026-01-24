@@ -14,7 +14,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth-context';
 import { Database, Hold, DetectedHold } from '../types/database.types';
-import FullScreenHoldEditor from '../components/FullScreenHoldEditor';
+import FullScreenRouteEditor from '../components/FullScreenRouteEditor';
 import RouteOverlay from '../components/RouteOverlay';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -408,7 +408,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
       {/* Fullscreen Hold Editor */}
       {selectedPhoto && (
-        <FullScreenHoldEditor
+        <FullScreenRouteEditor
           visible={editorVisible}
           photoUrl={selectedPhoto.image_url}
           holds={holds}
