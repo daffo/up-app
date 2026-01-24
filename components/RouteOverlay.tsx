@@ -1,5 +1,6 @@
 import Svg, { Circle, Line, Defs, Marker, Polygon, G, Rect, Text as SvgText, Path } from 'react-native-svg';
 import { Hold, DetectedHold } from '../types/database.types';
+import { calculatePolygonArea } from '../utils/polygon';
 
 interface RouteOverlayProps {
   holds: Hold[];
@@ -213,6 +214,7 @@ const polygonToPath = (polygon: Array<{ x: number; y: number }>): string => {
   path += 'Z';
   return path;
 };
+
 
 // Helper function to find intersection point between a line and polygon perimeter
 const findPerimeterIntersection = (
@@ -435,36 +437,46 @@ export default function RouteOverlay({
       })}
 
       {/* Draw hold borders and tappable areas */}
-      {holds.map((hold, index) => {
-        const expandedPixels = expandedPolygonsMap.get(hold.detected_hold_id);
-        if (!expandedPixels) return null;
+      {/* Sort by area (largest first) so smaller holds render on top and receive taps first */}
+      {holds
+        .map((hold, index) => ({ hold, index }))
+        .sort((a, b) => {
+          const aPixels = expandedPolygonsMap.get(a.hold.detected_hold_id);
+          const bPixels = expandedPolygonsMap.get(b.hold.detected_hold_id);
+          const aArea = aPixels ? calculatePolygonArea(aPixels) : 0;
+          const bArea = bPixels ? calculatePolygonArea(bPixels) : 0;
+          return bArea - aArea; // Largest first, smallest last (on top)
+        })
+        .map(({ hold, index }) => {
+          const expandedPixels = expandedPolygonsMap.get(hold.detected_hold_id);
+          if (!expandedPixels) return null;
 
-        // Simplify and smooth the polygon, then convert to path
-        const smoothed = smoothPolygon(expandedPixels, 3, 3);
-        const smoothPath = polygonToPath(smoothed);
+          // Simplify and smooth the polygon, then convert to path
+          const smoothed = smoothPolygon(expandedPixels, 3, 3);
+          const smoothPath = polygonToPath(smoothed);
 
-        return (
-          <G key={`polygon-${index}`}>
-            {/* Tappable area with transparent fill */}
-            {onHoldPress && (
+          return (
+            <G key={`polygon-${index}`}>
+              {/* Tappable area with transparent fill */}
+              {onHoldPress && (
+                <Path
+                  d={smoothPath}
+                  fill="rgba(255, 255, 255, 0.01)"
+                  stroke="transparent"
+                  onPress={() => onHoldPress(index)}
+                />
+              )}
+              {/* Visible border */}
               <Path
                 d={smoothPath}
-                fill="rgba(255, 255, 255, 0.01)"
-                stroke="transparent"
-                onPress={() => onHoldPress(index)}
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="0.5"
+                pointerEvents="none"
               />
-            )}
-            {/* Visible border */}
-            <Path
-              d={smoothPath}
-              fill="none"
-              stroke="#FFFFFF"
-              strokeWidth="0.5"
-              pointerEvents="none"
-            />
-          </G>
-        );
-      })}
+            </G>
+          );
+        })}
 
       {/* Draw labels with background */}
       {showLabels && holds.map((hold, index) => {

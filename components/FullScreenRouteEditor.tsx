@@ -13,6 +13,7 @@ import {
 import ImageZoom from 'react-native-image-pan-zoom';
 import { Hold, DetectedHold } from '../types/database.types';
 import RouteOverlay from './RouteOverlay';
+import { isPointInPolygon, findSmallestPolygonAtPoint } from '../utils/polygon';
 
 interface FullScreenRouteEditorProps {
   visible: boolean;
@@ -84,19 +85,6 @@ export default function FullScreenRouteEditor({
   const offsetX = (screenWidth - displayedDimensions.width) / 2;
   const offsetY = (availableHeight - displayedDimensions.height) / 2;
 
-  // Helper: Point-in-polygon test (ray casting algorithm)
-  const isPointInPolygon = (x: number, y: number, polygon: Array<{ x: number; y: number }>) => {
-    let inside = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i].x, yi = polygon[i].y;
-      const xj = polygon[j].x, yj = polygon[j].y;
-
-      const intersect = ((yi > y) !== (yj > y))
-        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-      if (intersect) inside = !inside;
-    }
-    return inside;
-  };
 
   const handleImagePress = (event: any) => {
     if (displayedDimensions.width === 0) return;
@@ -134,40 +122,43 @@ export default function FullScreenRouteEditor({
       return;
     }
 
-    // Check if tapped on an existing hold in the route
-    for (let i = 0; i < holds.length; i++) {
-      const hold = holds[i];
-      const detectedHold = detectedHolds.find(dh => dh.id === hold.detected_hold_id);
+    // Build list of route holds with their polygons for lookup
+    const routeHoldsWithPolygons = holds
+      .map((hold, index) => {
+        const detectedHold = detectedHolds.find(dh => dh.id === hold.detected_hold_id);
+        return detectedHold ? { index, polygon: detectedHold.polygon } : null;
+      })
+      .filter((h): h is { index: number; polygon: Array<{ x: number; y: number }> } => h !== null);
 
-      if (detectedHold && isPointInPolygon(xPercent, yPercent, detectedHold.polygon)) {
-        setSelectedHoldIndex(i);
-        setEditModalVisible(true);
-        return;
-      }
+    // Check if tapped on an existing hold in the route (prioritize smallest)
+    const smallestRouteHold = findSmallestPolygonAtPoint(xPercent, yPercent, routeHoldsWithPolygons);
+    if (smallestRouteHold) {
+      setSelectedHoldIndex(smallestRouteHold.index);
+      setEditModalVisible(true);
+      return;
     }
 
-    // Check if tapped on any detected hold (to add to route)
-    for (const detectedHold of detectedHolds) {
-      if (isPointInPolygon(xPercent, yPercent, detectedHold.polygon)) {
-        // Check if this hold is already in the route
-        const alreadyUsed = holds.some(h => h.detected_hold_id === detectedHold.id);
-        if (alreadyUsed) {
-          Alert.alert('Hold Already Used', 'This hold is already part of the route.');
-          return;
-        }
-
-        // Add new hold to route
-        const newHold: Hold = {
-          order: holds.length + 1,
-          detected_hold_id: detectedHold.id,
-          labelX: xPercent + 3,
-          labelY: yPercent - 3,
-          note: '',
-        };
-
-        setHolds([...holds, newHold]);
+    // Check if tapped on any detected hold to add to route (prioritize smallest)
+    const smallestDetectedHold = findSmallestPolygonAtPoint(xPercent, yPercent, detectedHolds);
+    if (smallestDetectedHold) {
+      // Check if this hold is already in the route
+      const alreadyUsed = holds.some(h => h.detected_hold_id === smallestDetectedHold.id);
+      if (alreadyUsed) {
+        Alert.alert('Hold Already Used', 'This hold is already part of the route.');
         return;
       }
+
+      // Add new hold to route
+      const newHold: Hold = {
+        order: holds.length + 1,
+        detected_hold_id: smallestDetectedHold.id,
+        labelX: xPercent + 3,
+        labelY: yPercent - 3,
+        note: '',
+      };
+
+      setHolds([...holds, newHold]);
+      return;
     }
 
     // No hold detected at tap location
