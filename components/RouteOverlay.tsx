@@ -9,6 +9,7 @@ interface RouteOverlayProps {
   pointerEvents?: 'none' | 'box-none' | 'auto';
   onHoldPress?: (index: number) => void;
   resizingHoldIndex?: number | null;
+  showLabels?: boolean; // Whether to show labels and arrows (default: true)
 }
 
 // Helper function to calculate label dimensions
@@ -263,6 +264,7 @@ export default function RouteOverlay({
   pointerEvents = 'none',
   onHoldPress,
   resizingHoldIndex = null,
+  showLabels = true,
 }: RouteOverlayProps) {
   // Create a map for quick lookup of detected holds by ID
   const detectedHoldsMap = new Map(
@@ -325,7 +327,7 @@ export default function RouteOverlay({
       />
 
       {/* Draw connecting lines between holds (sequence arrows) */}
-      {holds.map((hold, index) => {
+      {showLabels && holds.map((hold, index) => {
         if (index === holds.length - 1) return null;
         const nextHold = holds[index + 1];
 
@@ -366,7 +368,7 @@ export default function RouteOverlay({
       })}
 
       {/* Draw arrows from labels to holds */}
-      {holds.map((hold, index) => {
+      {showLabels && holds.map((hold, index) => {
         const detectedHold = detectedHoldsMap.get(hold.detected_hold_id);
         if (!detectedHold) return null;
 
@@ -454,7 +456,7 @@ export default function RouteOverlay({
       })}
 
       {/* Draw labels with background */}
-      {holds.map((hold, index) => {
+      {showLabels && holds.map((hold, index) => {
         const labelDims = calculateLabelDimensions(hold, width, height);
         const { labelX, labelY, labelText, lines, textWidth, lineHeight, totalTextHeight, padding } = labelDims;
 

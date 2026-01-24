@@ -23,6 +23,7 @@ interface FullScreenRouteViewerProps {
   onClose: () => void;
   editable?: boolean;
   onUpdateHolds?: (holds: Hold[]) => void;
+  showLabels?: boolean;
 }
 
 export default function FullScreenRouteViewer({
@@ -33,6 +34,7 @@ export default function FullScreenRouteViewer({
   onClose,
   editable = false,
   onUpdateHolds,
+  showLabels = true,
 }: FullScreenRouteViewerProps) {
   const windowDimensions = useWindowDimensions();
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
@@ -567,6 +569,7 @@ export default function FullScreenRouteViewer({
                   height={displayedDimensions.height}
                   pointerEvents="none"
                   resizingHoldIndex={resizingHoldIndex}
+                  showLabels={showLabels}
                 />
               </View>
             )}

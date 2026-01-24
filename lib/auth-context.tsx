@@ -13,6 +13,7 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  isAdmin: boolean;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
@@ -26,6 +27,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check admin status when user changes
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      const { data } = await supabase
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .single();
+      setIsAdmin(!!data);
+    };
+    checkAdminStatus();
+  }, [user]);
 
   useEffect(() => {
     // Get initial session
@@ -221,6 +240,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Force update local state
     setSession(null);
     setUser(null);
+    setIsAdmin(false);
   };
 
   return (
@@ -229,6 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         user,
         loading,
+        isAdmin,
         signUp,
         signIn,
         signInWithGoogle,
