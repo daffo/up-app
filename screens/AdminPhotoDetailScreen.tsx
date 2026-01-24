@@ -71,6 +71,11 @@ export default function AdminPhotoDetailScreen({ route }: any) {
     ));
   };
 
+  const handleAddDetectedHold = (hold: DetectedHold) => {
+    // Add new hold to local state
+    setDetectedHolds(prev => [...prev, hold]);
+  };
+
   // Create holds array that highlights ALL detected holds
   const allHoldsHighlighted: Hold[] = detectedHolds.map((dh, index) => ({
     order: index + 1,
@@ -130,6 +135,7 @@ export default function AdminPhotoDetailScreen({ route }: any) {
             photoId={photoId}
             onDeleteDetectedHold={handleDeleteDetectedHold}
             onUpdateDetectedHold={handleUpdateDetectedHold}
+            onAddDetectedHold={handleAddDetectedHold}
           />
         )}
       </View>

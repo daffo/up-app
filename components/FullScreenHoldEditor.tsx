@@ -30,6 +30,7 @@ interface FullScreenHoldEditorProps {
   photoId: string;
   onDeleteDetectedHold?: (holdId: string) => void;
   onUpdateDetectedHold?: (holdId: string, updates: Partial<DetectedHold>) => void;
+  onAddDetectedHold?: (hold: DetectedHold) => void;
 }
 
 type FocusMode = 'none' | 'selecting' | 'focused';
@@ -50,6 +51,7 @@ export default function FullScreenHoldEditor({
   photoId,
   onDeleteDetectedHold,
   onUpdateDetectedHold,
+  onAddDetectedHold,
 }: FullScreenHoldEditorProps) {
   const windowDimensions = useWindowDimensions();
   const [selectedHoldId, setSelectedHoldId] = useState<string | null>(null);
@@ -83,6 +85,9 @@ export default function FullScreenHoldEditor({
   const brushRadius = 4; // percentage of focused view width
   const brushStrokesRef = useRef<Array<{ x: number; y: number }>>([]);
   const focusedViewOffsetRef = useRef({ x: 0, y: 0 });
+
+  // Add hold mode state
+  const [isAddingHold, setIsAddingHold] = useState(false);
 
   // Keep refs in sync with state
   React.useEffect(() => {
@@ -295,6 +300,79 @@ export default function FullScreenHoldEditor({
     setSelectedHoldId(null);
   };
 
+  // Start add hold mode
+  const startAddHold = () => {
+    setIsAddingHold(true);
+    setBrushStrokes([]);
+    setSelectedHoldId(null);
+  };
+
+  // Cancel add hold
+  const cancelAddHold = () => {
+    setIsAddingHold(false);
+    setBrushStrokes([]);
+  };
+
+  // Save new hold
+  const saveAddHold = async () => {
+    if (brushStrokes.length < 3) {
+      Alert.alert('Error', 'Please draw more to define the hold shape');
+      return;
+    }
+
+    if (!focusRegion) {
+      cancelAddHold();
+      return;
+    }
+
+    setIsSavingRedraw(true); // Reuse the saving state
+
+    // Convert brush strokes to a polygon using the outline extraction algorithm
+    const newPolygonInFocusCoords = extractOutlineFromBrushStrokes(brushStrokes, brushRadius);
+
+    // Convert from focus region coordinates back to original image coordinates
+    const newPolygon = newPolygonInFocusCoords.map(p => ({
+      x: focusRegion.x + (p.x / 100) * focusRegion.width,
+      y: focusRegion.y + (p.y / 100) * focusRegion.height,
+    }));
+
+    // Calculate center
+    const newCenter = {
+      x: newPolygon.reduce((sum, p) => sum + p.x, 0) / newPolygon.length,
+      y: newPolygon.reduce((sum, p) => sum + p.y, 0) / newPolygon.length,
+    };
+
+    // Insert new hold into database
+    const { data, error } = await supabase
+      .from('detected_holds')
+      .insert({
+        photo_id: photoId,
+        polygon: newPolygon,
+        center: newCenter,
+      })
+      .select()
+      .single();
+
+    setIsSavingRedraw(false);
+
+    if (error) {
+      Alert.alert('Error', 'Failed to add hold: ' + error.message);
+      return;
+    }
+
+    // Notify parent to update state
+    if (onAddDetectedHold && data) {
+      onAddDetectedHold({
+        ...data,
+        polygon: newPolygon,
+        center: newCenter,
+      });
+    }
+
+    setIsAddingHold(false);
+    setBrushStrokes([]);
+  };
+
   // Extract outline from brush strokes using a grid-based approach
   const extractOutlineFromBrushStrokes = (
     strokes: Array<{ x: number; y: number }>,
@@ -349,33 +427,14 @@ export default function FullScreenHoldEditor({
       return computeConvexHull(strokes);
     }
 
-    // Order contour points to form a proper polygon
-    const orderedContour = orderContourPoints(contourPoints);
+    // Use convex hull of edge points for a clean polygon
+    // This won't capture concave shapes perfectly, but gives reliable results
+    const hull = computeConvexHull(contourPoints);
 
-    // Simplify the contour to reduce point count
-    const simplified = simplifyPolygon(orderedContour, 1.5);
+    // Simplify the hull to reduce point count
+    const simplified = simplifyPolygon(hull, 1.5);
 
     return simplified;
-  };
-
-  // Order contour points by walking around the perimeter
-  const orderContourPoints = (points: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> => {
-    if (points.length < 3) return points;
-
-    // Find centroid
-    const centroid = {
-      x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
-      y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
-    };
-
-    // Sort by angle from centroid
-    const sorted = [...points].sort((a, b) => {
-      const angleA = Math.atan2(a.y - centroid.y, a.x - centroid.x);
-      const angleB = Math.atan2(b.y - centroid.y, b.x - centroid.x);
-      return angleA - angleB;
-    });
-
-    return sorted;
   };
 
   // Douglas-Peucker polygon simplification
@@ -821,12 +880,13 @@ export default function FullScreenHoldEditor({
 
     const isMoving = !!movingHoldId;
     const isRedrawing = !!redrawHoldId;
-    const isEditing = isMoving || isRedrawing;
+    const isBrushing = isRedrawing || isAddingHold; // Both use brush painting
+    const isEditing = isMoving || isBrushing;
 
     // Determine which pan responder to use
     const activePanHandlers = isMoving
       ? movePanResponder.panHandlers
-      : isRedrawing
+      : isBrushing
       ? redrawPanResponder.panHandlers
       : {};
 
@@ -859,8 +919,8 @@ export default function FullScreenHoldEditor({
                 resizeMode="cover"
               />
             </View>
-            {/* Overlay for holds in this region - hide during redraw */}
-            {!isRedrawing && (
+            {/* Overlay for holds in this region - hide during brush painting */}
+            {!isBrushing && (
               <RouteOverlay
                 holds={fakeHolds}
                 detectedHolds={mappedDetectedHolds}
@@ -873,8 +933,8 @@ export default function FullScreenHoldEditor({
                 zoomScale={100 / (focusRegion?.width || 100)}
               />
             )}
-            {/* Brush strokes overlay during redraw */}
-            {isRedrawing && (
+            {/* Brush strokes overlay during redraw or add */}
+            {isBrushing && (
               <Svg
                 width={props.displayWidth}
                 height={props.displayHeight}
@@ -896,7 +956,7 @@ export default function FullScreenHoldEditor({
           {/* Back/Cancel button */}
           <TouchableOpacity
             style={styles.backButton}
-            onPress={isMoving ? cancelMove : isRedrawing ? cancelRedraw : exitFocusMode}
+            onPress={isMoving ? cancelMove : isRedrawing ? cancelRedraw : isAddingHold ? cancelAddHold : exitFocusMode}
           >
             <Text style={styles.backButtonText}>{isEditing ? 'Cancel' : '← Back'}</Text>
           </TouchableOpacity>
@@ -957,6 +1017,34 @@ export default function FullScreenHoldEditor({
             </>
           )}
 
+          {/* Add hold mode UI */}
+          {isAddingHold && (
+            <>
+              <View style={styles.movingHelper}>
+                <Text style={styles.movingHelperText}>Paint the new hold shape</Text>
+              </View>
+              <View style={styles.movingButtons}>
+                <TouchableOpacity
+                  style={[styles.movingButton, styles.movingButtonCancel]}
+                  onPress={cancelAddHold}
+                >
+                  <Text style={styles.movingButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.movingButton, styles.movingButtonSave]}
+                  onPress={saveAddHold}
+                  disabled={isSavingRedraw || brushStrokes.length < 3}
+                >
+                  {isSavingRedraw ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.movingButtonText}>Save</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
           {/* Edit button - show when a hold is selected and not editing */}
           {selectedHoldId && !isEditing && (
             <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
@@ -964,13 +1052,11 @@ export default function FullScreenHoldEditor({
             </TouchableOpacity>
           )}
 
-          {/* Region info - only show when no hold selected and not editing */}
+          {/* Add Hold button - show when no hold selected and not editing */}
           {!selectedHoldId && !isEditing && (
-            <View style={styles.focusInfo}>
-              <Text style={styles.focusInfoText}>
-                Focused Area • Tap hold to select
-              </Text>
-            </View>
+            <TouchableOpacity style={styles.addHoldButton} onPress={startAddHold}>
+              <Text style={styles.addHoldButtonText}>+ Add Hold</Text>
+            </TouchableOpacity>
           )}
         </View>
       </Modal>
@@ -1148,6 +1234,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  addHoldButton: {
+    position: 'absolute',
+    bottom: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(40, 167, 69, 0.95)',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  addHoldButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
