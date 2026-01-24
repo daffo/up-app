@@ -9,9 +9,21 @@ interface RouteVisualizationProps {
   holds: Hold[];
   detectedHolds: DetectedHold[];
   showLabels?: boolean;
+  // Admin mode props - when true, fullscreen allows hold deletion
+  adminMode?: boolean;
+  photoId?: string;
+  onDeleteDetectedHold?: (holdId: string) => void;
 }
 
-export default function RouteVisualization({ photoUrl, holds, detectedHolds, showLabels = true }: RouteVisualizationProps) {
+export default function RouteVisualization({
+  photoUrl,
+  holds,
+  detectedHolds,
+  showLabels = true,
+  adminMode = false,
+  photoId,
+  onDeleteDetectedHold,
+}: RouteVisualizationProps) {
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
   const [fullScreenVisible, setFullScreenVisible] = useState(false);
@@ -104,6 +116,9 @@ export default function RouteVisualization({ photoUrl, holds, detectedHolds, sho
         detectedHolds={detectedHolds}
         onClose={() => setFullScreenVisible(false)}
         showLabels={showLabels}
+        adminMode={adminMode}
+        photoId={photoId}
+        onDeleteDetectedHold={onDeleteDetectedHold}
       />
     </>
   );

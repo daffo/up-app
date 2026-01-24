@@ -59,6 +59,11 @@ export default function AdminPhotoDetailScreen({ route }: any) {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const handleDeleteDetectedHold = (holdId: string) => {
+    // Remove from local state when a hold is deleted
+    setDetectedHolds(prev => prev.filter(h => h.id !== holdId));
+  };
+
   // Create holds array that highlights ALL detected holds
   const allHoldsHighlighted: Hold[] = detectedHolds.map((dh, index) => ({
     order: index + 1,
@@ -102,6 +107,7 @@ export default function AdminPhotoDetailScreen({ route }: any) {
 
       <View style={styles.previewSection}>
         <Text style={styles.sectionTitle}>All Holds Preview</Text>
+        <Text style={styles.hint}>Tap to open fullscreen, then tap a hold to delete</Text>
         {!visualizationReady ? (
           <View style={styles.visualizationLoading}>
             <ActivityIndicator size="large" color="#0066cc" />
@@ -113,6 +119,9 @@ export default function AdminPhotoDetailScreen({ route }: any) {
             holds={allHoldsHighlighted}
             detectedHolds={detectedHolds}
             showLabels={false}
+            adminMode={true}
+            photoId={photoId}
+            onDeleteDetectedHold={handleDeleteDetectedHold}
           />
         )}
       </View>
@@ -156,6 +165,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 4,
+  },
+  hint: {
+    fontSize: 12,
+    color: '#999',
     marginBottom: 12,
   },
   visualizationLoading: {

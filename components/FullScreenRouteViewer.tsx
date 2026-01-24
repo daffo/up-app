@@ -10,9 +10,12 @@ import {
   StatusBar,
   TextInput,
   PanResponder,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { Hold, DetectedHold } from '../types/database.types';
+import { supabase } from '../lib/supabase';
 import RouteOverlay from './RouteOverlay';
 
 interface FullScreenRouteViewerProps {
@@ -24,6 +27,10 @@ interface FullScreenRouteViewerProps {
   editable?: boolean;
   onUpdateHolds?: (holds: Hold[]) => void;
   showLabels?: boolean;
+  // Admin mode props
+  adminMode?: boolean;
+  photoId?: string;
+  onDeleteDetectedHold?: (holdId: string) => void;
 }
 
 export default function FullScreenRouteViewer({
@@ -35,6 +42,9 @@ export default function FullScreenRouteViewer({
   editable = false,
   onUpdateHolds,
   showLabels = true,
+  adminMode = false,
+  photoId,
+  onDeleteDetectedHold,
 }: FullScreenRouteViewerProps) {
   const windowDimensions = useWindowDimensions();
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
@@ -50,6 +60,12 @@ export default function FullScreenRouteViewer({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
   const [resizingHoldIndex, setResizingHoldIndex] = useState<number | null>(null);
+
+  // Admin mode state
+  const [adminSelectedHoldIndex, setAdminSelectedHoldIndex] = useState<number | null>(null);
+  const [adminDeleteModalVisible, setAdminDeleteModalVisible] = useState(false);
+  const [adminIsDeleting, setAdminIsDeleting] = useState(false);
+  const [adminRoutesUsingHold, setAdminRoutesUsingHold] = useState<string[]>([]);
 
   // Zoom state tracking for PanResponder coordinate transformation
   const zoomStateRef = useRef({ scale: 1, positionX: 0, positionY: 0 });
@@ -518,6 +534,69 @@ export default function FullScreenRouteViewer({
     onClose();
   };
 
+  // Admin mode handlers
+  const handleAdminHoldPress = (index: number) => {
+    if (!adminMode) return;
+    setAdminSelectedHoldIndex(index);
+    setAdminDeleteModalVisible(true);
+  };
+
+  const handleAdminDeleteHold = async () => {
+    if (adminSelectedHoldIndex === null || !photoId) return;
+
+    const selectedHold = detectedHolds[adminSelectedHoldIndex];
+    setAdminIsDeleting(true);
+
+    // Check if this hold is used in any route
+    const { data: routes } = await supabase
+      .from('routes')
+      .select('id, title, holds')
+      .eq('photo_id', photoId);
+
+    const usingRoutes: string[] = [];
+    if (routes) {
+      for (const route of routes) {
+        const routeHolds = route.holds as Hold[];
+        if (routeHolds.some(h => h.detected_hold_id === selectedHold.id)) {
+          usingRoutes.push(route.title);
+        }
+      }
+    }
+
+    // If hold is used in routes, show error and abort
+    if (usingRoutes.length > 0) {
+      setAdminIsDeleting(false);
+      setAdminRoutesUsingHold(usingRoutes);
+      return;
+    }
+
+    // Delete the hold
+    const { error } = await supabase
+      .from('detected_holds')
+      .delete()
+      .eq('id', selectedHold.id);
+
+    setAdminIsDeleting(false);
+
+    if (error) {
+      Alert.alert('Error', 'Failed to delete hold: ' + error.message);
+      return;
+    }
+
+    // Notify parent to update state
+    if (onDeleteDetectedHold) {
+      onDeleteDetectedHold(selectedHold.id);
+    }
+
+    closeAdminModal();
+  };
+
+  const closeAdminModal = () => {
+    setAdminDeleteModalVisible(false);
+    setAdminSelectedHoldIndex(null);
+    setAdminRoutesUsingHold([]);
+  };
+
   return (
     <Modal
       visible={visible}
@@ -560,16 +639,17 @@ export default function FullScreenRouteViewer({
                   StyleSheet.absoluteFill,
                   { left: offsetX, top: offsetY, width: displayedDimensions.width, height: displayedDimensions.height }
                 ]}
-                pointerEvents="none"
+                pointerEvents={adminMode ? "auto" : "none"}
               >
                 <RouteOverlay
                   holds={holds}
                   detectedHolds={detectedHolds}
                   width={displayedDimensions.width}
                   height={displayedDimensions.height}
-                  pointerEvents="none"
+                  pointerEvents={adminMode ? "auto" : "none"}
                   resizingHoldIndex={resizingHoldIndex}
                   showLabels={showLabels}
+                  onHoldPress={adminMode ? handleAdminHoldPress : undefined}
                 />
               </View>
             )}
@@ -837,6 +917,57 @@ export default function FullScreenRouteViewer({
             </TouchableOpacity>
           </Modal>
         )}
+
+        {/* Admin Delete Hold Modal */}
+        {adminMode && (
+          <Modal
+            visible={adminDeleteModalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={closeAdminModal}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={closeAdminModal}
+            >
+              <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+                <Text style={styles.modalTitle}>
+                  Hold #{adminSelectedHoldIndex !== null ? adminSelectedHoldIndex + 1 : ''}
+                </Text>
+
+                {adminRoutesUsingHold.length > 0 && (
+                  <>
+                    <Text style={styles.adminWarningText}>
+                      Cannot delete - used in {adminRoutesUsingHold.length} route(s):
+                    </Text>
+                    {adminRoutesUsingHold.map((title, i) => (
+                      <Text key={i} style={styles.adminRouteListItem}>• {title}</Text>
+                    ))}
+                  </>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonDanger]}
+                  onPress={handleAdminDeleteHold}
+                  disabled={adminIsDeleting || adminRoutesUsingHold.length > 0}
+                >
+                  {adminIsDeleting ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.modalButtonText}>Delete Hold</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={closeAdminModal}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </Modal>
+        )}
       </View>
     </Modal>
   );
@@ -1005,5 +1136,24 @@ const styles = StyleSheet.create({
   },
   doneButton: {
     backgroundColor: '#28a745',
+  },
+  // Admin mode styles
+  adminWarningText: {
+    fontSize: 14,
+    color: '#dc3545',
+    marginBottom: 8,
+  },
+  adminRouteListItem: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 8,
+    marginBottom: 4,
+  },
+  adminInfoText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    marginBottom: 16,
+    textAlign: 'center',
   },
 });
