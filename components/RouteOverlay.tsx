@@ -12,6 +12,7 @@ interface RouteOverlayProps {
   resizingHoldIndex?: number | null;
   showLabels?: boolean; // Whether to show labels and arrows (default: true)
   selectedHoldId?: string | null; // ID of currently selected hold for highlighting
+  zoomScale?: number; // Zoom level to adjust smoothing (default: 1)
 }
 
 // Helper function to calculate label dimensions
@@ -269,7 +270,11 @@ export default function RouteOverlay({
   resizingHoldIndex = null,
   showLabels = true,
   selectedHoldId = null,
+  zoomScale = 1,
 }: RouteOverlayProps) {
+  // Adjust smoothing based on zoom - more iterations for higher zoom
+  const chaikinIterations = Math.min(5, 3 + Math.floor(zoomScale / 2));
+  const simplifyTolerance = Math.max(1, 3 / zoomScale);
   // Create a map for quick lookup of detected holds by ID
   const detectedHoldsMap = new Map(
     detectedHolds.map(dh => [dh.id, dh])
@@ -320,7 +325,7 @@ export default function RouteOverlay({
 
             // Reverse the polygon for hole winding, then simplify and smooth it
             const reversed = [...expandedPixels].reverse();
-            const smoothed = smoothPolygon(reversed, 3, 3);
+            const smoothed = smoothPolygon(reversed, simplifyTolerance, chaikinIterations);
             pathData += polygonToPath(smoothed) + ' ';
           });
 
@@ -454,7 +459,7 @@ export default function RouteOverlay({
           if (!expandedPixels) return null;
 
           // Simplify and smooth the polygon, then convert to path
-          const smoothed = smoothPolygon(expandedPixels, 3, 3);
+          const smoothed = smoothPolygon(expandedPixels, simplifyTolerance, chaikinIterations);
           const smoothPath = polygonToPath(smoothed);
 
           const isSelected = hold.detected_hold_id === selectedHoldId;

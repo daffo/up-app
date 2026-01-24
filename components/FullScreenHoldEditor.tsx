@@ -413,6 +413,7 @@ export default function FullScreenHoldEditor({
               showLabels={false}
               onHoldPress={handleFocusedHoldPress}
               selectedHoldId={selectedHoldId}
+              zoomScale={100 / (focusRegion?.width || 100)}
             />
           </View>
 
