@@ -60,7 +60,7 @@ export default function FullScreenHoldEditor({
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
 
-  // Handle tap on image - same pattern as FullScreenRouteEditor
+  // Handle tap on image - select hold on tap, deselect if tapping elsewhere
   const handleImageTap = (event: any) => {
     if (imageDimensions.width === 0) return;
 
@@ -73,6 +73,7 @@ export default function FullScreenHoldEditor({
     // Check if tap is outside the image bounds
     if (imageX < 0 || imageX > imageDimensions.width ||
         imageY < 0 || imageY > imageDimensions.height) {
+      setSelectedHoldId(null); // Deselect on tap outside
       return;
     }
 
@@ -83,7 +84,16 @@ export default function FullScreenHoldEditor({
     // Find smallest hold at tap point
     const tappedHold = findSmallestPolygonAtPoint(xPercent, yPercent, detectedHolds);
     if (tappedHold) {
-      setSelectedHoldId(tappedHold.id);
+      // Select hold (or toggle if already selected)
+      setSelectedHoldId(tappedHold.id === selectedHoldId ? null : tappedHold.id);
+    } else {
+      // Deselect if tapping on empty area
+      setSelectedHoldId(null);
+    }
+  };
+
+  const handleEditSelected = () => {
+    if (selectedHoldId) {
       setDeleteModalVisible(true);
     }
   };
@@ -259,8 +269,8 @@ export default function FullScreenHoldEditor({
     const holdsInRegion = getHoldsInRegion();
     const hold = holdsInRegion[index];
     if (hold) {
-      setSelectedHoldId(hold.id);
-      setDeleteModalVisible(true);
+      // Toggle selection
+      setSelectedHoldId(hold.id === selectedHoldId ? null : hold.id);
     }
   };
 
@@ -385,6 +395,7 @@ export default function FullScreenHoldEditor({
               pointerEvents="auto"
               showLabels={false}
               onHoldPress={handleFocusedHoldPress}
+              selectedHoldId={selectedHoldId}
             />
           </View>
 
@@ -393,12 +404,21 @@ export default function FullScreenHoldEditor({
             <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
 
-          {/* Region info */}
-          <View style={styles.focusInfo}>
-            <Text style={styles.focusInfoText}>
-              Focused Area • Tap hold to edit
-            </Text>
-          </View>
+          {/* Edit button - show when a hold is selected */}
+          {selectedHoldId && (
+            <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
+              <Text style={styles.editButtonText}>Edit Hold</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Region info - only show when no hold selected */}
+          {!selectedHoldId && (
+            <View style={styles.focusInfo}>
+              <Text style={styles.focusInfoText}>
+                Focused Area • Tap hold to select
+              </Text>
+            </View>
+          )}
         </View>
       </Modal>
     );
@@ -473,11 +493,19 @@ export default function FullScreenHoldEditor({
       overlayPointerEvents="none"
       onImageTap={focusMode === 'selecting' ? handleSelectingTap : handleImageTap}
       onDimensionsReady={handleDimensionsReady}
+      selectedHoldId={selectedHoldId}
     >
-      {/* Focus Area button - only show when not in selecting mode */}
-      {focusMode === 'none' && (
+      {/* Focus Area button - only show when not in selecting mode and no hold selected */}
+      {focusMode === 'none' && !selectedHoldId && (
         <TouchableOpacity style={styles.focusButton} onPress={startFocusSelection}>
           <Text style={styles.focusButtonText}>Focus Area</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Edit button - show when a hold is selected */}
+      {selectedHoldId && focusMode === 'none' && (
+        <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
+          <Text style={styles.editButtonText}>Edit Hold</Text>
         </TouchableOpacity>
       )}
 
@@ -566,6 +594,21 @@ const styles = StyleSheet.create({
   focusButtonText: {
     color: '#fff',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  editButton: {
+    position: 'absolute',
+    bottom: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(0, 102, 204, 0.95)',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: '600',
   },
   selectionHelper: {

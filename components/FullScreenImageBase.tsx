@@ -51,6 +51,8 @@ export interface FullScreenImageBaseProps {
   headerRight?: ReactNode;
   // Optional helper banner (shown below header)
   helperBanner?: ReactNode;
+  // Selected hold for highlighting
+  selectedHoldId?: string | null;
 }
 
 export default function FullScreenImageBase({
@@ -72,6 +74,7 @@ export default function FullScreenImageBase({
   headerTitle,
   headerRight,
   helperBanner,
+  selectedHoldId = null,
 }: FullScreenImageBaseProps) {
   const windowDimensions = useWindowDimensions();
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
@@ -179,6 +182,7 @@ export default function FullScreenImageBase({
                   resizingHoldIndex={resizingHoldIndex}
                   showLabels={showLabels}
                   onHoldPress={onHoldPress}
+                  selectedHoldId={selectedHoldId}
                 />
               </View>
             )}
