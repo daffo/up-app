@@ -98,11 +98,28 @@ export default function FullScreenHoldEditor({
     }
   };
 
-  const handleDeleteHold = async () => {
+  const handleDeleteHold = () => {
     if (selectedHoldId === null) return;
 
     const selectedHold = detectedHolds.find(h => h.id === selectedHoldId);
     if (!selectedHold) return;
+
+    // Confirm deletion - this is permanent
+    Alert.alert(
+      'Delete Hold',
+      'Are you sure? This will permanently delete this hold and cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => performDeleteHold(selectedHold),
+        },
+      ]
+    );
+  };
+
+  const performDeleteHold = async (selectedHold: DetectedHold) => {
     setIsDeleting(true);
 
     // Check if this hold is used in any route
