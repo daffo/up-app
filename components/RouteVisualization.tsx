@@ -14,6 +14,7 @@ interface RouteVisualizationProps {
   adminMode?: boolean;
   photoId?: string;
   onDeleteDetectedHold?: (holdId: string) => void;
+  onUpdateDetectedHold?: (holdId: string, updates: Partial<DetectedHold>) => void;
 }
 
 export default function RouteVisualization({
@@ -24,6 +25,7 @@ export default function RouteVisualization({
   adminMode = false,
   photoId,
   onDeleteDetectedHold,
+  onUpdateDetectedHold,
 }: RouteVisualizationProps) {
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
@@ -119,6 +121,7 @@ export default function RouteVisualization({
           onClose={() => setFullScreenVisible(false)}
           photoId={photoId}
           onDeleteDetectedHold={onDeleteDetectedHold}
+          onUpdateDetectedHold={onUpdateDetectedHold}
         />
       ) : (
         <FullScreenRouteViewer
