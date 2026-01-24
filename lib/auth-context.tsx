@@ -1,8 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+
+// Required for proper browser session dismissal on mobile
+WebBrowser.maybeCompleteAuthSession();
 
 type AuthContextType = {
   session: Session | null;
@@ -39,7 +44,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Handle deep links for OAuth callback (mobile only - fallback)
+    const handleDeepLink = async (event: { url: string }) => {
+      const url = event.url;
+
+      // Check if this is an OAuth callback with tokens
+      if (url.includes('access_token') || url.includes('refresh_token')) {
+        // Extract the fragment (everything after #)
+        const fragmentIndex = url.indexOf('#');
+        if (fragmentIndex !== -1) {
+          const fragment = url.substring(fragmentIndex + 1);
+          const params = new URLSearchParams(fragment);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+          }
+        }
+      }
+    };
+
+    // Listen for incoming deep links
+    const linkSubscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Check if app was opened from a deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      linkSubscription.remove();
+    };
   }, []);
 
   const signUp = async (email: string, password: string) => {
@@ -61,46 +103,119 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = async () => {
     const redirectTo = Platform.OS === 'web'
       ? window.location.origin
-      : 'exp://192.168.31.167:8081'; // Expo app URL
+      : Linking.createURL('/');
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    if (Platform.OS === 'web') {
+      // Web: use default browser redirect
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo },
+      });
+      return { error };
+    }
+
+    // Mobile: use in-app browser session
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
+        skipBrowserRedirect: true, // Don't auto-open browser, we'll do it manually
       },
     });
-    return { error };
+
+    if (error) return { error };
+
+    if (data?.url) {
+      // Open auth URL in an in-app browser that can intercept the redirect
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+      if (result.type === 'success' && result.url) {
+        // Extract tokens from the redirect URL
+        const url = result.url;
+        const fragmentIndex = url.indexOf('#');
+        if (fragmentIndex !== -1) {
+          const fragment = url.substring(fragmentIndex + 1);
+          const params = new URLSearchParams(fragment);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            return { error: sessionError };
+          }
+        }
+      }
+    }
+
+    return { error: null };
   };
 
   const signInWithFacebook = async () => {
     const redirectTo = Platform.OS === 'web'
       ? window.location.origin
-      : 'exp://192.168.31.167:8081'; // Expo app URL
+      : Linking.createURL('/');
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    if (Platform.OS === 'web') {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: { redirectTo },
+      });
+      return { error };
+    }
+
+    // Mobile: use in-app browser session
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: {
         redirectTo,
+        skipBrowserRedirect: true,
       },
     });
-    return { error };
+
+    if (error) return { error };
+
+    if (data?.url) {
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+      if (result.type === 'success' && result.url) {
+        const url = result.url;
+        const fragmentIndex = url.indexOf('#');
+        if (fragmentIndex !== -1) {
+          const fragment = url.substring(fragmentIndex + 1);
+          const params = new URLSearchParams(fragment);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            return { error: sessionError };
+          }
+        }
+      }
+    }
+
+    return { error: null };
   };
 
   const signOut = async () => {
     try {
-      // Try to sign out normally
       await supabase.auth.signOut({ scope: 'local' });
-    } catch (error) {
+    } catch {
       // Ignore errors - just clear local state
-      console.log('Sign out error (ignoring):', error);
     }
 
     // Always clear local storage and state regardless of API result
     try {
       await AsyncStorage.removeItem('supabase.auth.token');
-      await AsyncStorage.clear(); // Clear all storage to be safe
-    } catch (storageError) {
-      console.log('Storage clear error:', storageError);
+      await AsyncStorage.clear();
+    } catch {
+      // Ignore storage errors
     }
 
     // Force update local state

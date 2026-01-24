@@ -2,6 +2,7 @@
   "expo": {
     "name": "up-app",
     "slug": "up-app",
+    "scheme": "upapp",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -32,6 +33,9 @@
         "projectId": "3f8a144e-b45c-46a7-85d0-00cd453ad508"
       }
     },
-    "owner": "daffo"
+    "owner": "daffo",
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }
