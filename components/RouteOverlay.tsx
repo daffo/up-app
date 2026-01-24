@@ -434,7 +434,7 @@ export default function RouteOverlay({
         );
       })}
 
-      {/* Draw hold borders */}
+      {/* Draw hold borders and tappable areas */}
       {holds.map((hold, index) => {
         const expandedPixels = expandedPolygonsMap.get(hold.detected_hold_id);
         if (!expandedPixels) return null;
@@ -444,14 +444,25 @@ export default function RouteOverlay({
         const smoothPath = polygonToPath(smoothed);
 
         return (
-          <Path
-            key={`polygon-${index}`}
-            d={smoothPath}
-            fill="none"
-            stroke="#FFFFFF"
-            strokeWidth="0.5"
-            onPress={onHoldPress ? () => onHoldPress(index) : undefined}
-          />
+          <G key={`polygon-${index}`}>
+            {/* Tappable area with transparent fill */}
+            {onHoldPress && (
+              <Path
+                d={smoothPath}
+                fill="rgba(255, 255, 255, 0.01)"
+                stroke="transparent"
+                onPress={() => onHoldPress(index)}
+              />
+            )}
+            {/* Visible border */}
+            <Path
+              d={smoothPath}
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="0.5"
+              pointerEvents="none"
+            />
+          </G>
         );
       })}
 
