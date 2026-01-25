@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuth } from '../lib/auth-context';
 import { Database, Hold, DetectedHold } from '../types/database.types';
 import { routesApi, photosApi, detectedHoldsApi } from '../lib/api';
@@ -156,19 +158,33 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
     setHolds(holdsWithUpdatedOrder);
   };
 
-  const moveHoldUp = (index: number) => {
-    if (index === 0) return;
-    const newHolds = [...holds];
-    [newHolds[index - 1], newHolds[index]] = [newHolds[index], newHolds[index - 1]];
+  const deleteHold = (holdToDelete: Hold) => {
+    const newHolds = holds.filter(h => h !== holdToDelete);
     handleReorderHolds(newHolds);
   };
 
-  const moveHoldDown = (index: number) => {
-    if (index === holds.length - 1) return;
-    const newHolds = [...holds];
-    [newHolds[index], newHolds[index + 1]] = [newHolds[index + 1], newHolds[index]];
-    handleReorderHolds(newHolds);
-  };
+  const renderHoldItem = useCallback(({ item, drag, isActive }: RenderItemParams<Hold>) => (
+    <ScaleDecorator>
+      <TouchableOpacity
+        onLongPress={drag}
+        disabled={isActive}
+        style={[styles.holdItem, isActive && styles.holdItemActive]}
+      >
+        <Text style={styles.holdItemText}>
+          {item.order}. {item.note || '(no note)'}
+        </Text>
+        <View style={styles.holdItemButtons}>
+          <Text style={styles.dragHandle}>☰</Text>
+          <TouchableOpacity
+            onPress={() => deleteHold(item)}
+            style={[styles.holdActionButton, styles.holdDeleteButton]}
+          >
+            <Text style={styles.holdActionButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </ScaleDecorator>
+  ), [holds]);
 
   const handleSave = async () => {
     if (!user) {
@@ -352,39 +368,19 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               />
               </TouchableOpacity>
 
-            {/* Hold List - Arrow buttons to reorder */}
+            {/* Hold List - Drag to reorder */}
             {holds.length > 0 && (
               <View style={styles.holdsList}>
-                <Text style={styles.holdsListTitle}>Holds (use arrows to reorder):</Text>
-                {holds.map((hold, index) => (
-                  <View key={`hold-${hold.order}-${hold.detected_hold_id}`} style={styles.holdItem}>
-                    <Text style={styles.holdItemText}>
-                      {hold.order}. {hold.note || '(no note)'}
-                    </Text>
-                    <View style={styles.holdItemButtons}>
-                      <TouchableOpacity
-                        onPress={() => moveHoldUp(index)}
-                        disabled={index === 0}
-                        style={[
-                          styles.holdMoveButton,
-                          index === 0 && styles.holdMoveButtonDisabled,
-                        ]}
-                      >
-                        <Text style={styles.holdMoveButtonText}>▲</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => moveHoldDown(index)}
-                        disabled={index === holds.length - 1}
-                        style={[
-                          styles.holdMoveButton,
-                          index === holds.length - 1 && styles.holdMoveButtonDisabled,
-                        ]}
-                      >
-                        <Text style={styles.holdMoveButtonText}>▼</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
+                <Text style={styles.holdsListTitle}>Holds (long press to drag):</Text>
+                <GestureHandlerRootView>
+                  <DraggableFlatList
+                    data={holds}
+                    onDragEnd={({ data }) => handleReorderHolds(data)}
+                    keyExtractor={(item) => `hold-${item.order}-${item.detected_hold_id}`}
+                    renderItem={renderHoldItem}
+                    scrollEnabled={false}
+                  />
+                </GestureHandlerRootView>
               </View>
             )}
           </View>
@@ -547,22 +543,34 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
   },
+  holdItemActive: {
+    backgroundColor: '#e3f2fd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
   holdItemButtons: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 12,
   },
-  holdMoveButton: {
+  dragHandle: {
+    fontSize: 18,
+    color: '#999',
+  },
+  holdActionButton: {
     width: 32,
     height: 32,
     borderRadius: 4,
-    backgroundColor: '#0066cc',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  holdMoveButtonDisabled: {
-    backgroundColor: '#ccc',
+  holdDeleteButton: {
+    backgroundColor: '#dc3545',
   },
-  holdMoveButtonText: {
+  holdActionButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
