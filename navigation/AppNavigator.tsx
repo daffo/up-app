@@ -7,6 +7,7 @@ import RouteDetailScreen from '../screens/RouteDetailScreen';
 import CreateEditRouteScreen from '../screens/CreateEditRouteScreen';
 import AdminPhotosScreen from '../screens/AdminPhotosScreen';
 import AdminPhotoDetailScreen from '../screens/AdminPhotoDetailScreen';
+import MyAccountScreen from '../screens/MyAccountScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -62,6 +63,15 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: 'Photo Details',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="MyAccount"
+          component={MyAccountScreen}
+          options={{
+            headerShown: true,
+            title: 'My Account',
             headerBackTitle: 'Back',
           }}
         />
