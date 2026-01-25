@@ -233,6 +233,33 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
     }
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Route',
+      `Are you sure you want to delete "${title || 'this route'}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setSaving(true);
+              await routesApi.delete(routeId);
+              Alert.alert('Deleted', 'Route has been deleted');
+              navigation.goBack();
+            } catch (err) {
+              console.error('Error deleting route:', err);
+              Alert.alert('Error', 'Failed to delete route');
+            } finally {
+              setSaving(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -365,21 +392,32 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         </View>
       </ScrollView>
 
-      {/* Sticky Save Button */}
+      {/* Sticky Footer Buttons */}
       <View style={styles.stickyFooter}>
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>
-              {isEditMode ? 'Save Changes' : 'Create Route'}
-            </Text>
+        <View style={styles.footerButtons}>
+          {isEditMode && (
+            <TouchableOpacity
+              style={[styles.footerButton, styles.deleteButton]}
+              onPress={handleDelete}
+              disabled={saving}
+            >
+              <Text style={styles.footerButtonText}>Delete</Text>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.footerButton, styles.saveButton, saving && styles.buttonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.footerButtonText}>
+                {isEditMode ? 'Save Changes' : 'Create Route'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Fullscreen Hold Editor */}
@@ -529,16 +567,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  saveButton: {
-    backgroundColor: '#0066cc',
+  footerButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  footerButton: {
+    flex: 1,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
-  saveButtonDisabled: {
+  saveButton: {
+    backgroundColor: '#0066cc',
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545',
+  },
+  buttonDisabled: {
     opacity: 0.6,
   },
-  saveButtonText: {
+  footerButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
