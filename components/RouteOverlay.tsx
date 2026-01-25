@@ -448,7 +448,7 @@ export default function RouteOverlay({
   ) : null;
 
   return (
-    <View style={{ width, height }} pointerEvents="box-none">
+    <View style={{ position: 'absolute', top: 0, left: 0, width, height }} pointerEvents="box-none">
       {svgElement}
       {labelsElement}
     </View>
