@@ -1,4 +1,5 @@
-import Svg, { Circle, Line, Defs, Marker, Polygon, G, Rect, Text as SvgText, Path } from 'react-native-svg';
+import { View, Text, StyleSheet } from 'react-native';
+import Svg, { Line, Defs, Marker, Polygon, G, Path } from 'react-native-svg';
 import { Hold, DetectedHold } from '../types/database.types';
 import { calculatePolygonArea } from '../utils/polygon';
 
@@ -15,53 +16,6 @@ interface RouteOverlayProps {
   zoomScale?: number; // Zoom level to adjust smoothing (default: 1)
 }
 
-// Constants for pill label styling
-const PILL_FONT_SIZE = 10;
-const PILL_CHAR_WIDTH = 5; // Average character width for 10px font
-const PILL_PADDING_H = 2; // Horizontal padding
-const PILL_PADDING_V = 2; // Vertical padding
-const PILL_LINE_HEIGHT = 12;
-
-// Helper function to calculate label dimensions
-const calculateLabelDimensions = (
-  hold: Hold,
-  width: number,
-  height: number
-) => {
-  const labelX = (hold.labelX / 100) * width;
-  const labelY = (hold.labelY / 100) * height;
-  const labelText = hold.note ? `${hold.order}. ${hold.note}` : `${hold.order}`;
-  const lines = labelText.split('\n');
-  const maxLineLength = Math.max(...lines.map(line => line.length));
-
-  // Calculate pill dimensions based on content
-  const textWidth = maxLineLength * PILL_CHAR_WIDTH;
-  const pillWidth = textWidth + PILL_PADDING_H * 2;
-  const pillHeight = lines.length * PILL_LINE_HEIGHT + PILL_PADDING_V * 2;
-
-  // Pill is positioned with labelX,labelY as its center point
-  const rectLeft = labelX - pillWidth / 2;
-  const rectRight = labelX + pillWidth / 2;
-  const rectTop = labelY - pillHeight / 2;
-  const rectBottom = labelY + pillHeight / 2;
-  const labelCenterX = labelX;
-  const labelCenterY = labelY;
-
-  return {
-    labelX,
-    labelY,
-    labelText,
-    lines,
-    pillWidth,
-    pillHeight,
-    rectLeft,
-    rectRight,
-    rectTop,
-    rectBottom,
-    labelCenterX,
-    labelCenterY,
-  };
-};
 
 // Helper function to convert polygon percentage coordinates to pixels
 const polygonToPixels = (
@@ -302,7 +256,7 @@ export default function RouteOverlay({
     }
   });
 
-  return (
+  const svgElement = (
     <Svg
       style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       width={width}
@@ -394,88 +348,22 @@ export default function RouteOverlay({
         const holdXCenter = (detectedHold.center.x / 100) * width;
         const holdYCenter = (detectedHold.center.y / 100) * height;
 
-        // Calculate label dimensions
-        const labelDims = calculateLabelDimensions(hold, width, height);
-        const { labelCenterX, labelCenterY, rectLeft, rectRight, rectTop, rectBottom, pillWidth, pillHeight } = labelDims;
-
-        // Pill radius for the rounded ends
-        const pillRadius = pillHeight / 2;
-
-        // Direction from label center to hold
-        const dx = holdXCenter - labelCenterX;
-        const dy = holdYCenter - labelCenterY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist === 0) return null;
-
-        // Normalize direction
-        const nx = dx / dist;
-        const ny = dy / dist;
-
-        // Find intersection with pill shape
-        // The pill consists of: a rectangle in the middle + semicircles on left/right ends
-        // Left semicircle center: (rectLeft + pillRadius, labelCenterY)
-        // Right semicircle center: (rectRight - pillRadius, labelCenterY)
-
-        let startX = labelCenterX;
-        let startY = labelCenterY;
-
-        // Check if line exits through the flat top/bottom or through the rounded ends
-        const leftCircleCenterX = rectLeft + pillRadius;
-        const rightCircleCenterX = rectRight - pillRadius;
-
-        // Calculate where line would hit top/bottom edges
-        if (ny !== 0) {
-          const tTop = (rectTop - labelCenterY) / ny;
-          const tBottom = (rectBottom - labelCenterY) / ny;
-          const t = ny < 0 ? tTop : tBottom;
-          if (t > 0) {
-            const hitX = labelCenterX + nx * t;
-            // Check if hitX is in the flat middle section
-            if (hitX >= leftCircleCenterX && hitX <= rightCircleCenterX) {
-              startX = hitX;
-              startY = ny < 0 ? rectTop : rectBottom;
-            }
-          }
-        }
-
-        // If we didn't hit the flat section, calculate intersection with the semicircle
-        if (startX === labelCenterX && startY === labelCenterY) {
-          // Determine which semicircle (left or right)
-          const circleCenterX = nx < 0 ? leftCircleCenterX : rightCircleCenterX;
-          const circleCenterY = labelCenterY;
-
-          // Ray-circle intersection from label center
-          // Ray: P = labelCenter + t * n
-          // Circle: |P - circleCenter|^2 = r^2
-          const ocX = labelCenterX - circleCenterX;
-          const ocY = labelCenterY - circleCenterY;
-
-          const a = 1; // nx^2 + ny^2 = 1
-          const b = 2 * (ocX * nx + ocY * ny);
-          const c = ocX * ocX + ocY * ocY - pillRadius * pillRadius;
-
-          const discriminant = b * b - 4 * a * c;
-          if (discriminant >= 0) {
-            const t = (-b + Math.sqrt(discriminant)) / (2 * a);
-            if (t > 0) {
-              startX = labelCenterX + nx * t;
-              startY = labelCenterY + ny * t;
-            }
-          }
-        }
+        // Label position (center point)
+        const labelX = (hold.labelX / 100) * width;
+        const labelY = (hold.labelY / 100) * height;
 
         // Get smoothed polygon for accurate perimeter intersection
         const holdPolygon = smoothedPolygonsMap.get(hold.detected_hold_id);
         if (!holdPolygon) return null;
 
-        const endPoint = findPerimeterIntersection(startX, startY, holdXCenter, holdYCenter, holdPolygon);
+        const endPoint = findPerimeterIntersection(labelX, labelY, holdXCenter, holdYCenter, holdPolygon);
 
-        // Arrow points to hold perimeter
+        // Arrow points from label center to hold perimeter
         return (
           <Line
             key={`arrow-${index}`}
-            x1={startX}
-            y1={startY}
+            x1={labelX}
+            y1={labelY}
             x2={endPoint.x}
             y2={endPoint.y}
             stroke="#FFFFFF"
@@ -527,41 +415,68 @@ export default function RouteOverlay({
           );
         })}
 
-      {/* Draw labels with pill background */}
-      {showLabels && holds.map((hold, index) => {
-        const labelDims = calculateLabelDimensions(hold, width, height);
-        const { labelX, labelY, labelText, lines, pillWidth, pillHeight, rectLeft, rectTop } = labelDims;
-
-        // Pill radius - fully rounded ends
-        const pillRadius = pillHeight / 2;
-
-        return (
-          <G key={`label-${index}`}>
-            <Rect
-              x={rectLeft}
-              y={rectTop}
-              width={pillWidth}
-              height={pillHeight}
-              fill="rgba(255, 255, 255, 0.95)"
-              rx={3}
-              ry={3}
-            />
-            {lines.map((line, lineIndex) => (
-              <SvgText
-                key={`line-${lineIndex}`}
-                x={labelX}
-                y={rectTop + PILL_PADDING_V + PILL_LINE_HEIGHT * (lineIndex + 0.75)}
-                fontSize={PILL_FONT_SIZE}
-                fontWeight="600"
-                fill="#333333"
-                textAnchor="middle"
-              >
-                {line}
-              </SvgText>
-            ))}
-          </G>
-        );
-      })}
     </Svg>
   );
+
+  // Render labels as React Native components
+  const labelsElement = showLabels ? (
+    <>
+      {holds.map((hold, index) => {
+        const labelX = (hold.labelX / 100) * width;
+        const labelY = (hold.labelY / 100) * height;
+        const labelText = hold.note ? `${hold.order}. ${hold.note}` : `${hold.order}`;
+
+        return (
+          <View
+            key={`label-${index}`}
+            style={[
+              styles.labelWrapper,
+              {
+                left: labelX,
+                top: labelY,
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <View style={styles.labelContainer}>
+              <Text style={styles.labelText}>{labelText}</Text>
+            </View>
+          </View>
+        );
+      })}
+    </>
+  ) : null;
+
+  return (
+    <View style={{ width, height }} pointerEvents="box-none">
+      {svgElement}
+      {labelsElement}
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  labelWrapper: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Use negative margin to shift the center point
+    marginLeft: -50,
+    marginTop: -50,
+    width: 100,
+    height: 100,
+  },
+  labelContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 1,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  labelText: {
+    fontSize: 10,
+    lineHeight: 10,
+    fontWeight: '600',
+    color: '#333333',
+    includeFontPadding: false,
+  },
+});
