@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Database, DetectedHold } from '../types/database.types';
-import { routesApi, detectedHoldsApi } from '../lib/api';
+import { routesApi, detectedHoldsApi, cacheEvents } from '../lib/api';
 import RouteVisualization from '../components/RouteVisualization';
 import { useAuth } from '../lib/auth-context';
 
@@ -29,6 +29,9 @@ export default function RouteDetailScreen({ route, navigation }: any) {
 
   useEffect(() => {
     fetchRouteDetail();
+
+    const unsubscribe = cacheEvents.subscribe('route', fetchRouteDetail);
+    return unsubscribe;
   }, [routeId]);
 
   useEffect(() => {
