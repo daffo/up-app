@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Database, DetectedHold } from '../types/database.types';
-import { routesApi, detectedHoldsApi, cacheEvents } from '../lib/api';
+import { routesApi, detectedHoldsApi, userProfilesApi, cacheEvents } from '../lib/api';
 import RouteVisualization from '../components/RouteVisualization';
 import { useAuth } from '../lib/auth-context';
 
@@ -17,6 +17,7 @@ type Photo = Database['public']['Tables']['photos']['Row'];
 
 interface RouteWithPhoto extends Route {
   photo?: Photo;
+  creatorDisplayName?: string;
 }
 
 export default function RouteDetailScreen({ route, navigation }: any) {
@@ -58,13 +59,25 @@ export default function RouteDetailScreen({ route, navigation }: any) {
       setError(null);
 
       // Fetch route with photo
-      const routeData = await routesApi.get(routeId);
-      setRouteData(routeData as RouteWithPhoto);
+      const fetchedRoute = await routesApi.get(routeId);
+
+      // Fetch creator's display name
+      let creatorDisplayName: string | undefined;
+      if (fetchedRoute?.user_id) {
+        try {
+          const profile = await userProfilesApi.get(fetchedRoute.user_id);
+          creatorDisplayName = profile?.display_name || undefined;
+        } catch (profileErr) {
+          console.error('Error fetching creator profile:', profileErr);
+        }
+      }
+
+      setRouteData({ ...fetchedRoute, creatorDisplayName } as RouteWithPhoto);
 
       // Fetch detected holds for the photo
-      if (routeData?.photo_id) {
+      if (fetchedRoute?.photo_id) {
         try {
-          const detectedHoldsData = await detectedHoldsApi.listByPhoto(routeData.photo_id);
+          const detectedHoldsData = await detectedHoldsApi.listByPhoto(fetchedRoute.photo_id);
           setDetectedHolds(detectedHoldsData);
         } catch (holdsErr) {
           console.error('Error fetching detected holds:', holdsErr);
@@ -100,49 +113,36 @@ export default function RouteDetailScreen({ route, navigation }: any) {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{routeData.title}</Text>
-        <Text style={styles.grade}>{routeData.grade}</Text>
+        <View style={styles.headerMeta}>
+          <Text style={styles.grade}>{routeData.grade}</Text>
+          <Text style={styles.holdCount}>{routeData.holds.length} holds</Text>
+        </View>
+        {routeData.description && (
+          <Text style={styles.description}>{routeData.description}</Text>
+        )}
       </View>
 
-      {routeData.description && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>{routeData.description}</Text>
-        </View>
-      )}
-
       {routeData.photo && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Route Visualization</Text>
+        <View style={styles.imageSection}>
           <RouteVisualization
             photoUrl={routeData.photo.image_url}
             holds={routeData.holds}
             detectedHolds={detectedHolds}
           />
-          <View style={styles.photoInfo}>
-            <Text style={styles.photoDate}>
-              Setup: {new Date(routeData.photo.setup_date).toLocaleDateString()}
-            </Text>
-            {routeData.photo.teardown_date && (
-              <Text style={styles.photoDate}>
-                Teardown: {new Date(routeData.photo.teardown_date).toLocaleDateString()}
-              </Text>
-            )}
-          </View>
         </View>
       )}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Details</Text>
+      <View style={styles.detailsSection}>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Created:</Text>
+          <Text style={styles.detailLabel}>Created by</Text>
           <Text style={styles.detailValue}>
-            {new Date(routeData.created_at).toLocaleDateString()}
+            {routeData.creatorDisplayName || 'Unknown'}
           </Text>
         </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Holds:</Text>
+        <View style={[styles.detailRow, styles.detailRowLast]}>
+          <Text style={styles.detailLabel}>Created</Text>
           <Text style={styles.detailValue}>
-            {routeData.holds.length} holds
+            {new Date(routeData.created_at).toLocaleDateString()}
           </Text>
         </View>
       </View>
@@ -168,61 +168,67 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#fff',
-    padding: 20,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  headerMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginBottom: 8,
   },
   grade: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
     color: '#0066cc',
   },
-  section: {
+  holdCount: {
+    fontSize: 14,
+    color: '#666',
+  },
+  description: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#666',
+  },
+  imageSection: {
     backgroundColor: '#fff',
-    padding: 20,
     marginTop: 12,
+    padding: 16,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#ddd',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#333',
-  },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#666',
-  },
-  photoInfo: {
+  detailsSection: {
+    backgroundColor: '#fff',
     marginTop: 12,
-  },
-  photoDate: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  detailRowLast: {
+    borderBottomWidth: 0,
+  },
   detailLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
     color: '#333',
   },
   detailValue: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#666',
   },
 });
