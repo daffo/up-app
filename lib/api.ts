@@ -3,6 +3,7 @@ import { Database, Hold, DetectedHold } from '../types/database.types';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
+type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
 
 // Simple event emitter for cache invalidation
 type InvalidationEvent = 'routes' | 'route' | 'photos' | 'detected_holds';
@@ -167,5 +168,33 @@ export const detectedHoldsApi = {
     cacheEvents.invalidate('detected_holds');
 
     return data as DetectedHold;
+  },
+};
+
+// User Profiles API
+export const userProfilesApi = {
+  async get(userId: string): Promise<UserProfile | null> {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
+    return data;
+  },
+
+  async upsert(userId: string, updates: { display_name: string }) {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: userId,
+        ...updates,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as UserProfile;
   },
 };
