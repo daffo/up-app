@@ -45,7 +45,8 @@ cacheEvents.invalidate('routes');
 ## Build & Deploy
 - **Dev**: `npx expo start`
 - **Build**: `eas build --profile preview --platform android`
-- **GitHub Integration**: Use PR label `eas-build-android:preview` to trigger builds
+- **Version**: In `app.json` → `expo.version`
+- **CI/CD**: Bump version in app.json → push to main → auto-tags & builds
 
 ## Important Notes
 - GestureHandlerRootView must wrap the app (in App.tsx)
