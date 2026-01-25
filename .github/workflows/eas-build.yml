@@ -5,7 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'app.json'
+      - 'app.json'                                                                                                                                                 
+                                                                                                                                                                        
+permissions:                                                                                                                                                          
+  contents: write 
 
 jobs:
   check-and-build:
