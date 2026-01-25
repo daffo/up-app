@@ -2,9 +2,10 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../lib/auth-context';
 import RouteList from '../components/RouteList';
+import ProfileDropdown from '../components/ProfileDropdown';
 
 export default function HomeScreen({ navigation }: any) {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, signOut } = useAuth();
 
   const handleAddRoute = () => {
     if (!user) {
@@ -27,28 +28,20 @@ export default function HomeScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>🧗 Up App</Text>
-        <View style={styles.headerButtons}>
-          {isAdmin && (
-            <TouchableOpacity
-              style={styles.adminButton}
-              onPress={() => navigation.navigate('AdminPhotos')}
-            >
-              <Text style={styles.adminText}>Admin</Text>
-            </TouchableOpacity>
-          )}
-          {user ? (
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.loginButton}
-              onPress={() => navigation.navigate('Login')}
-            >
-              <Text style={styles.loginText}>Login</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        {user ? (
+          <ProfileDropdown
+            onMyAccount={() => navigation.navigate('MyAccount')}
+            onAdmin={() => navigation.navigate('AdminPhotos')}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={styles.loginText}>Login</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Content */}
@@ -84,21 +77,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  adminButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#6c757d',
-    borderRadius: 6,
-  },
-  adminText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   loginButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -106,17 +84,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   loginText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  logoutButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#dc3545',
-    borderRadius: 6,
-  },
-  logoutText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
