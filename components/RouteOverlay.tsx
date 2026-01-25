@@ -287,14 +287,18 @@ export default function RouteOverlay({
     detectedHolds.map(dh => [dh.id, dh])
   );
 
-  // Pre-calculate expanded polygons for all holds (used for overlay holes, borders, and arrows)
+  // Pre-calculate expanded and smoothed polygons for all holds (used for overlay holes, borders, and arrows)
   const expandedPolygonsMap = new Map<string, Array<{ x: number; y: number }>>();
+  const smoothedPolygonsMap = new Map<string, Array<{ x: number; y: number }>>();
   holds.forEach(hold => {
     const detectedHold = detectedHoldsMap.get(hold.detected_hold_id);
     if (detectedHold) {
       const pixels = polygonToPixels(detectedHold.polygon, width, height);
       const expanded = expandPolygon(pixels, 3, 1.05);
       expandedPolygonsMap.set(hold.detected_hold_id, expanded);
+      // Pre-calculate smoothed version for consistent use in borders and arrows
+      const smoothed = smoothPolygon(expanded, simplifyTolerance, chaikinIterations);
+      smoothedPolygonsMap.set(hold.detected_hold_id, smoothed);
     }
   });
 
@@ -327,13 +331,12 @@ export default function RouteOverlay({
 
           // Add each hold polygon as a smooth hole (reverse winding)
           holds.forEach(hold => {
-            const expandedPixels = expandedPolygonsMap.get(hold.detected_hold_id);
-            if (!expandedPixels || expandedPixels.length === 0) return;
+            const smoothedPixels = smoothedPolygonsMap.get(hold.detected_hold_id);
+            if (!smoothedPixels || smoothedPixels.length === 0) return;
 
-            // Reverse the polygon for hole winding, then simplify and smooth it
-            const reversed = [...expandedPixels].reverse();
-            const smoothed = smoothPolygon(reversed, simplifyTolerance, chaikinIterations);
-            pathData += polygonToPath(smoothed) + ' ';
+            // Reverse the pre-calculated smoothed polygon for hole winding
+            const reversed = [...smoothedPixels].reverse();
+            pathData += polygonToPath(reversed) + ' ';
           });
 
           return pathData;
@@ -357,9 +360,9 @@ export default function RouteOverlay({
         const x2Center = (nextDetectedHold.center.x / 100) * width;
         const y2Center = (nextDetectedHold.center.y / 100) * height;
 
-        // Get expanded polygons
-        const polygon1 = expandedPolygonsMap.get(hold.detected_hold_id);
-        const polygon2 = expandedPolygonsMap.get(nextHold.detected_hold_id);
+        // Get smoothed polygons for accurate perimeter intersection
+        const polygon1 = smoothedPolygonsMap.get(hold.detected_hold_id);
+        const polygon2 = smoothedPolygonsMap.get(nextHold.detected_hold_id);
 
         if (!polygon1 || !polygon2) return null;
 
@@ -461,8 +464,8 @@ export default function RouteOverlay({
           }
         }
 
-        // Get expanded polygon
-        const holdPolygon = expandedPolygonsMap.get(hold.detected_hold_id);
+        // Get smoothed polygon for accurate perimeter intersection
+        const holdPolygon = smoothedPolygonsMap.get(hold.detected_hold_id);
         if (!holdPolygon) return null;
 
         const endPoint = findPerimeterIntersection(startX, startY, holdXCenter, holdYCenter, holdPolygon);
@@ -475,7 +478,7 @@ export default function RouteOverlay({
             y1={startY}
             x2={endPoint.x}
             y2={endPoint.y}
-            stroke="#FF0000"
+            stroke="#FFFFFF"
             strokeWidth="1"
           />
         );
@@ -493,12 +496,11 @@ export default function RouteOverlay({
           return bArea - aArea; // Largest first, smallest last (on top)
         })
         .map(({ hold, index }) => {
-          const expandedPixels = expandedPolygonsMap.get(hold.detected_hold_id);
-          if (!expandedPixels) return null;
+          // Use pre-calculated smoothed polygon for consistency with arrows
+          const smoothedPixels = smoothedPolygonsMap.get(hold.detected_hold_id);
+          if (!smoothedPixels) return null;
 
-          // Simplify and smooth the polygon, then convert to path
-          const smoothed = smoothPolygon(expandedPixels, simplifyTolerance, chaikinIterations);
-          const smoothPath = polygonToPath(smoothed);
+          const smoothPath = polygonToPath(smoothedPixels);
 
           const isSelected = hold.detected_hold_id === selectedHoldId;
 
@@ -541,10 +543,8 @@ export default function RouteOverlay({
               width={pillWidth}
               height={pillHeight}
               fill="rgba(255, 255, 255, 0.95)"
-              stroke="#333333"
-              strokeWidth={1}
-              rx={pillRadius}
-              ry={pillRadius}
+              rx={3}
+              ry={3}
             />
             {lines.map((line, lineIndex) => (
               <SvgText
