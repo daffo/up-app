@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, FlatList, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, FlatList, Text, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { Database } from '../types/database.types';
 import { routesApi, cacheEvents } from '../lib/api';
 import RouteCard from './RouteCard';
@@ -13,11 +13,16 @@ interface RouteListProps {
 export default function RouteList({ onRoutePress }: RouteListProps) {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRoutes = async () => {
+  const fetchRoutes = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       const data = await routesApi.list();
       setRoutes(data);
@@ -26,8 +31,11 @@ export default function RouteList({ onRoutePress }: RouteListProps) {
       setError(err instanceof Error ? err.message : 'Failed to fetch routes');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
+
+  const onRefresh = () => fetchRoutes(true);
 
   useEffect(() => {
     fetchRoutes();
@@ -72,6 +80,9 @@ export default function RouteList({ onRoutePress }: RouteListProps) {
         <RouteCard route={item} onPress={() => onRoutePress(item.id)} />
       )}
       contentContainerStyle={styles.listContainer}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     />
   );
 }
