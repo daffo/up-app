@@ -7,8 +7,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { supabase } from '../lib/supabase';
 import { Database, DetectedHold } from '../types/database.types';
+import { routesApi, detectedHoldsApi } from '../lib/api';
 import RouteVisualization from '../components/RouteVisualization';
 import { useAuth } from '../lib/auth-context';
 
@@ -55,30 +55,16 @@ export default function RouteDetailScreen({ route, navigation }: any) {
       setError(null);
 
       // Fetch route with photo
-      const { data: routeData, error: routeError } = await supabase
-        .from('routes')
-        .select(`
-          *,
-          photo:photos(*)
-        `)
-        .eq('id', routeId)
-        .single();
-
-      if (routeError) throw routeError;
-
+      const routeData = await routesApi.get(routeId);
       setRouteData(routeData as RouteWithPhoto);
 
       // Fetch detected holds for the photo
       if (routeData?.photo_id) {
-        const { data: detectedHoldsData, error: holdsError } = await supabase
-          .from('detected_holds')
-          .select('*')
-          .eq('photo_id', routeData.photo_id);
-
-        if (holdsError) {
-          console.error('Error fetching detected holds:', holdsError);
-        } else {
-          setDetectedHolds(detectedHoldsData || []);
+        try {
+          const detectedHoldsData = await detectedHoldsApi.listByPhoto(routeData.photo_id);
+          setDetectedHolds(detectedHoldsData);
+        } catch (holdsErr) {
+          console.error('Error fetching detected holds:', holdsErr);
         }
       }
     } catch (err) {

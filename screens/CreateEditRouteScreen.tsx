@@ -11,9 +11,9 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth-context';
 import { Database, Hold, DetectedHold } from '../types/database.types';
+import { routesApi, photosApi, detectedHoldsApi } from '../lib/api';
 import FullScreenRouteEditor from '../components/FullScreenRouteEditor';
 import RouteOverlay from '../components/RouteOverlay';
 
@@ -62,25 +62,13 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
     try {
       setLoading(true);
 
-      // Fetch available photos (only active ones - no teardown date or teardown in future)
-      const { data: photosData, error: photosError } = await supabase
-        .from('photos')
-        .select('*')
-        .or('teardown_date.is.null,teardown_date.gte.' + new Date().toISOString())
-        .order('setup_date', { ascending: false });
-
-      if (photosError) throw photosError;
-      setPhotos(photosData || []);
+      // Fetch available photos (only active ones)
+      const photosData = await photosApi.listActive();
+      setPhotos(photosData);
 
       // If editing, fetch existing route
       if (isEditMode) {
-        const { data: routeData, error: routeError } = await supabase
-          .from('routes')
-          .select('*')
-          .eq('id', routeId)
-          .single();
-
-        if (routeError) throw routeError;
+        const routeData = await routesApi.get(routeId);
 
         // Check if user owns this route
         if (routeData.user_id !== user?.id) {
@@ -144,13 +132,8 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
       }
 
       try {
-        const { data, error } = await supabase
-          .from('detected_holds')
-          .select('*')
-          .eq('photo_id', selectedPhotoId);
-
-        if (error) throw error;
-        setDetectedHolds(data || []);
+        const data = await detectedHoldsApi.listByPhoto(selectedPhotoId);
+        setDetectedHolds(data);
       } catch (err) {
         console.error('Error fetching detected holds:', err);
         setDetectedHolds([]);
@@ -217,38 +200,27 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
       setSaving(true);
 
       if (isEditMode) {
-        // Update existing route
-        const { error } = await supabase
-          .from('routes')
-          .update({
-            title: title.trim(),
-            description: description.trim() || null,
-            grade: grade.trim(),
-            photo_id: selectedPhotoId,
-            holds,
-          })
-          .eq('id', routeId);
-
-        if (error) throw error;
+        // Update existing route (automatically invalidates cache)
+        await routesApi.update(routeId, {
+          title: title.trim(),
+          description: description.trim() || null,
+          grade: grade.trim(),
+          photo_id: selectedPhotoId,
+          holds,
+        });
 
         Alert.alert('Success', 'Route updated successfully');
         navigation.goBack();
       } else {
-        // Create new route
-        const { data, error } = await supabase
-          .from('routes')
-          .insert({
-            title: title.trim(),
-            description: description.trim() || null,
-            grade: grade.trim(),
-            photo_id: selectedPhotoId,
-            holds,
-            user_id: user.id,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
+        // Create new route (automatically invalidates cache)
+        const data = await routesApi.create({
+          title: title.trim(),
+          description: description.trim() || null,
+          grade: grade.trim(),
+          photo_id: selectedPhotoId,
+          holds,
+          user_id: user.id,
+        });
 
         Alert.alert('Success', 'Route created successfully');
         navigation.replace('RouteDetail', { routeId: data.id });

@@ -148,6 +148,7 @@ export default function FullScreenImageBase({
     >
       <StatusBar hidden />
       <View style={styles.container}>
+        {/* @ts-expect-error - ImageZoom types don't include children but it accepts them */}
         <ImageZoom
           cropWidth={windowDimensions.width}
           cropHeight={windowDimensions.height}
