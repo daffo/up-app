@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, FlatList, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { supabase } from '../lib/supabase';
 import { Database } from '../types/database.types';
+import { routesApi, cacheEvents } from '../lib/api';
 import RouteCard from './RouteCard';
 
 type Route = Database['public']['Tables']['routes']['Row'];
@@ -15,23 +15,12 @@ export default function RouteList({ onRoutePress }: RouteListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchRoutes();
-  }, []);
-
   const fetchRoutes = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      const { data, error } = await supabase
-        .from('routes')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setRoutes(data || []);
+      const data = await routesApi.list();
+      setRoutes(data);
     } catch (err) {
       console.error('Error fetching routes:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch routes');
@@ -39,6 +28,14 @@ export default function RouteList({ onRoutePress }: RouteListProps) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchRoutes();
+
+    // Subscribe to routes cache invalidation
+    const unsubscribe = cacheEvents.subscribe('routes', fetchRoutes);
+    return unsubscribe;
+  }, []);
 
   if (loading) {
     return (
