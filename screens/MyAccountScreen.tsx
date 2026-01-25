@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,29 +6,65 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../lib/auth-context';
+import { userProfilesApi } from '../lib/api';
 
 export default function MyAccountScreen({ navigation }: any) {
   const { user } = useAuth();
-  // TODO: This will come from the database later
   const [displayName, setDisplayName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
+
+  const loadProfile = async () => {
+    if (!user) return;
+
+    try {
+      const profile = await userProfilesApi.get(user.id);
+      if (profile?.display_name) {
+        setDisplayName(profile.display_name);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSave = async () => {
+    if (!user) return;
+
     if (!displayName.trim()) {
       Alert.alert('Error', 'Please enter a display name');
       return;
     }
 
     setIsSaving(true);
-    // TODO: Save to database
-    // For now, just show success
-    setTimeout(() => {
+    try {
+      await userProfilesApi.upsert(user.id, { display_name: displayName.trim() });
+      Alert.alert('Success', 'Display name updated');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Failed to save display name');
+    } finally {
       setIsSaving(false);
-      Alert.alert('Success', 'Display name updated (dummy - not saved yet)');
-    }, 500);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0066cc" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -66,6 +102,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   section: {
     marginBottom: 24,
