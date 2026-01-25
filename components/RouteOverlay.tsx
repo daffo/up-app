@@ -15,6 +15,13 @@ interface RouteOverlayProps {
   zoomScale?: number; // Zoom level to adjust smoothing (default: 1)
 }
 
+// Constants for pill label styling
+const PILL_FONT_SIZE = 10;
+const PILL_CHAR_WIDTH = 5; // Average character width for 10px font
+const PILL_PADDING_H = 2; // Horizontal padding
+const PILL_PADDING_V = 2; // Vertical padding
+const PILL_LINE_HEIGHT = 12;
+
 // Helper function to calculate label dimensions
 const calculateLabelDimensions = (
   hold: Hold,
@@ -26,27 +33,27 @@ const calculateLabelDimensions = (
   const labelText = hold.note ? `${hold.order}. ${hold.note}` : `${hold.order}`;
   const lines = labelText.split('\n');
   const maxLineLength = Math.max(...lines.map(line => line.length));
-  const textWidth = maxLineLength * 4.5;
-  const lineHeight = 8;
-  const totalTextHeight = lines.length * lineHeight;
-  const padding = 2;
 
-  const rectLeft = labelX;
-  const rectRight = labelX + textWidth + padding * 2;
-  const rectTop = labelY - totalTextHeight - padding;
-  const rectBottom = labelY + padding;
-  const labelCenterX = (rectLeft + rectRight) / 2;
-  const labelCenterY = (rectTop + rectBottom) / 2;
+  // Calculate pill dimensions based on content
+  const textWidth = maxLineLength * PILL_CHAR_WIDTH;
+  const pillWidth = textWidth + PILL_PADDING_H * 2;
+  const pillHeight = lines.length * PILL_LINE_HEIGHT + PILL_PADDING_V * 2;
+
+  // Pill is positioned with labelX,labelY as its center point
+  const rectLeft = labelX - pillWidth / 2;
+  const rectRight = labelX + pillWidth / 2;
+  const rectTop = labelY - pillHeight / 2;
+  const rectBottom = labelY + pillHeight / 2;
+  const labelCenterX = labelX;
+  const labelCenterY = labelY;
 
   return {
     labelX,
     labelY,
     labelText,
     lines,
-    textWidth,
-    lineHeight,
-    totalTextHeight,
-    padding,
+    pillWidth,
+    pillHeight,
     rectLeft,
     rectRight,
     rectTop,
@@ -386,40 +393,71 @@ export default function RouteOverlay({
 
         // Calculate label dimensions
         const labelDims = calculateLabelDimensions(hold, width, height);
-        const { labelCenterX, labelCenterY, rectLeft, rectRight, rectTop, rectBottom } = labelDims;
+        const { labelCenterX, labelCenterY, rectLeft, rectRight, rectTop, rectBottom, pillWidth, pillHeight } = labelDims;
 
-        // Calculate angle from label center to hold center
-        const angle = Math.atan2(holdYCenter - labelCenterY, holdXCenter - labelCenterX);
+        // Pill radius for the rounded ends
+        const pillRadius = pillHeight / 2;
 
-        // Find intersection point with label rectangle edge
+        // Direction from label center to hold
+        const dx = holdXCenter - labelCenterX;
+        const dy = holdYCenter - labelCenterY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist === 0) return null;
+
+        // Normalize direction
+        const nx = dx / dist;
+        const ny = dy / dist;
+
+        // Find intersection with pill shape
+        // The pill consists of: a rectangle in the middle + semicircles on left/right ends
+        // Left semicircle center: (rectLeft + pillRadius, labelCenterY)
+        // Right semicircle center: (rectRight - pillRadius, labelCenterY)
+
         let startX = labelCenterX;
         let startY = labelCenterY;
 
-        // Determine which edge the line exits from based on angle
-        const dx = holdXCenter - labelCenterX;
-        const dy = holdYCenter - labelCenterY;
+        // Check if line exits through the flat top/bottom or through the rounded ends
+        const leftCircleCenterX = rectLeft + pillRadius;
+        const rightCircleCenterX = rectRight - pillRadius;
 
-        if (Math.abs(dx) > Math.abs(dy)) {
-          // Line exits from left or right edge
-          if (dx > 0) {
-            // Right edge
-            startX = rectRight;
-            startY = labelCenterY + (dy / dx) * (rectRight - labelCenterX);
-          } else {
-            // Left edge
-            startX = rectLeft;
-            startY = labelCenterY + (dy / dx) * (rectLeft - labelCenterX);
+        // Calculate where line would hit top/bottom edges
+        if (ny !== 0) {
+          const tTop = (rectTop - labelCenterY) / ny;
+          const tBottom = (rectBottom - labelCenterY) / ny;
+          const t = ny < 0 ? tTop : tBottom;
+          if (t > 0) {
+            const hitX = labelCenterX + nx * t;
+            // Check if hitX is in the flat middle section
+            if (hitX >= leftCircleCenterX && hitX <= rightCircleCenterX) {
+              startX = hitX;
+              startY = ny < 0 ? rectTop : rectBottom;
+            }
           }
-        } else {
-          // Line exits from top or bottom edge
-          if (dy > 0) {
-            // Bottom edge
-            startY = rectBottom;
-            startX = labelCenterX + (dx / dy) * (rectBottom - labelCenterY);
-          } else {
-            // Top edge
-            startY = rectTop;
-            startX = labelCenterX + (dx / dy) * (rectTop - labelCenterY);
+        }
+
+        // If we didn't hit the flat section, calculate intersection with the semicircle
+        if (startX === labelCenterX && startY === labelCenterY) {
+          // Determine which semicircle (left or right)
+          const circleCenterX = nx < 0 ? leftCircleCenterX : rightCircleCenterX;
+          const circleCenterY = labelCenterY;
+
+          // Ray-circle intersection from label center
+          // Ray: P = labelCenter + t * n
+          // Circle: |P - circleCenter|^2 = r^2
+          const ocX = labelCenterX - circleCenterX;
+          const ocY = labelCenterY - circleCenterY;
+
+          const a = 1; // nx^2 + ny^2 = 1
+          const b = 2 * (ocX * nx + ocY * ny);
+          const c = ocX * ocX + ocY * ocY - pillRadius * pillRadius;
+
+          const discriminant = b * b - 4 * a * c;
+          if (discriminant >= 0) {
+            const t = (-b + Math.sqrt(discriminant)) / (2 * a);
+            if (t > 0) {
+              startX = labelCenterX + nx * t;
+              startY = labelCenterY + ny * t;
+            }
           }
         }
 
@@ -487,31 +525,36 @@ export default function RouteOverlay({
           );
         })}
 
-      {/* Draw labels with background */}
+      {/* Draw labels with pill background */}
       {showLabels && holds.map((hold, index) => {
         const labelDims = calculateLabelDimensions(hold, width, height);
-        const { labelX, labelY, labelText, lines, textWidth, lineHeight, totalTextHeight, padding } = labelDims;
+        const { labelX, labelY, labelText, lines, pillWidth, pillHeight, rectLeft, rectTop } = labelDims;
+
+        // Pill radius - fully rounded ends
+        const pillRadius = pillHeight / 2;
 
         return (
           <G key={`label-${index}`}>
             <Rect
-              x={labelX}
-              y={labelY - totalTextHeight - padding}
-              width={textWidth + padding * 2}
-              height={totalTextHeight + padding * 2}
-              fill="rgba(255, 255, 255, 0.9)"
-              stroke="#000000"
+              x={rectLeft}
+              y={rectTop}
+              width={pillWidth}
+              height={pillHeight}
+              fill="rgba(255, 255, 255, 0.95)"
+              stroke="#333333"
               strokeWidth={1}
-              rx={3}
+              rx={pillRadius}
+              ry={pillRadius}
             />
             {lines.map((line, lineIndex) => (
               <SvgText
                 key={`line-${lineIndex}`}
-                x={labelX + padding}
-                y={labelY - totalTextHeight + lineHeight * (lineIndex + 1)}
-                fontSize={10}
-                fontWeight="bold"
-                fill="#000000"
+                x={labelX}
+                y={rectTop + PILL_PADDING_V + PILL_LINE_HEIGHT * (lineIndex + 0.75)}
+                fontSize={PILL_FONT_SIZE}
+                fontWeight="600"
+                fill="#333333"
+                textAnchor="middle"
               >
                 {line}
               </SvgText>
