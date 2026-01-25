@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Modal,
@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import { Hold, DetectedHold } from '../types/database.types';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
+import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
+import { useDragDelta } from '../hooks/useDragDelta';
 
 interface FullScreenRouteEditorProps {
   visible: boolean;
@@ -34,15 +36,55 @@ export default function FullScreenRouteEditor({
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [noteText, setNoteText] = useState('');
-  const [movingMode, setMovingMode] = useState<'label' | null>(null);
+
+  // Moving label state
+  const [movingLabelIndex, setMovingLabelIndex] = useState<number | null>(null);
 
   // Image dimensions from base component
   const [imageDimensions, setImageDimensions] = useState<ImageDimensions>({ width: 0, height: 0 });
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
 
+  // Drag hook for moving labels
+  const getDimensions = useCallback(() => imageDimensions, [imageDimensions]);
+  const labelDrag = useDragDelta({ getDimensions });
+
   React.useEffect(() => {
     setHolds(initialHolds);
   }, [initialHolds]);
+
+  // Start moving label
+  const startMoveLabel = () => {
+    setMovingLabelIndex(selectedHoldIndex);
+    labelDrag.start();
+    setEditModalVisible(false);
+  };
+
+  // Cancel move
+  const cancelMoveLabel = () => {
+    setMovingLabelIndex(null);
+    labelDrag.cancel();
+  };
+
+  // Save move
+  const saveMoveLabel = () => {
+    if (movingLabelIndex === null) return;
+
+    const delta = labelDrag.complete();
+    const updatedHolds = holds.map((hold, i) => {
+      if (i === movingLabelIndex) {
+        return {
+          ...hold,
+          labelX: hold.labelX + delta.x,
+          labelY: hold.labelY + delta.y,
+        };
+      }
+      return hold;
+    });
+
+    setHolds(updatedHolds);
+    setMovingLabelIndex(null);
+    setSelectedHoldIndex(null);
+  };
 
   const handleDimensionsReady = (dimensions: ImageDimensions, offset: { x: number; y: number }) => {
     setImageDimensions(dimensions);
@@ -53,6 +95,9 @@ export default function FullScreenRouteEditor({
   const selectedHoldId = selectedHoldIndex !== null ? holds[selectedHoldIndex]?.detected_hold_id : null;
 
   const handleImageTap = (event: any) => {
+    // Ignore taps when in moving mode (handled by PanResponder)
+    if (movingLabelIndex !== null) return;
+
     if (imageDimensions.width === 0) return;
 
     const { locationX, locationY } = event;
@@ -71,23 +116,6 @@ export default function FullScreenRouteEditor({
     // Convert to percentages relative to displayed image
     const xPercent = (imageX / imageDimensions.width) * 100;
     const yPercent = (imageY / imageDimensions.height) * 100;
-
-    // If in moving mode, update position
-    if (movingMode && selectedHoldIndex !== null) {
-      const updatedHolds = holds.map((hold, i) => {
-        if (i === selectedHoldIndex) {
-          if (movingMode === 'label') {
-            return { ...hold, labelX: xPercent, labelY: yPercent };
-          }
-        }
-        return hold;
-      });
-
-      setHolds(updatedHolds);
-      setMovingMode(null);
-      setSelectedHoldIndex(null);
-      return;
-    }
 
     // Build list of route holds with their polygons for lookup
     const routeHoldsWithPolygons = holds
@@ -158,11 +186,6 @@ export default function FullScreenRouteEditor({
     setSelectedHoldIndex(null);
   };
 
-  const handleMoveLabel = () => {
-    setMovingMode('label');
-    setEditModalVisible(false);
-  };
-
   const handleOpenNoteModal = () => {
     if (selectedHoldIndex !== null) {
       setNoteText(holds[selectedHoldIndex].note || '');
@@ -182,6 +205,23 @@ export default function FullScreenRouteEditor({
     setSelectedHoldIndex(null);
   };
 
+  // Get holds with moving delta applied for visual feedback
+  const getDisplayedHolds = () => {
+    if (movingLabelIndex === null) return holds;
+    return holds.map((hold, i) => {
+      if (i === movingLabelIndex) {
+        return {
+          ...hold,
+          labelX: hold.labelX + labelDrag.delta.x,
+          labelY: hold.labelY + labelDrag.delta.y,
+        };
+      }
+      return hold;
+    });
+  };
+
+  const isMovingLabel = movingLabelIndex !== null;
+
   const handleDone = () => {
     onUpdateHolds(holds);
     onClose();
@@ -191,15 +231,15 @@ export default function FullScreenRouteEditor({
     <FullScreenImageBase
       visible={visible}
       photoUrl={photoUrl}
-      holds={holds}
+      holds={getDisplayedHolds()}
       detectedHolds={detectedHolds}
-      onClose={handleDone}
+      onClose={isMovingLabel ? cancelMoveLabel : handleDone}
       showLabels={true}
-      closeButtonText="Done"
-      helperBanner={movingMode ? (
+      closeButtonText={isMovingLabel ? 'Cancel' : 'Done'}
+      helperBanner={isMovingLabel ? (
         <View style={baseStyles.helperBanner}>
           <Text style={baseStyles.helperText}>
-            Tap to move label position
+            Drag to move label position
           </Text>
         </View>
       ) : undefined}
@@ -207,12 +247,19 @@ export default function FullScreenRouteEditor({
       onImageTap={handleImageTap}
       onDimensionsReady={handleDimensionsReady}
       selectedHoldId={selectedHoldId}
+      panHandlers={isMovingLabel ? labelDrag.panHandlers : undefined}
+      lockZoom={isMovingLabel}
     >
-      {/* Edit button - show when a hold is selected */}
-      {selectedHoldIndex !== null && !movingMode && (
+      {/* Edit button - show when a hold is selected and not moving */}
+      {selectedHoldIndex !== null && !isMovingLabel && (
         <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
           <Text style={styles.editButtonText}>Edit Hold {holds[selectedHoldIndex]?.order}</Text>
         </TouchableOpacity>
+      )}
+
+      {/* Moving mode buttons */}
+      {isMovingLabel && (
+        <DragModeButtons onCancel={cancelMoveLabel} onSave={saveMoveLabel} />
       )}
 
       {/* Edit Hold Modal */}
@@ -236,7 +283,7 @@ export default function FullScreenRouteEditor({
               <Text style={baseStyles.modalButtonText}>Edit Note</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={baseStyles.modalButton} onPress={handleMoveLabel}>
+            <TouchableOpacity style={baseStyles.modalButton} onPress={startMoveLabel}>
               <Text style={baseStyles.modalButtonText}>Move Label Position</Text>
             </TouchableOpacity>
 

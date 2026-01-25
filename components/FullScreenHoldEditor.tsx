@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Modal,
@@ -12,14 +12,15 @@ import {
   StatusBar,
   PanResponder,
   GestureResponderEvent,
-  PanResponderGestureState,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Hold, DetectedHold } from '../types/database.types';
 import { supabase } from '../lib/supabase';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import RouteOverlay from './RouteOverlay';
+import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
+import { useDragDelta } from '../hooks/useDragDelta';
 
 interface FullScreenHoldEditorProps {
   visible: boolean;
@@ -70,11 +71,7 @@ export default function FullScreenHoldEditor({
 
   // Moving mode state
   const [movingHoldId, setMovingHoldId] = useState<string | null>(null);
-  const [movingDelta, setMovingDelta] = useState({ x: 0, y: 0 });
   const [isSavingMove, setIsSavingMove] = useState(false);
-  const dragStartRef = useRef({ x: 0, y: 0 });
-  const movingDeltaRef = useRef({ x: 0, y: 0 });
-  const imageDimensionsRef = useRef({ width: 0, height: 0 });
   const focusRegionRef = useRef<FocusRegion | null>(null);
   const focusedViewDimensionsRef = useRef({ width: 0, height: 0 });
 
@@ -91,14 +88,6 @@ export default function FullScreenHoldEditor({
 
   // Keep refs in sync with state
   React.useEffect(() => {
-    movingDeltaRef.current = movingDelta;
-  }, [movingDelta]);
-
-  React.useEffect(() => {
-    imageDimensionsRef.current = imageDimensions;
-  }, [imageDimensions]);
-
-  React.useEffect(() => {
     focusRegionRef.current = focusRegion;
   }, [focusRegion]);
 
@@ -106,34 +95,26 @@ export default function FullScreenHoldEditor({
     brushStrokesRef.current = brushStrokes;
   }, [brushStrokes]);
 
-  // PanResponder for move gesture - only works in focused view
-  const movePanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        dragStartRef.current = { x: movingDeltaRef.current.x, y: movingDeltaRef.current.y };
-      },
-      onPanResponderMove: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        const focus = focusRegionRef.current;
-        const sensitivity = 0.4; // Lower = less sensitive
+  // Custom delta calculation for focused view
+  const calculateMoveDelta = useCallback((gestureState: { dx: number; dy: number }) => {
+    const focus = focusRegionRef.current;
+    const dims = focusedViewDimensionsRef.current;
+    const sensitivity = 0.4;
 
-        if (focus && focusedViewDimensionsRef.current.width > 0) {
-          // In focused view: delta is relative to focused view dimensions
-          // but needs to be converted to original image percentage
-          const deltaXPercent = (gestureState.dx / focusedViewDimensionsRef.current.width) * focus.width * sensitivity;
-          const deltaYPercent = (gestureState.dy / focusedViewDimensionsRef.current.height) * focus.height * sensitivity;
-          setMovingDelta({
-            x: dragStartRef.current.x + deltaXPercent,
-            y: dragStartRef.current.y + deltaYPercent,
-          });
-        }
-      },
-      onPanResponderRelease: () => {
-        // Keep the delta - user will explicitly save or cancel
-      },
-    })
-  ).current;
+    if (!focus || dims.width === 0) return null;
+
+    // Convert from focused view pixels to original image percentage
+    const deltaXPercent = (gestureState.dx / dims.width) * focus.width * sensitivity;
+    const deltaYPercent = (gestureState.dy / dims.height) * focus.height * sensitivity;
+
+    return { x: deltaXPercent, y: deltaYPercent };
+  }, []);
+
+  // Drag hook for moving holds
+  const holdDrag = useDragDelta({
+    getDimensions: useCallback(() => focusedViewDimensionsRef.current, []),
+    calculateDelta: calculateMoveDelta,
+  });
 
   // PanResponder for redraw brush - only works in focused view
   // Uses refs to avoid stale closure issues
@@ -176,26 +157,28 @@ export default function FullScreenHoldEditor({
   // Start moving mode
   const startMoveHold = () => {
     setMovingHoldId(selectedHoldId);
-    setMovingDelta({ x: 0, y: 0 });
+    holdDrag.start();
     setDeleteModalVisible(false);
   };
 
   // Cancel move
   const cancelMove = () => {
     setMovingHoldId(null);
-    setMovingDelta({ x: 0, y: 0 });
+    holdDrag.cancel();
   };
 
   // Save move to database
   const saveMove = async () => {
-    if (!movingHoldId || (movingDelta.x === 0 && movingDelta.y === 0)) {
-      cancelMove();
+    const delta = holdDrag.complete();
+
+    if (!movingHoldId || (delta.x === 0 && delta.y === 0)) {
+      setMovingHoldId(null);
       return;
     }
 
     const holdToMove = detectedHolds.find(h => h.id === movingHoldId);
     if (!holdToMove) {
-      cancelMove();
+      setMovingHoldId(null);
       return;
     }
 
@@ -203,12 +186,12 @@ export default function FullScreenHoldEditor({
 
     // Calculate new polygon and center
     const newPolygon = holdToMove.polygon.map(p => ({
-      x: p.x + movingDelta.x,
-      y: p.y + movingDelta.y,
+      x: p.x + delta.x,
+      y: p.y + delta.y,
     }));
     const newCenter = {
-      x: holdToMove.center.x + movingDelta.x,
-      y: holdToMove.center.y + movingDelta.y,
+      x: holdToMove.center.x + delta.x,
+      y: holdToMove.center.y + delta.y,
     };
 
     // Update in database
@@ -230,7 +213,6 @@ export default function FullScreenHoldEditor({
     }
 
     setMovingHoldId(null);
-    setMovingDelta({ x: 0, y: 0 });
     setSelectedHoldId(null);
   };
 
@@ -536,12 +518,12 @@ export default function FullScreenHoldEditor({
       return {
         ...hold,
         polygon: hold.polygon.map(p => ({
-          x: p.x + movingDelta.x,
-          y: p.y + movingDelta.y,
+          x: p.x + holdDrag.delta.x,
+          y: p.y + holdDrag.delta.y,
         })),
         center: {
-          x: hold.center.x + movingDelta.x,
-          y: hold.center.y + movingDelta.y,
+          x: hold.center.x + holdDrag.delta.x,
+          y: hold.center.y + holdDrag.delta.y,
         },
       };
     });
@@ -885,7 +867,7 @@ export default function FullScreenHoldEditor({
 
     // Determine which pan responder to use
     const activePanHandlers = isMoving
-      ? movePanResponder.panHandlers
+      ? holdDrag.panHandlers
       : isBrushing
       ? redrawPanResponder.panHandlers
       : {};
@@ -967,25 +949,11 @@ export default function FullScreenHoldEditor({
               <View style={styles.movingHelper}>
                 <Text style={styles.movingHelperText}>Drag to move hold</Text>
               </View>
-              <View style={styles.movingButtons}>
-                <TouchableOpacity
-                  style={[styles.movingButton, styles.movingButtonCancel]}
-                  onPress={cancelMove}
-                >
-                  <Text style={styles.movingButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.movingButton, styles.movingButtonSave]}
-                  onPress={saveMove}
-                  disabled={isSavingMove}
-                >
-                  {isSavingMove ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Text style={styles.movingButtonText}>Save</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+              <DragModeButtons
+                onCancel={cancelMove}
+                onSave={saveMove}
+                isSaving={isSavingMove}
+              />
             </>
           )}
 
@@ -995,25 +963,12 @@ export default function FullScreenHoldEditor({
               <View style={styles.movingHelper}>
                 <Text style={styles.movingHelperText}>Paint over the hold shape</Text>
               </View>
-              <View style={styles.movingButtons}>
-                <TouchableOpacity
-                  style={[styles.movingButton, styles.movingButtonCancel]}
-                  onPress={cancelRedraw}
-                >
-                  <Text style={styles.movingButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.movingButton, styles.movingButtonSave]}
-                  onPress={saveRedraw}
-                  disabled={isSavingRedraw || brushStrokes.length < 3}
-                >
-                  {isSavingRedraw ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Text style={styles.movingButtonText}>Save</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+              <DragModeButtons
+                onCancel={cancelRedraw}
+                onSave={saveRedraw}
+                isSaving={isSavingRedraw}
+                saveDisabled={brushStrokes.length < 3}
+              />
             </>
           )}
 
@@ -1023,25 +978,12 @@ export default function FullScreenHoldEditor({
               <View style={styles.movingHelper}>
                 <Text style={styles.movingHelperText}>Paint the new hold shape</Text>
               </View>
-              <View style={styles.movingButtons}>
-                <TouchableOpacity
-                  style={[styles.movingButton, styles.movingButtonCancel]}
-                  onPress={cancelAddHold}
-                >
-                  <Text style={styles.movingButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.movingButton, styles.movingButtonSave]}
-                  onPress={saveAddHold}
-                  disabled={isSavingRedraw || brushStrokes.length < 3}
-                >
-                  {isSavingRedraw ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Text style={styles.movingButtonText}>Save</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+              <DragModeButtons
+                onCancel={cancelAddHold}
+                onSave={saveAddHold}
+                isSaving={isSavingRedraw}
+                saveDisabled={brushStrokes.length < 3}
+              />
             </>
           )}
 
@@ -1316,31 +1258,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     fontSize: 16,
-    fontWeight: '600',
-  },
-  movingButtons: {
-    position: 'absolute',
-    bottom: 50,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  movingButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  movingButtonCancel: {
-    backgroundColor: 'rgba(108, 117, 125, 0.95)',
-  },
-  movingButtonSave: {
-    backgroundColor: 'rgba(0, 102, 204, 0.95)',
-  },
-  movingButtonText: {
-    color: '#fff',
-    fontSize: 18,
     fontWeight: '600',
   },
 });
