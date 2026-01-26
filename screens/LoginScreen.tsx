@@ -4,13 +4,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../lib/auth-context';
+import TrimmedTextInput from '../components/TrimmedTextInput';
+import AuthLayout from '../components/auth/AuthLayout';
+import { authStyles } from '../components/auth/authStyles';
 
 export default function LoginScreen({ navigation, route }: any) {
   const [email, setEmail] = useState('');
@@ -20,11 +20,7 @@ export default function LoginScreen({ navigation, route }: any) {
   const { redirectTo } = route.params || {};
 
   const handleLoginSuccess = () => {
-    if (redirectTo) {
-      navigation.replace(redirectTo);
-    } else {
-      navigation.goBack();
-    }
+    navigation.replace(redirectTo || 'Home');
   };
 
   const handleLogin = async () => {
@@ -57,161 +53,60 @@ export default function LoginScreen({ navigation, route }: any) {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        <Text style={styles.title}>🧗 Up App</Text>
-        <Text style={styles.subtitle}>Climbing Gym Route Tracker</Text>
+    <AuthLayout subtitle="Climbing Gym Route Tracker">
+      <TrimmedTextInput
+        style={authStyles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        editable={!loading}
+      />
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            editable={!loading}
-          />
+      <TextInput
+        style={authStyles.input}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        editable={!loading}
+      />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-          />
+      <TouchableOpacity
+        style={[authStyles.button, loading && authStyles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        <Text style={authStyles.buttonText}>
+          {loading ? 'Logging in...' : 'Log In'}
+        </Text>
+      </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? 'Logging in...' : 'Log In'}
-            </Text>
-          </TouchableOpacity>
+      <TouchableOpacity
+        style={authStyles.linkButton}
+        onPress={() => navigation.navigate('Signup')}
+        disabled={loading}
+      >
+        <Text style={authStyles.linkText}>
+          Don't have an account? Sign up
+        </Text>
+      </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.linkButton}
-            onPress={() => navigation.navigate('Signup')}
-            disabled={loading}
-          >
-            <Text style={styles.linkText}>
-              Don't have an account? Sign up
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or continue with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.googleButton, loading && styles.buttonDisabled]}
-            onPress={handleGoogleLogin}
-            disabled={loading}
-          >
-            <FontAwesome name="google" size={20} color="#4285F4" />
-            <Text style={styles.googleButtonText}>Google</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={authStyles.divider}>
+        <View style={authStyles.dividerLine} />
+        <Text style={authStyles.dividerText}>or continue with</Text>
+        <View style={authStyles.dividerLine} />
       </View>
-    </KeyboardAvoidingView>
+
+      <TouchableOpacity
+        style={[authStyles.googleButton, loading && authStyles.buttonDisabled]}
+        onPress={handleGoogleLogin}
+        disabled={loading}
+      >
+        <FontAwesome name="google" size={20} color="#4285F4" />
+        <Text style={authStyles.googleButtonText}>Google</Text>
+      </TouchableOpacity>
+    </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 40,
-  },
-  form: {
-    gap: 16,
-  },
-  input: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  button: {
-    backgroundColor: '#0066cc',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#ddd',
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    color: '#999',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  googleButton: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    gap: 12,
-  },
-  googleButtonText: {
-    color: '#333',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkButton: {
-    padding: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  linkText: {
-    color: '#0066cc',
-    fontSize: 14,
-  },
-});
