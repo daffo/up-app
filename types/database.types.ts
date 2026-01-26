@@ -23,6 +23,10 @@ export interface Hold {
   note?: string
 }
 
+export interface RouteFilters {
+  creatorId?: string
+}
+
 export interface Database {
   public: {
     Tables: {

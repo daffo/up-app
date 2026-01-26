@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Database, Hold, DetectedHold } from '../types/database.types';
+import { Database, Hold, DetectedHold, RouteFilters } from '../types/database.types';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -31,11 +31,17 @@ export const cacheEvents = {
 
 // Routes API
 export const routesApi = {
-  async list() {
-    const { data, error } = await supabase
+  async list(filters?: RouteFilters) {
+    let query = supabase
       .from('routes')
       .select('*')
       .order('created_at', { ascending: false });
+
+    if (filters?.creatorId) {
+      query = query.eq('user_id', filters.creatorId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data || [];

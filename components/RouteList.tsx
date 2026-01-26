@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, FlatList, Text, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
-import { Database } from '../types/database.types';
+import { Database, RouteFilters } from '../types/database.types';
 import { routesApi, cacheEvents } from '../lib/api';
 import RouteCard from './RouteCard';
 
@@ -8,15 +8,16 @@ type Route = Database['public']['Tables']['routes']['Row'];
 
 interface RouteListProps {
   onRoutePress: (routeId: string) => void;
+  filters?: RouteFilters;
 }
 
-export default function RouteList({ onRoutePress }: RouteListProps) {
+export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRoutes = async (isRefresh = false) => {
+  const fetchRoutes = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -24,7 +25,7 @@ export default function RouteList({ onRoutePress }: RouteListProps) {
         setLoading(true);
       }
       setError(null);
-      const data = await routesApi.list();
+      const data = await routesApi.list(filters);
       setRoutes(data);
     } catch (err) {
       console.error('Error fetching routes:', err);
@@ -33,7 +34,7 @@ export default function RouteList({ onRoutePress }: RouteListProps) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [filters]);
 
   const onRefresh = () => fetchRoutes(true);
 
@@ -41,9 +42,9 @@ export default function RouteList({ onRoutePress }: RouteListProps) {
     fetchRoutes();
 
     // Subscribe to routes cache invalidation
-    const unsubscribe = cacheEvents.subscribe('routes', fetchRoutes);
+    const unsubscribe = cacheEvents.subscribe('routes', () => fetchRoutes());
     return unsubscribe;
-  }, []);
+  }, [fetchRoutes]);
 
   if (loading) {
     return (
