@@ -44,9 +44,15 @@ cacheEvents.invalidate('routes');
 
 ## Build & Deploy
 - **Dev**: `npx expo start`
-- **Build**: `eas build --profile preview --platform android`
 - **Version**: In `app.json` → `expo.version`
-- **CI/CD**: Bump version in app.json → push to main → auto-tags & builds
+
+### Triggering a Build
+To trigger a CI build:
+1. Bump version in `app.json` (e.g., `0.1.2-alpha` → `0.1.3-alpha`)
+2. Commit and push to `main`
+3. GitHub Actions will auto-tag and run `eas build --profile preview --platform android`
+
+**Note**: The workflow only triggers when `app.json` changes AND the version number is different from the previous commit.
 
 ## Important Notes
 - GestureHandlerRootView must wrap the app (in App.tsx)
