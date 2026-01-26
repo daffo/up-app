@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import TrimmedTextInput from '../components/TrimmedTextInput';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuth } from '../lib/auth-context';
@@ -291,7 +291,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         {/* Title */}
         <View style={styles.field}>
           <Text style={styles.label}>Title *</Text>
-          <TextInput
+          <TrimmedTextInput
             style={styles.input}
             value={title}
             onChangeText={setTitle}
@@ -302,7 +302,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         {/* Grade */}
         <View style={styles.field}>
           <Text style={styles.label}>Grade *</Text>
-          <TextInput
+          <TrimmedTextInput
             style={styles.input}
             value={grade}
             onChangeText={setGrade}
@@ -313,7 +313,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         {/* Description */}
         <View style={styles.field}>
           <Text style={styles.label}>Description</Text>
-          <TextInput
+          <TrimmedTextInput
             style={[styles.input, styles.textArea]}
             value={description}
             onChangeText={setDescription}

@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import TrimmedTextInput from '../components/TrimmedTextInput';
 import { useAuth } from '../lib/auth-context';
 import { userProfilesApi } from '../lib/api';
 
@@ -75,7 +75,7 @@ export default function MyAccountScreen({ navigation }: any) {
 
       <View style={styles.section}>
         <Text style={styles.label}>Display Name</Text>
-        <TextInput
+        <TrimmedTextInput
           style={styles.input}
           value={displayName}
           onChangeText={setDisplayName}
