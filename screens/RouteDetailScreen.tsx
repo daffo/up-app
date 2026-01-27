@@ -9,6 +9,7 @@ import {
   Keyboard,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Database, DetectedHold } from '../types/database.types';
 import { routesApi, detectedHoldsApi, userProfilesApi, cacheEvents } from '../lib/api';
 import RouteVisualization from '../components/RouteVisualization';
@@ -60,22 +61,20 @@ export default function RouteDetailScreen({ route, navigation }: any) {
   }, [routeId]);
 
   useEffect(() => {
-    // Set edit button in navigation header if user owns the route
-    if (routeData && user && routeData.user_id === user.id) {
-      navigation.setOptions({
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() => navigation.navigate('CreateEditRoute', { routeId })}
-            style={{ marginRight: 10 }}
-          >
-            <Text style={{ color: '#0066cc', fontSize: 16, fontWeight: '600' }}>
-              Edit
-            </Text>
-          </TouchableOpacity>
-        ),
-      });
-    }
-  }, [routeData, user, navigation, routeId]);
+    // Set send button in navigation header
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ marginRight: 10 }}>
+          <SendButton
+            routeId={routeId}
+            userId={user?.id}
+            onLoginRequired={() => requireAuth(() => {}, 'RouteDetail')}
+            compact
+          />
+        </View>
+      ),
+    });
+  }, [user, navigation, routeId, requireAuth]);
 
   const fetchRouteDetail = async () => {
     try {
@@ -149,13 +148,6 @@ export default function RouteDetailScreen({ route, navigation }: any) {
         {routeData.description && (
           <Text style={styles.description}>{routeData.description}</Text>
         )}
-        <View style={styles.sendButtonContainer}>
-          <SendButton
-            routeId={routeId}
-            userId={user?.id}
-            onLoginRequired={() => requireAuth(() => {}, 'RouteDetail')}
-          />
-        </View>
       </View>
 
       {routeData.photo && (
@@ -175,12 +167,21 @@ export default function RouteDetailScreen({ route, navigation }: any) {
             {routeData.creatorDisplayName || 'Unknown'}
           </Text>
         </View>
-        <View style={[styles.detailRow, styles.detailRowLast]}>
+        <View style={[styles.detailRow, user && routeData.user_id === user.id ? undefined : styles.detailRowLast]}>
           <Text style={styles.detailLabel}>Created</Text>
           <Text style={styles.detailValue}>
             {formatDate(routeData.created_at)}
           </Text>
         </View>
+        {user && routeData.user_id === user.id && (
+          <TouchableOpacity
+            style={[styles.detailRow, styles.detailRowLast]}
+            onPress={() => navigation.navigate('CreateEditRoute', { routeId })}
+          >
+            <Text style={styles.editRouteLabel}>Edit Route</Text>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <CommentsSection
@@ -244,10 +245,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#666',
   },
-  sendButtonContainer: {
-    marginTop: 16,
-    alignItems: 'flex-start',
-  },
   imageSection: {
     backgroundColor: '#fff',
     marginTop: 12,
@@ -281,5 +278,9 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 15,
     color: '#666',
+  },
+  editRouteLabel: {
+    fontSize: 15,
+    color: '#0066cc',
   },
 });

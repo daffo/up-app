@@ -14,6 +14,7 @@ interface SendButtonProps {
   routeId: string;
   userId?: string;
   onLoginRequired: () => void;
+  compact?: boolean;
 }
 
 const DIFFICULTY_OPTIONS = [
@@ -22,7 +23,7 @@ const DIFFICULTY_OPTIONS = [
   { value: 1, label: 'Hard' },
 ];
 
-export default function SendButton({ routeId, userId, onLoginRequired }: SendButtonProps) {
+export default function SendButton({ routeId, userId, onLoginRequired, compact }: SendButtonProps) {
   const [send, setSend] = useState<Send | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -109,19 +110,32 @@ export default function SendButton({ routeId, userId, onLoginRequired }: SendBut
 
   return (
     <>
-      <TouchableOpacity
-        style={[styles.button, send && styles.buttonSent]}
-        onPress={handlePress}
-      >
-        <Ionicons
-          name={send ? 'checkmark-circle' : 'checkmark-circle-outline'}
-          size={20}
-          color={send ? '#fff' : '#0066cc'}
-        />
-        <Text style={[styles.buttonText, send && styles.buttonTextSent]}>
-          {send ? 'Sent' : 'Log Send'}
-        </Text>
-      </TouchableOpacity>
+      {compact ? (
+        <TouchableOpacity onPress={handlePress} style={styles.compactButton}>
+          <Ionicons
+            name={send ? 'checkmark-circle' : 'checkmark-circle-outline'}
+            size={18}
+            color={send ? '#28a745' : '#0066cc'}
+          />
+          <Text style={[styles.compactText, send && styles.compactTextSent]}>
+            {send ? 'Sent' : 'Send'}
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={[styles.button, send && styles.buttonSent]}
+          onPress={handlePress}
+        >
+          <Ionicons
+            name={send ? 'checkmark-circle' : 'checkmark-circle-outline'}
+            size={20}
+            color={send ? '#fff' : '#0066cc'}
+          />
+          <Text style={[styles.buttonText, send && styles.buttonTextSent]}>
+            {send ? 'Sent' : 'Log Send'}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <Modal
         visible={modalVisible}
@@ -214,6 +228,19 @@ export default function SendButton({ routeId, userId, onLoginRequired }: SendBut
 }
 
 const styles = StyleSheet.create({
+  compactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  compactText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0066cc',
+  },
+  compactTextSent: {
+    color: '#28a745',
+  },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
