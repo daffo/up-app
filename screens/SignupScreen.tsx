@@ -5,12 +5,14 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
 import TrimmedTextInput from '../components/TrimmedTextInput';
 import AuthLayout from '../components/auth/AuthLayout';
 import { authStyles } from '../components/auth/authStyles';
 
 export default function SignupScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,17 +21,17 @@ export default function SignupScreen({ navigation }: any) {
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('auth.errorFillFields'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('common.error'), t('auth.errorPasswordMatch'));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert(t('common.error'), t('auth.errorPasswordLength'));
       return;
     }
 
@@ -38,21 +40,21 @@ export default function SignupScreen({ navigation }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Signup Failed', error.message);
+      Alert.alert(t('auth.signupFailed'), error.message);
     } else {
       Alert.alert(
-        'Success',
-        'Account created! Please check your email to confirm your account.',
+        t('common.success'),
+        t('auth.signupSuccess'),
         [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
       );
     }
   };
 
   return (
-    <AuthLayout subtitle="Create Your Account">
+    <AuthLayout subtitle={t('auth.createAccount')}>
       <TrimmedTextInput
         style={authStyles.input}
-        placeholder="Email"
+        placeholder={t('auth.email')}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -62,7 +64,7 @@ export default function SignupScreen({ navigation }: any) {
 
       <TextInput
         style={authStyles.input}
-        placeholder="Password (min 6 characters)"
+        placeholder={t('auth.passwordMin')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -71,7 +73,7 @@ export default function SignupScreen({ navigation }: any) {
 
       <TextInput
         style={authStyles.input}
-        placeholder="Confirm Password"
+        placeholder={t('auth.confirmPassword')}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry
@@ -84,7 +86,7 @@ export default function SignupScreen({ navigation }: any) {
         disabled={loading}
       >
         <Text style={authStyles.buttonText}>
-          {loading ? 'Creating account...' : 'Sign Up'}
+          {loading ? t('auth.creatingAccount') : t('auth.signUp')}
         </Text>
       </TouchableOpacity>
 
@@ -94,7 +96,7 @@ export default function SignupScreen({ navigation }: any) {
         disabled={loading}
       >
         <Text style={authStyles.linkText}>
-          Already have an account? Log in
+          {t('auth.hasAccount')}
         </Text>
       </TouchableOpacity>
     </AuthLayout>

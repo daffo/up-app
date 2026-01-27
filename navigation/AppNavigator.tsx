@@ -1,5 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -16,6 +17,8 @@ import UserProfileScreen from '../screens/UserProfileScreen';
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
+  const { t } = useTranslation();
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
@@ -39,8 +42,8 @@ export default function AppNavigator() {
           component={RouteDetailScreen}
           options={{
             headerShown: true,
-            title: 'Route Details',
-            headerBackTitle: 'Back',
+            title: t('nav.routeDetails'),
+            headerBackTitle: t('common.back'),
           }}
         />
         <Stack.Screen
@@ -48,8 +51,8 @@ export default function AppNavigator() {
           component={CreateEditRouteScreen}
           options={({ route }: any) => ({
             headerShown: true,
-            title: route.params?.routeId ? 'Edit Route' : 'Create Route',
-            headerBackTitle: 'Back',
+            title: route.params?.routeId ? t('nav.editRoute') : t('nav.createRoute'),
+            headerBackTitle: t('common.back'),
           })}
         />
         <Stack.Screen
@@ -57,8 +60,8 @@ export default function AppNavigator() {
           component={AdminPhotosScreen}
           options={{
             headerShown: true,
-            title: 'Manage Photos',
-            headerBackTitle: 'Back',
+            title: t('nav.managePhotos'),
+            headerBackTitle: t('common.back'),
           }}
         />
         <Stack.Screen
@@ -66,8 +69,8 @@ export default function AppNavigator() {
           component={AdminPhotoDetailScreen}
           options={{
             headerShown: true,
-            title: 'Photo Details',
-            headerBackTitle: 'Back',
+            title: t('nav.photoDetails'),
+            headerBackTitle: t('common.back'),
           }}
         />
         <Stack.Screen
@@ -75,8 +78,8 @@ export default function AppNavigator() {
           component={MyAccountScreen}
           options={{
             headerShown: true,
-            title: 'My Account',
-            headerBackTitle: 'Back',
+            title: t('nav.myAccount'),
+            headerBackTitle: t('common.back'),
           }}
         />
         <Stack.Screen
@@ -84,8 +87,8 @@ export default function AppNavigator() {
           component={MySendsScreen}
           options={{
             headerShown: true,
-            title: 'My Sends',
-            headerBackTitle: 'Back',
+            title: t('nav.mySends'),
+            headerBackTitle: t('common.back'),
           }}
         />
         <Stack.Screen
@@ -93,8 +96,8 @@ export default function AppNavigator() {
           component={MyCommentsScreen}
           options={{
             headerShown: true,
-            title: 'My Comments',
-            headerBackTitle: 'Back',
+            title: t('nav.myComments'),
+            headerBackTitle: t('common.back'),
           }}
         />
         <Stack.Screen
@@ -102,8 +105,8 @@ export default function AppNavigator() {
           component={RouteSendsScreen}
           options={{
             headerShown: true,
-            title: 'Sends',
-            headerBackTitle: 'Back',
+            title: t('nav.sends'),
+            headerBackTitle: t('common.back'),
           }}
         />
         <Stack.Screen
@@ -111,8 +114,8 @@ export default function AppNavigator() {
           component={UserProfileScreen}
           options={{
             headerShown: true,
-            title: 'Profile',
-            headerBackTitle: 'Back',
+            title: t('nav.profile'),
+            headerBackTitle: t('common.back'),
           }}
         />
       </Stack.Navigator>

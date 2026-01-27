@@ -7,15 +7,20 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import TrimmedTextInput from '../components/TrimmedTextInput';
 import { useAuth } from '../lib/auth-context';
 import { userProfilesApi } from '../lib/api';
+import { SUPPORTED_LANGUAGES, changeLanguage, getCurrentLanguage, LanguageCode } from '../lib/i18n';
 
 export default function MyAccountScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [currentLang, setCurrentLang] = useState<LanguageCode>(getCurrentLanguage());
 
   useEffect(() => {
     if (user) {
@@ -42,20 +47,25 @@ export default function MyAccountScreen({ navigation }: any) {
     if (!user) return;
 
     if (!displayName.trim()) {
-      Alert.alert('Error', 'Please enter a display name');
+      Alert.alert(t('common.error'), t('account.displayNameRequired'));
       return;
     }
 
     setIsSaving(true);
     try {
       await userProfilesApi.upsert(user.id, { display_name: displayName.trim() });
-      Alert.alert('Success', 'Display name updated');
+      Alert.alert(t('common.success'), t('account.displayNameUpdated'));
     } catch (error) {
       console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Failed to save display name');
+      Alert.alert(t('common.error'), t('account.failedToSave'));
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleLanguageChange = async (langCode: LanguageCode) => {
+    await changeLanguage(langCode);
+    setCurrentLang(langCode);
   };
 
   if (isLoading) {
@@ -69,17 +79,17 @@ export default function MyAccountScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.section}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t('account.email')}</Text>
         <Text style={styles.emailText}>{user?.email}</Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Display Name</Text>
+        <Text style={styles.label}>{t('account.displayName')}</Text>
         <TrimmedTextInput
           style={styles.input}
           value={displayName}
           onChangeText={setDisplayName}
-          placeholder="Enter your display name"
+          placeholder={t('account.displayNamePlaceholder')}
           autoCapitalize="words"
         />
       </View>
@@ -90,9 +100,37 @@ export default function MyAccountScreen({ navigation }: any) {
         disabled={isSaving}
       >
         <Text style={styles.saveButtonText}>
-          {isSaving ? 'Saving...' : 'Save'}
+          {isSaving ? t('common.saving') : t('common.save')}
         </Text>
       </TouchableOpacity>
+
+      <View style={styles.languageSection}>
+        <Text style={styles.label}>{t('account.language')}</Text>
+        <View style={styles.languageOptions}>
+          {SUPPORTED_LANGUAGES.map((lang) => (
+            <TouchableOpacity
+              key={lang.code}
+              style={[
+                styles.languageOption,
+                currentLang === lang.code && styles.languageOptionSelected,
+              ]}
+              onPress={() => handleLanguageChange(lang.code)}
+            >
+              <Text
+                style={[
+                  styles.languageOptionText,
+                  currentLang === lang.code && styles.languageOptionTextSelected,
+                ]}
+              >
+                {lang.flag}  {lang.nativeName}
+              </Text>
+              {currentLang === lang.code && (
+                <Ionicons name="checkmark" size={20} color="#0066cc" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -135,6 +173,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
+    marginBottom: 32,
   },
   saveButtonDisabled: {
     opacity: 0.6,
@@ -142,6 +181,35 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  languageSection: {
+    marginTop: 8,
+  },
+  languageOptions: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    overflow: 'hidden',
+  },
+  languageOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  languageOptionSelected: {
+    backgroundColor: '#f0f7ff',
+  },
+  languageOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  languageOptionTextSelected: {
+    color: '#0066cc',
     fontWeight: '600',
   },
 });

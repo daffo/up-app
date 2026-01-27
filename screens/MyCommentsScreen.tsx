@@ -8,6 +8,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
 import { commentsApi, cacheEvents } from '../lib/api';
 import { Comment } from '../types/database.types';
@@ -16,6 +17,7 @@ import { formatRelativeDate } from '../utils/date';
 type CommentWithRoute = Comment & { route: { id: string; title: string; grade: string } };
 
 export default function MyCommentsScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [comments, setComments] = useState<CommentWithRoute[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +84,7 @@ export default function MyCommentsScreen({ navigation }: any) {
         renderItem={renderComment}
         contentContainerStyle={comments.length === 0 ? styles.emptyContainer : undefined}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No comments yet</Text>
+          <Text style={styles.emptyText}>{t('comments.noCommentsYet')}</Text>
         }
         refreshing={refreshing}
         onRefresh={handleRefresh}

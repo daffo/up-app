@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, FlatList, Text, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { RouteFilters } from '../types/database.types';
 import { routesApi, cacheEvents, RouteWithStats } from '../lib/api';
 import RouteCard from './RouteCard';
@@ -10,6 +11,7 @@ interface RouteListProps {
 }
 
 export default function RouteList({ onRoutePress, filters }: RouteListProps) {
+  const { t } = useTranslation();
   const [routes, setRoutes] = useState<RouteWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -59,7 +61,7 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   if (error) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Error: {error}</Text>
+        <Text style={styles.errorText}>{t('routes.error', { message: error })}</Text>
       </View>
     );
   }
@@ -67,9 +69,9 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   if (routes.length === 0) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>No routes yet</Text>
+        <Text style={styles.emptyText}>{t('routes.noRoutesYet')}</Text>
         <Text style={styles.emptySubtext}>
-          Be the first to add a route!
+          {t('routes.beFirstToAdd')}
         </Text>
       </View>
     );

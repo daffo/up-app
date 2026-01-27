@@ -10,6 +10,7 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import TrimmedTextInput from '../components/TrimmedTextInput';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -29,6 +30,7 @@ interface CreateEditRouteScreenProps {
 }
 
 export default function CreateEditRouteScreen({ navigation, route }: CreateEditRouteScreenProps) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { routeId } = route.params || {};
   const isEditMode = !!routeId;
@@ -75,7 +77,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
         // Check if user owns this route
         if (routeData.user_id !== user?.id) {
-          Alert.alert('Error', 'You can only edit your own routes');
+          Alert.alert(t('common.error'), t('routeForm.errorOwnership'));
           navigation.goBack();
           return;
         }
@@ -94,7 +96,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
       }
     } catch (err) {
       console.error('Error initializing:', err);
-      Alert.alert('Error', 'Failed to load data');
+      Alert.alert(t('common.error'), t('routeForm.errorLoad'));
     } finally {
       setLoading(false);
     }
@@ -172,7 +174,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         style={[styles.holdItem, isActive && styles.holdItemActive]}
       >
         <Text style={styles.holdItemText}>
-          {item.order}. {item.note || '(no note)'}
+          {item.order}. {item.note || t('routeForm.noNote')}
         </Text>
         <View style={styles.holdItemButtons}>
           <Text style={styles.dragHandle}>☰</Text>
@@ -185,31 +187,31 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         </View>
       </TouchableOpacity>
     </ScaleDecorator>
-  ), [holds]);
+  ), [holds, t]);
 
   const handleSave = async () => {
     if (!user) {
-      Alert.alert('Error', 'You must be logged in to save a route');
+      Alert.alert(t('common.error'), t('routeForm.errorLogin'));
       return;
     }
 
     if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a title');
+      Alert.alert(t('common.error'), t('routeForm.errorTitle'));
       return;
     }
 
     if (!grade.trim()) {
-      Alert.alert('Error', 'Please enter a grade');
+      Alert.alert(t('common.error'), t('routeForm.errorGrade'));
       return;
     }
 
     if (!selectedPhotoId) {
-      Alert.alert('Error', 'Please select a photo');
+      Alert.alert(t('common.error'), t('routeForm.errorPhoto'));
       return;
     }
 
     if (holds.length === 0) {
-      Alert.alert('Error', 'Please add at least one hold');
+      Alert.alert(t('common.error'), t('routeForm.errorHolds'));
       return;
     }
 
@@ -226,7 +228,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
           holds,
         });
 
-        Alert.alert('Success', 'Route updated successfully');
+        Alert.alert(t('common.success'), t('routeForm.routeUpdated'));
         navigation.goBack();
       } else {
         // Create new route (automatically invalidates cache)
@@ -239,12 +241,12 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
           user_id: user.id,
         });
 
-        Alert.alert('Success', 'Route created successfully');
+        Alert.alert(t('common.success'), t('routeForm.routeCreated'));
         navigation.replace('RouteDetail', { routeId: data.id });
       }
     } catch (err) {
       console.error('Error saving route:', err);
-      Alert.alert('Error', 'Failed to save route');
+      Alert.alert(t('common.error'), t('routeForm.errorSave'));
     } finally {
       setSaving(false);
     }
@@ -252,22 +254,22 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Route',
-      `Are you sure you want to delete "${title || 'this route'}"? This cannot be undone.`,
+      t('routeForm.deleteRoute'),
+      t('routeForm.deleteConfirm', { title: title || 'this route' }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               setSaving(true);
               await routesApi.delete(routeId);
-              Alert.alert('Deleted', 'Route has been deleted');
+              Alert.alert(t('routeForm.deleted'), t('routeForm.routeDeleted'));
               navigation.goBack();
             } catch (err) {
               console.error('Error deleting route:', err);
-              Alert.alert('Error', 'Failed to delete route');
+              Alert.alert(t('common.error'), t('routeForm.errorDelete'));
             } finally {
               setSaving(false);
             }
@@ -291,34 +293,34 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         <View style={styles.form}>
         {/* Title */}
         <View style={styles.field}>
-          <Text style={styles.label}>Title *</Text>
+          <Text style={styles.label}>{t('routeForm.title')} *</Text>
           <TrimmedTextInput
             style={styles.input}
             value={title}
             onChangeText={setTitle}
-            placeholder="e.g., Crimpy Traverse"
+            placeholder={t('routeForm.titlePlaceholder')}
           />
         </View>
 
         {/* Grade */}
         <View style={styles.field}>
-          <Text style={styles.label}>Grade *</Text>
+          <Text style={styles.label}>{t('routeForm.grade')} *</Text>
           <TrimmedTextInput
             style={styles.input}
             value={grade}
             onChangeText={setGrade}
-            placeholder="e.g., V4, 6b+"
+            placeholder={t('routeForm.gradePlaceholder')}
           />
         </View>
 
         {/* Description */}
         <View style={styles.field}>
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>{t('routeForm.description')}</Text>
           <TrimmedTextInput
             style={[styles.input, styles.textArea]}
             value={description}
             onChangeText={setDescription}
-            placeholder="Optional route description"
+            placeholder={t('routeForm.descriptionPlaceholder')}
             multiline
             numberOfLines={3}
           />
@@ -326,7 +328,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
         {/* Photo Selection */}
         <View style={styles.field}>
-          <Text style={styles.label}>Spray Wall Photo *</Text>
+          <Text style={styles.label}>{t('routeForm.sprayWallPhoto')} *</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoSelector}>
             {photos.map((photo) => (
               <TouchableOpacity
@@ -349,8 +351,8 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         {/* Hold Placement */}
         {selectedPhoto && displayWidth > 0 && (
           <View style={styles.field}>
-            <Text style={styles.label}>Route Preview ({holds.length} holds)</Text>
-            <Text style={styles.helperText}>Tap to edit holds in fullscreen</Text>
+            <Text style={styles.label}>{t('routeForm.routePreview', { count: holds.length })}</Text>
+            <Text style={styles.helperText}>{t('routeForm.tapToEdit')}</Text>
             <TouchableOpacity
               style={styles.imageContainer}
               onPress={() => setEditorVisible(true)}
@@ -372,7 +374,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
             {/* Hold List - Drag to reorder */}
             {holds.length > 0 && (
               <View style={styles.holdsList}>
-                <Text style={styles.holdsListTitle}>Holds (long press to drag):</Text>
+                <Text style={styles.holdsListTitle}>{t('routeForm.holdsListTitle')}</Text>
                 <GestureHandlerRootView>
                   <DraggableFlatList
                     data={holds}
@@ -398,7 +400,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               onPress={handleDelete}
               disabled={saving}
             >
-              <Text style={styles.footerButtonText}>Delete</Text>
+              <Text style={styles.footerButtonText}>{t('common.delete')}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -410,7 +412,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.footerButtonText}>
-                {isEditMode ? 'Save Changes' : 'Create Route'}
+                {isEditMode ? t('routeForm.saveChanges') : t('routeForm.createRoute')}
               </Text>
             )}
           </TouchableOpacity>

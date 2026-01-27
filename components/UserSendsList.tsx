@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { sendsApi, cacheEvents } from '../lib/api';
 import { Send } from '../types/database.types';
 import { formatRelativeDate } from '../utils/date';
@@ -20,7 +21,8 @@ interface UserSendsListProps {
   emptyMessage?: string;
 }
 
-export default function UserSendsList({ userId, emptyMessage = 'No sends yet' }: UserSendsListProps) {
+export default function UserSendsList({ userId, emptyMessage }: UserSendsListProps) {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const [sends, setSends] = useState<SendWithRoute[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,9 +52,9 @@ export default function UserSendsList({ userId, emptyMessage = 'No sends yet' }:
   };
 
   const getDifficultyLabel = (rating: number | null) => {
-    if (rating === -1) return 'Soft';
-    if (rating === 0) return 'Accurate';
-    if (rating === 1) return 'Hard';
+    if (rating === -1) return t('sends.soft');
+    if (rating === 0) return t('sends.accurate');
+    if (rating === 1) return t('sends.hard');
     return null;
   };
 
@@ -98,7 +100,7 @@ export default function UserSendsList({ userId, emptyMessage = 'No sends yet' }:
       renderItem={renderSend}
       contentContainerStyle={sends.length === 0 ? styles.emptyContainer : undefined}
       ListEmptyComponent={
-        <Text style={styles.emptyText}>{emptyMessage}</Text>
+        <Text style={styles.emptyText}>{emptyMessage || t('sends.noSendsYet')}</Text>
       }
       refreshing={refreshing}
       onRefresh={handleRefresh}

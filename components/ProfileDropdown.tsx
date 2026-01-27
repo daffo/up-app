@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
 
 interface ProfileDropdownProps {
@@ -24,6 +25,7 @@ export default function ProfileDropdown({
   onAdmin,
   onLogout,
 }: ProfileDropdownProps) {
+  const { t } = useTranslation();
   const { user, isAdmin } = useAuth();
   const [visible, setVisible] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
@@ -105,27 +107,27 @@ export default function ProfileDropdown({
             ]}
           >
             <TouchableOpacity style={styles.menuItem} onPress={handleMyAccount}>
-              <Text style={styles.menuItemText}>My Account</Text>
+              <Text style={styles.menuItemText}>{t('menu.myAccount')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={handleMySends}>
-              <Text style={styles.menuItemText}>My Sends</Text>
+              <Text style={styles.menuItemText}>{t('menu.mySends')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={handleMyComments}>
-              <Text style={styles.menuItemText}>My Comments</Text>
+              <Text style={styles.menuItemText}>{t('menu.myComments')}</Text>
             </TouchableOpacity>
 
             {isAdmin && onAdmin && (
               <TouchableOpacity style={styles.menuItem} onPress={handleAdmin}>
-                <Text style={styles.menuItemText}>Admin</Text>
+                <Text style={styles.menuItemText}>{t('menu.admin')}</Text>
               </TouchableOpacity>
             )}
 
             <View style={styles.separator} />
 
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <Text style={[styles.menuItemText, styles.logoutText]}>Logout</Text>
+              <Text style={[styles.menuItemText, styles.logoutText]}>{t('menu.logout')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Switch,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { RouteFilters } from '../types/database.types';
 import TrimmedTextInput from './TrimmedTextInput';
 
@@ -27,6 +28,8 @@ export default function FilterModal({
   onApply,
   onLoginRequired,
 }: FilterModalProps) {
+  const { t } = useTranslation();
+
   const handleMyRoutesToggle = (value: boolean) => {
     if (value && !userId) {
       onClose();
@@ -62,9 +65,9 @@ export default function FilterModal({
         <TouchableOpacity style={styles.backdrop} onPress={onClose} />
         <View style={styles.sheet}>
           <View style={styles.header}>
-            <Text style={styles.title}>Filters</Text>
+            <Text style={styles.title}>{t('filters.title')}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.closeButton}>Done</Text>
+              <Text style={styles.closeButton}>{t('common.done')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -74,19 +77,19 @@ export default function FilterModal({
                 style={styles.searchInput}
                 value={filters.search || ''}
                 onChangeText={handleSearchChange}
-                placeholder="Search by name or description"
+                placeholder={t('filters.searchPlaceholder')}
                 placeholderTextColor="#999"
                 autoCorrect={false}
               />
             </View>
 
             <View style={styles.filterRow}>
-              <Text style={styles.filterLabel}>Grade</Text>
+              <Text style={styles.filterLabel}>{t('filters.grade')}</Text>
               <TrimmedTextInput
                 style={styles.gradeInput}
                 value={filters.grade || ''}
                 onChangeText={handleGradeChange}
-                placeholder="e.g. V5, 6a+"
+                placeholder={t('filters.gradePlaceholder')}
                 placeholderTextColor="#999"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -94,7 +97,7 @@ export default function FilterModal({
             </View>
 
             <View style={styles.filterRow}>
-              <Text style={styles.filterLabel}>My Routes</Text>
+              <Text style={styles.filterLabel}>{t('filters.myRoutes')}</Text>
               <Switch
                 value={isMyRoutesEnabled}
                 onValueChange={handleMyRoutesToggle}
@@ -106,7 +109,7 @@ export default function FilterModal({
           <View style={styles.footer}>
             {hasActiveFilters && (
               <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-                <Text style={styles.resetButtonText}>Reset Filters</Text>
+                <Text style={styles.resetButtonText}>{t('filters.resetFilters')}</Text>
               </TouchableOpacity>
             )}
           </View>

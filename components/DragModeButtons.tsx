@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface DragModeButtonsProps {
   onCancel: () => void;
@@ -24,6 +25,8 @@ export default function DragModeButtons({
   isSaving = false,
   saveDisabled = false,
 }: DragModeButtonsProps) {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -31,7 +34,7 @@ export default function DragModeButtons({
         onPress={onCancel}
         disabled={isSaving}
       >
-        <Text style={styles.buttonText}>Cancel</Text>
+        <Text style={styles.buttonText}>{t('common.cancel')}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.button, styles.saveButton]}
@@ -41,7 +44,7 @@ export default function DragModeButtons({
         {isSaving ? (
           <ActivityIndicator color="#fff" size="small" />
         ) : (
-          <Text style={styles.buttonText}>Save</Text>
+          <Text style={styles.buttonText}>{t('common.save')}</Text>
         )}
       </TouchableOpacity>
     </View>

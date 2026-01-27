@@ -1,8 +1,10 @@
+import i18n from '../lib/i18n';
+
 /**
  * Format date as absolute date string using device locale
  */
 export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString();
+  return new Date(dateString).toLocaleDateString(i18n.language);
 }
 
 /**
@@ -21,9 +23,9 @@ export function formatRelativeDate(dateString: string): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 2) return 'Yesterday';
-  return date.toLocaleDateString();
+  if (diffMins < 1) return i18n.t('date.justNow');
+  if (diffMins < 60) return i18n.t('date.minutesAgo', { count: diffMins });
+  if (diffHours < 24) return i18n.t('date.hoursAgo', { count: diffHours });
+  if (diffDays < 2) return i18n.t('date.yesterday');
+  return date.toLocaleDateString(i18n.language);
 }
