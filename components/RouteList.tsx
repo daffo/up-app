@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, FlatList, Text, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
-import { Database, RouteFilters } from '../types/database.types';
-import { routesApi, cacheEvents } from '../lib/api';
+import { RouteFilters } from '../types/database.types';
+import { routesApi, cacheEvents, RouteWithStats } from '../lib/api';
 import RouteCard from './RouteCard';
-
-type Route = Database['public']['Tables']['routes']['Row'];
 
 interface RouteListProps {
   onRoutePress: (routeId: string) => void;
@@ -12,7 +10,7 @@ interface RouteListProps {
 }
 
 export default function RouteList({ onRoutePress, filters }: RouteListProps) {
-  const [routes, setRoutes] = useState<Route[]>([]);
+  const [routes, setRoutes] = useState<RouteWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +39,13 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   useEffect(() => {
     fetchRoutes();
 
-    // Subscribe to routes cache invalidation
-    const unsubscribe = cacheEvents.subscribe('routes', () => fetchRoutes());
-    return unsubscribe;
+    // Subscribe to routes and sends cache invalidation (sends affect avg rating)
+    const unsubscribeRoutes = cacheEvents.subscribe('routes', () => fetchRoutes());
+    const unsubscribeSends = cacheEvents.subscribe('sends', () => fetchRoutes());
+    return () => {
+      unsubscribeRoutes();
+      unsubscribeSends();
+    };
   }, [fetchRoutes]);
 
   if (loading) {

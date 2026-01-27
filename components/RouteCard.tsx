@@ -1,11 +1,10 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Database } from '../types/database.types';
+import { Ionicons } from '@expo/vector-icons';
+import { RouteWithStats } from '../lib/api';
 import { formatDate } from '../utils/date';
 
-type Route = Database['public']['Tables']['routes']['Row'];
-
 interface RouteCardProps {
-  route: Route;
+  route: RouteWithStats;
   onPress: () => void;
 }
 
@@ -14,7 +13,15 @@ export default function RouteCard({ route, onPress }: RouteCardProps) {
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.header}>
         <Text style={styles.title}>{route.title}</Text>
-        <Text style={styles.grade}>{route.grade}</Text>
+        <View style={styles.headerRight}>
+          {route.avgRating !== null && (
+            <View style={styles.rating}>
+              <Ionicons name="star" size={14} color="#f5a623" />
+              <Text style={styles.ratingText}>{route.avgRating.toFixed(1)}</Text>
+            </View>
+          )}
+          <Text style={styles.grade}>{route.grade}</Text>
+        </View>
       </View>
       {route.description && (
         <Text style={styles.description} numberOfLines={2}>
@@ -48,11 +55,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginLeft: 12,
+  },
+  rating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f5a623',
+  },
   grade: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#0066cc',
-    marginLeft: 12,
   },
   description: {
     fontSize: 14,
