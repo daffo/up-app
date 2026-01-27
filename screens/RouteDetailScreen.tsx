@@ -10,8 +10,8 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Database, DetectedHold } from '../types/database.types';
-import { routesApi, detectedHoldsApi, userProfilesApi, cacheEvents } from '../lib/api';
+import { Database, DetectedHold, Send } from '../types/database.types';
+import { routesApi, detectedHoldsApi, userProfilesApi, sendsApi, cacheEvents } from '../lib/api';
 import RouteVisualization from '../components/RouteVisualization';
 import SendButton from '../components/SendButton';
 import CommentsSection from '../components/CommentsSection';
@@ -32,6 +32,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
   const scrollViewRef = useRef<ScrollView>(null);
   const [routeData, setRouteData] = useState<RouteWithPhoto | null>(null);
   const [detectedHolds, setDetectedHolds] = useState<DetectedHold[]>([]);
+  const [sends, setSends] = useState<Send[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -55,10 +56,24 @@ export default function RouteDetailScreen({ route, navigation }: any) {
 
   useEffect(() => {
     fetchRouteDetail();
+    fetchSends();
 
-    const unsubscribe = cacheEvents.subscribe('route', fetchRouteDetail);
-    return unsubscribe;
+    const unsubscribeRoute = cacheEvents.subscribe('route', fetchRouteDetail);
+    const unsubscribeSends = cacheEvents.subscribe('sends', fetchSends);
+    return () => {
+      unsubscribeRoute();
+      unsubscribeSends();
+    };
   }, [routeId]);
+
+  const fetchSends = async () => {
+    try {
+      const data = await sendsApi.listByRoute(routeId);
+      setSends(data);
+    } catch (err) {
+      console.error('Error fetching sends:', err);
+    }
+  };
 
   useEffect(() => {
     // Set send button in navigation header
@@ -167,12 +182,34 @@ export default function RouteDetailScreen({ route, navigation }: any) {
             {routeData.creatorDisplayName || 'Unknown'}
           </Text>
         </View>
-        <View style={[styles.detailRow, user && routeData.user_id === user.id ? undefined : styles.detailRowLast]}>
+        <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Created</Text>
           <Text style={styles.detailValue}>
             {formatDate(routeData.created_at)}
           </Text>
         </View>
+        <TouchableOpacity
+          style={[styles.detailRow, !(user && routeData.user_id === user.id) && styles.detailRowLast]}
+          onPress={() => navigation.navigate('RouteSends', { routeId })}
+        >
+          <Text style={styles.detailLabel}>Rating</Text>
+          <View style={styles.ratingValue}>
+            {(() => {
+              const ratings = sends.map(s => s.quality_rating).filter((r): r is number => r !== null);
+              const avg = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : null;
+              return avg !== null ? (
+                <>
+                  <Ionicons name="star" size={16} color="#f5a623" />
+                  <Text style={styles.ratingText}>{avg.toFixed(1)}</Text>
+                  <Text style={styles.sendCountText}>({sends.length})</Text>
+                </>
+              ) : (
+                <Text style={styles.detailValue}>No ratings yet</Text>
+              );
+            })()}
+            <Ionicons name="chevron-forward" size={20} color="#999" style={styles.chevron} />
+          </View>
+        </TouchableOpacity>
         {user && routeData.user_id === user.id && (
           <TouchableOpacity
             style={[styles.detailRow, styles.detailRowLast]}
@@ -278,6 +315,23 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 15,
     color: '#666',
+  },
+  ratingValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#f5a623',
+  },
+  sendCountText: {
+    fontSize: 14,
+    color: '#999',
+  },
+  chevron: {
+    marginLeft: 4,
   },
   editRouteLabel: {
     fontSize: 15,

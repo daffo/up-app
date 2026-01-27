@@ -29,12 +29,18 @@ export const cacheEvents = {
   },
 };
 
+// Route with computed stats
+export type RouteWithStats = Route & {
+  avgRating: number | null;
+  sendCount: number;
+};
+
 // Routes API
 export const routesApi = {
-  async list(filters?: RouteFilters) {
+  async list(filters?: RouteFilters): Promise<RouteWithStats[]> {
     let query = supabase
       .from('routes')
-      .select('*')
+      .select('*, sends(quality_rating)')
       .order('created_at', { ascending: false });
 
     if (filters?.creatorId) {
@@ -52,7 +58,22 @@ export const routesApi = {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+
+    // Compute average rating from sends
+    return (data || []).map((route: Route & { sends: { quality_rating: number | null }[] }) => {
+      const ratings = route.sends
+        .map(s => s.quality_rating)
+        .filter((r): r is number => r !== null);
+      const avgRating = ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
+        : null;
+      const { sends, ...routeData } = route;
+      return {
+        ...routeData,
+        avgRating,
+        sendCount: route.sends.length,
+      };
+    });
   },
 
   async get(routeId: string) {
