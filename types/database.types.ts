@@ -29,6 +29,24 @@ export interface RouteFilters {
   search?: string
 }
 
+export interface Send {
+  id: string
+  user_id: string
+  route_id: string
+  quality_rating: number | null
+  difficulty_rating: number | null
+  sent_at: string
+  created_at: string
+}
+
+export interface Comment {
+  id: string
+  user_id: string
+  route_id: string
+  text: string
+  created_at: string
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -148,6 +166,58 @@ export interface Database {
           display_name?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      sends: {
+        Row: {
+          id: string
+          user_id: string
+          route_id: string
+          quality_rating: number | null
+          difficulty_rating: number | null
+          sent_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          route_id: string
+          quality_rating?: number | null
+          difficulty_rating?: number | null
+          sent_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          route_id?: string
+          quality_rating?: number | null
+          difficulty_rating?: number | null
+          sent_at?: string
+          created_at?: string
+        }
+      }
+      comments: {
+        Row: {
+          id: string
+          user_id: string
+          route_id: string
+          text: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          route_id: string
+          text: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          route_id?: string
+          text?: string
+          created_at?: string
         }
       }
     }
