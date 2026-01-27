@@ -18,7 +18,7 @@ export default function LoginScreen({ navigation, route }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, signInWithFacebook } = useAuth();
   const { redirectTo } = route.params || {};
 
   const handleLoginSuccess = () => {
@@ -45,6 +45,18 @@ export default function LoginScreen({ navigation, route }: any) {
   const handleGoogleLogin = async () => {
     setLoading(true);
     const { error } = await signInWithGoogle();
+    setLoading(false);
+
+    if (error) {
+      Alert.alert(t('auth.loginFailed'), error.message);
+    } else {
+      handleLoginSuccess();
+    }
+  };
+
+  const handleFacebookLogin = async () => {
+    setLoading(true);
+    const { error } = await signInWithFacebook();
     setLoading(false);
 
     if (error) {
@@ -108,6 +120,15 @@ export default function LoginScreen({ navigation, route }: any) {
       >
         <FontAwesome name="google" size={20} color="#4285F4" />
         <Text style={authStyles.googleButtonText}>Google</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[authStyles.googleButton, loading && authStyles.buttonDisabled]}
+        onPress={handleFacebookLogin}
+        disabled={loading}
+      >
+        <FontAwesome name="instagram" size={20} color="#E4405F" />
+        <Text style={authStyles.googleButtonText}>Instagram/Facebook</Text>
       </TouchableOpacity>
     </AuthLayout>
   );
