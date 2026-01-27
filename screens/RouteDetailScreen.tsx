@@ -15,6 +15,7 @@ import { routesApi, detectedHoldsApi, userProfilesApi, sendsApi, cacheEvents } f
 import RouteVisualization from '../components/RouteVisualization';
 import SendButton from '../components/SendButton';
 import CommentsSection from '../components/CommentsSection';
+import UserNameLink from '../components/UserNameLink';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { formatDate } from '../utils/date';
 
@@ -178,9 +179,11 @@ export default function RouteDetailScreen({ route, navigation }: any) {
       <View style={styles.detailsSection}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Created by</Text>
-          <Text style={styles.detailValue}>
-            {routeData.creatorDisplayName || 'Unknown'}
-          </Text>
+          <UserNameLink
+            userId={routeData.user_id}
+            displayName={routeData.creatorDisplayName}
+            style={styles.detailValue}
+          />
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Created</Text>
