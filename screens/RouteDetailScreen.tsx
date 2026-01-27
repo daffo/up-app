@@ -15,6 +15,7 @@ import RouteVisualization from '../components/RouteVisualization';
 import SendButton from '../components/SendButton';
 import CommentsSection from '../components/CommentsSection';
 import { useRequireAuth } from '../hooks/useRequireAuth';
+import { formatDate } from '../utils/date';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -177,7 +178,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
         <View style={[styles.detailRow, styles.detailRowLast]}>
           <Text style={styles.detailLabel}>Created</Text>
           <Text style={styles.detailValue}>
-            {new Date(routeData.created_at).toLocaleDateString()}
+            {formatDate(routeData.created_at)}
           </Text>
         </View>
       </View>

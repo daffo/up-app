@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Comment } from '../types/database.types';
 import { commentsApi, userProfilesApi, cacheEvents } from '../lib/api';
 import TrimmedTextInput from './TrimmedTextInput';
+import { formatRelativeDate } from '../utils/date';
 
 interface CommentWithProfile extends Comment {
   displayName?: string;
@@ -95,21 +96,6 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>
@@ -131,7 +117,7 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
                       {comment.displayName || 'Anonymous'}
                     </Text>
                     <Text style={styles.commentDate}>
-                      {formatDate(comment.created_at)}
+                      {formatRelativeDate(comment.created_at)}
                     </Text>
                   </View>
                   <Text style={styles.commentText}>{comment.text}</Text>

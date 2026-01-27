@@ -18,6 +18,7 @@ import { Database, Hold, DetectedHold } from '../types/database.types';
 import { routesApi, photosApi, detectedHoldsApi } from '../lib/api';
 import FullScreenRouteEditor from '../components/FullScreenRouteEditor';
 import RouteOverlay from '../components/RouteOverlay';
+import { formatDate } from '../utils/date';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 type Route = Database['public']['Tables']['routes']['Row'];
@@ -338,7 +339,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               >
                 <Image source={{ uri: photo.image_url }} style={styles.photoThumbnail} />
                 <Text style={styles.photoDate}>
-                  {new Date(photo.setup_date).toLocaleDateString()}
+                  {formatDate(photo.setup_date)}
                 </Text>
               </TouchableOpacity>
             ))}

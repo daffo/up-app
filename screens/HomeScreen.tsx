@@ -73,6 +73,8 @@ export default function HomeScreen({ navigation }: any) {
         {user ? (
           <ProfileDropdown
             onMyAccount={() => navigation.navigate('MyAccount')}
+            onMySends={() => navigation.navigate('MySends')}
+            onMyComments={() => navigation.navigate('MyComments')}
             onAdmin={() => navigation.navigate('AdminPhotos')}
             onLogout={handleLogout}
           />

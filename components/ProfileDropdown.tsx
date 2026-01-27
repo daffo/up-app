@@ -11,12 +11,16 @@ import { useAuth } from '../lib/auth-context';
 
 interface ProfileDropdownProps {
   onMyAccount: () => void;
+  onMySends: () => void;
+  onMyComments: () => void;
   onAdmin?: () => void;
   onLogout: () => void;
 }
 
 export default function ProfileDropdown({
   onMyAccount,
+  onMySends,
+  onMyComments,
   onAdmin,
   onLogout,
 }: ProfileDropdownProps) {
@@ -43,6 +47,16 @@ export default function ProfileDropdown({
   const handleMyAccount = () => {
     handleClose();
     onMyAccount();
+  };
+
+  const handleMySends = () => {
+    handleClose();
+    onMySends();
+  };
+
+  const handleMyComments = () => {
+    handleClose();
+    onMyComments();
   };
 
   const handleAdmin = () => {
@@ -92,6 +106,14 @@ export default function ProfileDropdown({
           >
             <TouchableOpacity style={styles.menuItem} onPress={handleMyAccount}>
               <Text style={styles.menuItemText}>My Account</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={handleMySends}>
+              <Text style={styles.menuItemText}>My Sends</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={handleMyComments}>
+              <Text style={styles.menuItemText}>My Comments</Text>
             </TouchableOpacity>
 
             {isAdmin && onAdmin && (

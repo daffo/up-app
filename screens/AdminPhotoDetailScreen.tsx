@@ -9,6 +9,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { Database, DetectedHold, Hold } from '../types/database.types';
 import RouteVisualization from '../components/RouteVisualization';
+import { formatDate } from '../utils/date';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
@@ -53,10 +54,6 @@ export default function AdminPhotoDetailScreen({ route }: any) {
       setDetectedHolds(holds);
     }
     setLoading(false);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
   };
 
   const handleDeleteDetectedHold = (holdId: string) => {
