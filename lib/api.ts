@@ -1,12 +1,12 @@
 import { supabase } from './supabase';
-import { Database, Hold, DetectedHold, RouteFilters } from '../types/database.types';
+import { Database, Hold, DetectedHold, RouteFilters, Send, Comment } from '../types/database.types';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
 
 // Simple event emitter for cache invalidation
-type InvalidationEvent = 'routes' | 'route' | 'photos' | 'detected_holds';
+type InvalidationEvent = 'routes' | 'route' | 'photos' | 'detected_holds' | 'sends' | 'comments';
 type Listener = () => void;
 
 const listeners: Map<InvalidationEvent, Set<Listener>> = new Map();
@@ -210,5 +210,113 @@ export const userProfilesApi = {
 
     if (error) throw error;
     return data as UserProfile;
+  },
+};
+
+// Sends API
+export const sendsApi = {
+  async listByRoute(routeId: string): Promise<Send[]> {
+    const { data, error } = await supabase
+      .from('sends')
+      .select('*')
+      .eq('route_id', routeId)
+      .order('sent_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByUserAndRoute(userId: string, routeId: string): Promise<Send | null> {
+    const { data, error } = await supabase
+      .from('sends')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('route_id', routeId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async create(send: {
+    user_id: string;
+    route_id: string;
+    quality_rating?: number | null;
+    difficulty_rating?: number | null;
+    sent_at?: string;
+  }): Promise<Send> {
+    const { data, error } = await supabase
+      .from('sends')
+      .insert(send)
+      .select()
+      .single();
+
+    if (error) throw error;
+    cacheEvents.invalidate('sends');
+    return data as Send;
+  },
+
+  async update(sendId: string, updates: {
+    quality_rating?: number | null;
+    difficulty_rating?: number | null;
+    sent_at?: string;
+  }): Promise<void> {
+    const { error } = await supabase
+      .from('sends')
+      .update(updates)
+      .eq('id', sendId);
+
+    if (error) throw error;
+    cacheEvents.invalidate('sends');
+  },
+
+  async delete(sendId: string): Promise<void> {
+    const { error } = await supabase
+      .from('sends')
+      .delete()
+      .eq('id', sendId);
+
+    if (error) throw error;
+    cacheEvents.invalidate('sends');
+  },
+};
+
+// Comments API
+export const commentsApi = {
+  async listByRoute(routeId: string): Promise<Comment[]> {
+    const { data, error } = await supabase
+      .from('comments')
+      .select('*')
+      .eq('route_id', routeId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(comment: {
+    user_id: string;
+    route_id: string;
+    text: string;
+  }): Promise<Comment> {
+    const { data, error } = await supabase
+      .from('comments')
+      .insert(comment)
+      .select()
+      .single();
+
+    if (error) throw error;
+    cacheEvents.invalidate('comments');
+    return data as Comment;
+  },
+
+  async delete(commentId: string): Promise<void> {
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) throw error;
+    cacheEvents.invalidate('comments');
   },
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,15 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { Database, DetectedHold } from '../types/database.types';
 import { routesApi, detectedHoldsApi, userProfilesApi, cacheEvents } from '../lib/api';
 import RouteVisualization from '../components/RouteVisualization';
-import { useAuth } from '../lib/auth-context';
+import SendButton from '../components/SendButton';
+import CommentsSection from '../components/CommentsSection';
+import { useRequireAuth } from '../hooks/useRequireAuth';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -22,11 +26,30 @@ interface RouteWithPhoto extends Route {
 
 export default function RouteDetailScreen({ route, navigation }: any) {
   const { routeId } = route.params;
-  const { user } = useAuth();
+  const { user, requireAuth } = useRequireAuth();
+  const scrollViewRef = useRef<ScrollView>(null);
   const [routeData, setRouteData] = useState<RouteWithPhoto | null>(null);
   const [detectedHolds, setDetectedHolds] = useState<DetectedHold[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     fetchRouteDetail();
@@ -110,7 +133,12 @@ export default function RouteDetailScreen({ route, navigation }: any) {
   }
 
   return (
-    <ScrollView style={styles.container}>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: keyboardHeight }}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={styles.header}>
         <Text style={styles.title}>{routeData.title}</Text>
         <View style={styles.headerMeta}>
@@ -120,6 +148,13 @@ export default function RouteDetailScreen({ route, navigation }: any) {
         {routeData.description && (
           <Text style={styles.description}>{routeData.description}</Text>
         )}
+        <View style={styles.sendButtonContainer}>
+          <SendButton
+            routeId={routeId}
+            userId={user?.id}
+            onLoginRequired={() => requireAuth(() => {}, 'RouteDetail')}
+          />
+        </View>
       </View>
 
       {routeData.photo && (
@@ -146,7 +181,18 @@ export default function RouteDetailScreen({ route, navigation }: any) {
           </Text>
         </View>
       </View>
-    </ScrollView>
+
+      <CommentsSection
+        routeId={routeId}
+        userId={user?.id}
+        onLoginRequired={() => requireAuth(() => {}, 'RouteDetail')}
+        onInputFocus={() => {
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          }, 300);
+        }}
+      />
+      </ScrollView>
   );
 }
 
@@ -196,6 +242,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#666',
+  },
+  sendButtonContainer: {
+    marginTop: 16,
+    alignItems: 'flex-start',
   },
   imageSection: {
     backgroundColor: '#fff',
