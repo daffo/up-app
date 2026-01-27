@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { Database, DetectedHold, Hold } from '../types/database.types';
 import RouteVisualization from '../components/RouteVisualization';
@@ -14,6 +15,7 @@ import { formatDate } from '../utils/date';
 type Photo = Database['public']['Tables']['photos']['Row'];
 
 export default function AdminPhotoDetailScreen({ route }: any) {
+  const { t } = useTranslation();
   const { photoId } = route.params;
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [detectedHolds, setDetectedHolds] = useState<DetectedHold[]>([]);
@@ -92,7 +94,7 @@ export default function AdminPhotoDetailScreen({ route }: any) {
   if (!photo) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>Photo not found</Text>
+        <Text style={styles.errorText}>{t('admin.photoNotFound')}</Text>
       </View>
     );
   }
@@ -100,27 +102,27 @@ export default function AdminPhotoDetailScreen({ route }: any) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.infoSection}>
-        <Text style={styles.label}>Setup Date</Text>
+        <Text style={styles.label}>{t('admin.setupDate')}</Text>
         <Text style={styles.value}>{formatDate(photo.setup_date)}</Text>
 
         {photo.teardown_date && (
           <>
-            <Text style={styles.label}>Teardown Date</Text>
+            <Text style={styles.label}>{t('admin.teardownDate')}</Text>
             <Text style={styles.value}>{formatDate(photo.teardown_date)}</Text>
           </>
         )}
 
-        <Text style={styles.label}>Detected Holds</Text>
-        <Text style={styles.value}>{detectedHolds.length} holds</Text>
+        <Text style={styles.label}>{t('admin.detectedHolds')}</Text>
+        <Text style={styles.value}>{t('admin.holdsCount', { count: detectedHolds.length })}</Text>
       </View>
 
       <View style={styles.previewSection}>
-        <Text style={styles.sectionTitle}>All Holds Preview</Text>
-        <Text style={styles.hint}>Tap to open fullscreen, then tap a hold to delete</Text>
+        <Text style={styles.sectionTitle}>{t('admin.allHoldsPreview')}</Text>
+        <Text style={styles.hint}>{t('admin.tapToOpenFullscreen')}</Text>
         {!visualizationReady ? (
           <View style={styles.visualizationLoading}>
             <ActivityIndicator size="large" color="#0066cc" />
-            <Text style={styles.loadingText}>Rendering {detectedHolds.length} holds...</Text>
+            <Text style={styles.loadingText}>{t('admin.renderingHolds', { count: detectedHolds.length })}</Text>
           </View>
         ) : (
           <RouteVisualization

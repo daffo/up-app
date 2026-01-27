@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../lib/auth-context';
 import TrimmedTextInput from '../components/TrimmedTextInput';
@@ -13,6 +14,7 @@ import AuthLayout from '../components/auth/AuthLayout';
 import { authStyles } from '../components/auth/authStyles';
 
 export default function LoginScreen({ navigation, route }: any) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,7 @@ export default function LoginScreen({ navigation, route }: any) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('auth.errorFillFields'));
       return;
     }
 
@@ -34,7 +36,7 @@ export default function LoginScreen({ navigation, route }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Login Failed', error.message);
+      Alert.alert(t('auth.loginFailed'), error.message);
     } else {
       handleLoginSuccess();
     }
@@ -46,17 +48,17 @@ export default function LoginScreen({ navigation, route }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Login Failed', error.message);
+      Alert.alert(t('auth.loginFailed'), error.message);
     } else {
       handleLoginSuccess();
     }
   };
 
   return (
-    <AuthLayout subtitle="Climbing Gym Route Tracker">
+    <AuthLayout subtitle={t('auth.subtitle')}>
       <TrimmedTextInput
         style={authStyles.input}
-        placeholder="Email"
+        placeholder={t('auth.email')}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -66,7 +68,7 @@ export default function LoginScreen({ navigation, route }: any) {
 
       <TextInput
         style={authStyles.input}
-        placeholder="Password"
+        placeholder={t('auth.password')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -79,7 +81,7 @@ export default function LoginScreen({ navigation, route }: any) {
         disabled={loading}
       >
         <Text style={authStyles.buttonText}>
-          {loading ? 'Logging in...' : 'Log In'}
+          {loading ? t('auth.loggingIn') : t('auth.logIn')}
         </Text>
       </TouchableOpacity>
 
@@ -89,13 +91,13 @@ export default function LoginScreen({ navigation, route }: any) {
         disabled={loading}
       >
         <Text style={authStyles.linkText}>
-          Don't have an account? Sign up
+          {t('auth.noAccount')}
         </Text>
       </TouchableOpacity>
 
       <View style={authStyles.divider}>
         <View style={authStyles.dividerLine} />
-        <Text style={authStyles.dividerText}>or continue with</Text>
+        <Text style={authStyles.dividerText}>{t('auth.orContinueWith')}</Text>
         <View style={authStyles.dividerLine} />
       </View>
 

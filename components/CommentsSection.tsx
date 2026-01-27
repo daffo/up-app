@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Comment } from '../types/database.types';
 import { commentsApi, userProfilesApi, cacheEvents } from '../lib/api';
 import TrimmedTextInput from './TrimmedTextInput';
@@ -25,6 +26,7 @@ interface CommentsSectionProps {
 }
 
 export default function CommentsSection({ routeId, userId, onLoginRequired, onInputFocus }: CommentsSectionProps) {
+  const { t } = useTranslation();
   const [comments, setComments] = useState<CommentWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
@@ -100,7 +102,7 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>
-        Comments {comments.length > 0 && `(${comments.length})`}
+        {comments.length > 0 ? t('comments.titleWithCount', { count: comments.length }) : t('comments.title')}
       </Text>
 
       {loading ? (
@@ -108,7 +110,7 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
       ) : (
         <>
           {comments.length === 0 ? (
-            <Text style={styles.emptyText}>No comments yet</Text>
+            <Text style={styles.emptyText}>{t('comments.noCommentsYet')}</Text>
           ) : (
             <View style={styles.commentsList}>
               {comments.map((comment) => (
@@ -142,7 +144,7 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
               style={styles.input}
               value={newComment}
               onChangeText={setNewComment}
-              placeholder="Add a comment..."
+              placeholder={t('comments.addComment')}
               placeholderTextColor="#999"
               multiline
               editable={!submitting}

@@ -7,6 +7,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { sendsApi, userProfilesApi, cacheEvents } from '../lib/api';
 import { Send } from '../types/database.types';
 import UserNameLink from '../components/UserNameLink';
@@ -15,6 +16,7 @@ import { formatRelativeDate } from '../utils/date';
 type SendWithProfile = Send & { displayName?: string };
 
 export default function RouteSendsScreen({ route }: any) {
+  const { t } = useTranslation();
   const { routeId } = route.params;
   const [sends, setSends] = useState<SendWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,9 +66,9 @@ export default function RouteSendsScreen({ route }: any) {
   };
 
   const getDifficultyLabel = (rating: number | null) => {
-    if (rating === -1) return 'Soft';
-    if (rating === 0) return 'Accurate';
-    if (rating === 1) return 'Hard';
+    if (rating === -1) return t('sends.soft');
+    if (rating === 0) return t('sends.accurate');
+    if (rating === 1) return t('sends.hard');
     return null;
   };
 
@@ -114,7 +116,7 @@ export default function RouteSendsScreen({ route }: any) {
         renderItem={renderSend}
         contentContainerStyle={sends.length === 0 ? styles.emptyContainer : undefined}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No sends yet</Text>
+          <Text style={styles.emptyText}>{t('sends.noSendsYet')}</Text>
         }
         refreshing={refreshing}
         onRefresh={handleRefresh}

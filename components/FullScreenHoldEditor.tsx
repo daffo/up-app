@@ -13,6 +13,7 @@ import {
   PanResponder,
   GestureResponderEvent,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Svg, { Circle } from 'react-native-svg';
 import { Hold, DetectedHold } from '../types/database.types';
 import { supabase } from '../lib/supabase';
@@ -54,6 +55,7 @@ export default function FullScreenHoldEditor({
   onUpdateDetectedHold,
   onAddDetectedHold,
 }: FullScreenHoldEditorProps) {
+  const { t } = useTranslation();
   const windowDimensions = useWindowDimensions();
   const [selectedHoldId, setSelectedHoldId] = useState<string | null>(null);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -203,7 +205,7 @@ export default function FullScreenHoldEditor({
     setIsSavingMove(false);
 
     if (error) {
-      Alert.alert('Error', 'Failed to move hold: ' + error.message);
+      Alert.alert(t('common.error'), t('editor.errorMoveHold') + ': ' + error.message);
       return;
     }
 
@@ -232,7 +234,7 @@ export default function FullScreenHoldEditor({
   // Save redrawn shape
   const saveRedraw = async () => {
     if (!redrawHoldId || brushStrokes.length < 3) {
-      Alert.alert('Error', 'Please draw more to define the hold shape');
+      Alert.alert(t('common.error'), t('editor.errorDrawMore'));
       return;
     }
 
@@ -268,7 +270,7 @@ export default function FullScreenHoldEditor({
     setIsSavingRedraw(false);
 
     if (error) {
-      Alert.alert('Error', 'Failed to save redrawn hold: ' + error.message);
+      Alert.alert(t('common.error'), t('editor.errorRedrawHold') + ': ' + error.message);
       return;
     }
 
@@ -298,7 +300,7 @@ export default function FullScreenHoldEditor({
   // Save new hold
   const saveAddHold = async () => {
     if (brushStrokes.length < 3) {
-      Alert.alert('Error', 'Please draw more to define the hold shape');
+      Alert.alert(t('common.error'), t('editor.errorDrawMore'));
       return;
     }
 
@@ -338,7 +340,7 @@ export default function FullScreenHoldEditor({
     setIsSavingRedraw(false);
 
     if (error) {
-      Alert.alert('Error', 'Failed to add hold: ' + error.message);
+      Alert.alert(t('common.error'), t('editor.errorAddHold') + ': ' + error.message);
       return;
     }
 
@@ -575,12 +577,12 @@ export default function FullScreenHoldEditor({
 
     // Confirm deletion - this is permanent
     Alert.alert(
-      'Delete Hold',
-      'Are you sure? This will permanently delete this hold and cannot be undone.',
+      t('editor.deleteHold'),
+      t('editor.deleteHoldConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('editor.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => performDeleteHold(selectedHold),
         },
@@ -623,7 +625,7 @@ export default function FullScreenHoldEditor({
     setIsDeleting(false);
 
     if (error) {
-      Alert.alert('Error', 'Failed to delete hold: ' + error.message);
+      Alert.alert(t('common.error'), error.message);
       return;
     }
 
@@ -940,14 +942,14 @@ export default function FullScreenHoldEditor({
             style={styles.backButton}
             onPress={isMoving ? cancelMove : isRedrawing ? cancelRedraw : isAddingHold ? cancelAddHold : exitFocusMode}
           >
-            <Text style={styles.backButtonText}>{isEditing ? 'Cancel' : '← Back'}</Text>
+            <Text style={styles.backButtonText}>{isEditing ? t('editor.cancel') : t('editor.back')}</Text>
           </TouchableOpacity>
 
           {/* Moving mode UI */}
           {isMoving && (
             <>
               <View style={styles.movingHelper}>
-                <Text style={styles.movingHelperText}>Drag to move hold</Text>
+                <Text style={styles.movingHelperText}>{t('editor.dragToMoveHold')}</Text>
               </View>
               <DragModeButtons
                 onCancel={cancelMove}
@@ -961,7 +963,7 @@ export default function FullScreenHoldEditor({
           {isRedrawing && (
             <>
               <View style={styles.movingHelper}>
-                <Text style={styles.movingHelperText}>Paint over the hold shape</Text>
+                <Text style={styles.movingHelperText}>{t('editor.paintHoldShape')}</Text>
               </View>
               <DragModeButtons
                 onCancel={cancelRedraw}
@@ -976,7 +978,7 @@ export default function FullScreenHoldEditor({
           {isAddingHold && (
             <>
               <View style={styles.movingHelper}>
-                <Text style={styles.movingHelperText}>Paint the new hold shape</Text>
+                <Text style={styles.movingHelperText}>{t('editor.paintNewHold')}</Text>
               </View>
               <DragModeButtons
                 onCancel={cancelAddHold}
@@ -990,14 +992,14 @@ export default function FullScreenHoldEditor({
           {/* Edit button - show when a hold is selected and not editing */}
           {selectedHoldId && !isEditing && (
             <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
-              <Text style={styles.editButtonText}>Edit Hold</Text>
+              <Text style={styles.editButtonText}>{t('editor.editHold')}</Text>
             </TouchableOpacity>
           )}
 
           {/* Add Hold button - show when no hold selected and not editing */}
           {!selectedHoldId && !isEditing && (
             <TouchableOpacity style={styles.addHoldButton} onPress={startAddHold}>
-              <Text style={styles.addHoldButtonText}>+ Add Hold</Text>
+              <Text style={styles.addHoldButtonText}>{t('editor.addHold')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1022,12 +1024,12 @@ export default function FullScreenHoldEditor({
         onPress={closeModal}
       >
         <TouchableOpacity activeOpacity={1} style={baseStyles.modalContent}>
-          <Text style={baseStyles.modalTitle}>Edit Hold</Text>
+          <Text style={baseStyles.modalTitle}>{t('editor.editHold')}</Text>
 
           {routesUsingHold.length > 0 && (
             <>
               <Text style={styles.warningText}>
-                Cannot delete - used in {routesUsingHold.length} route(s):
+                {t('editor.cannotDelete', { count: routesUsingHold.length })}
               </Text>
               {routesUsingHold.map((title, i) => (
                 <Text key={i} style={styles.routeListItem}>• {title}</Text>
@@ -1042,19 +1044,19 @@ export default function FullScreenHoldEditor({
                 style={baseStyles.modalButton}
                 onPress={startMoveHold}
               >
-                <Text style={baseStyles.modalButtonText}>Move Hold</Text>
+                <Text style={baseStyles.modalButtonText}>{t('editor.moveHold')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={baseStyles.modalButton}
                 onPress={startRedraw}
               >
-                <Text style={baseStyles.modalButtonText}>Redraw Shape</Text>
+                <Text style={baseStyles.modalButtonText}>{t('editor.redrawShape')}</Text>
               </TouchableOpacity>
             </>
           ) : (
             <Text style={styles.hintText}>
-              Use Focus Area for move/redraw options
+              {t('editor.useFocusHint')}
             </Text>
           )}
 
@@ -1066,14 +1068,14 @@ export default function FullScreenHoldEditor({
             {isDeleting ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={baseStyles.modalButtonText}>Delete Hold</Text>
+              <Text style={baseStyles.modalButtonText}>{t('editor.deleteHold')}</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
             style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
             onPress={closeModal}
           >
-            <Text style={baseStyles.modalButtonText}>Cancel</Text>
+            <Text style={baseStyles.modalButtonText}>{t('editor.cancel')}</Text>
           </TouchableOpacity>
         </TouchableOpacity>
       </TouchableOpacity>
@@ -1098,7 +1100,7 @@ export default function FullScreenHoldEditor({
       detectedHolds={detectedHolds}
       onClose={focusMode === 'selecting' ? cancelSelection : onClose}
       showLabels={false}
-      closeButtonText={focusMode === 'selecting' ? 'Cancel' : '✕'}
+      closeButtonText={focusMode === 'selecting' ? t('editor.cancel') : '✕'}
       overlayPointerEvents="none"
       onImageTap={focusMode === 'selecting' ? handleSelectingTap : handleImageTap}
       onDimensionsReady={handleDimensionsReady}
@@ -1107,14 +1109,14 @@ export default function FullScreenHoldEditor({
       {/* Focus Area button - only show when not in selecting mode and no hold selected */}
       {focusMode === 'none' && !selectedHoldId && (
         <TouchableOpacity style={styles.focusButton} onPress={startFocusSelection}>
-          <Text style={styles.focusButtonText}>Focus Area</Text>
+          <Text style={styles.focusButtonText}>{t('editor.focusArea')}</Text>
         </TouchableOpacity>
       )}
 
       {/* Edit button - show when a hold is selected */}
       {selectedHoldId && focusMode === 'none' && (
         <TouchableOpacity style={styles.editButton} onPress={handleEditSelected}>
-          <Text style={styles.editButtonText}>Edit Hold</Text>
+          <Text style={styles.editButtonText}>{t('editor.editHold')}</Text>
         </TouchableOpacity>
       )}
 
@@ -1122,7 +1124,7 @@ export default function FullScreenHoldEditor({
       {focusMode === 'selecting' && (
         <View style={styles.selectionHelper}>
           <Text style={styles.selectionHelperText}>
-            Tap to zoom into area
+            {t('editor.tapToZoom')}
           </Text>
         </View>
       )}

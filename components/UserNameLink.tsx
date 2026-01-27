@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, TouchableOpacity, StyleSheet, TextStyle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 interface UserNameLinkProps {
   userId: string;
@@ -9,6 +10,7 @@ interface UserNameLinkProps {
 }
 
 export default function UserNameLink({ userId, displayName, style }: UserNameLinkProps) {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
 
   const handlePress = () => {
@@ -18,7 +20,7 @@ export default function UserNameLink({ userId, displayName, style }: UserNameLin
   return (
     <TouchableOpacity onPress={handlePress}>
       <Text style={[styles.name, style]}>
-        {displayName || 'Anonymous'}
+        {displayName || t('common.anonymous')}
       </Text>
     </TouchableOpacity>
   );

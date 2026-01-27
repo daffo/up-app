@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Database, DetectedHold, Send } from '../types/database.types';
 import { routesApi, detectedHoldsApi, userProfilesApi, sendsApi, cacheEvents } from '../lib/api';
 import RouteVisualization from '../components/RouteVisualization';
@@ -28,6 +29,7 @@ interface RouteWithPhoto extends Route {
 }
 
 export default function RouteDetailScreen({ route, navigation }: any) {
+  const { t } = useTranslation();
   const { routeId } = route.params;
   const { user, requireAuth } = useRequireAuth();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -159,7 +161,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
         <Text style={styles.title}>{routeData.title}</Text>
         <View style={styles.headerMeta}>
           <Text style={styles.grade}>{routeData.grade}</Text>
-          <Text style={styles.holdCount}>{routeData.holds.length} holds</Text>
+          <Text style={styles.holdCount}>{t('route.holds', { count: routeData.holds.length })}</Text>
         </View>
         {routeData.description && (
           <Text style={styles.description}>{routeData.description}</Text>
@@ -178,7 +180,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
 
       <View style={styles.detailsSection}>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Created by</Text>
+          <Text style={styles.detailLabel}>{t('route.createdBy')}</Text>
           <UserNameLink
             userId={routeData.user_id}
             displayName={routeData.creatorDisplayName}
@@ -186,7 +188,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
           />
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Created</Text>
+          <Text style={styles.detailLabel}>{t('route.created')}</Text>
           <Text style={styles.detailValue}>
             {formatDate(routeData.created_at)}
           </Text>
@@ -195,7 +197,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
           style={[styles.detailRow, !(user && routeData.user_id === user.id) && styles.detailRowLast]}
           onPress={() => navigation.navigate('RouteSends', { routeId })}
         >
-          <Text style={styles.detailLabel}>Rating</Text>
+          <Text style={styles.detailLabel}>{t('route.rating')}</Text>
           <View style={styles.ratingValue}>
             {(() => {
               const ratings = sends.map(s => s.quality_rating).filter((r): r is number => r !== null);
@@ -207,7 +209,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
                   <Text style={styles.sendCountText}>({sends.length})</Text>
                 </>
               ) : (
-                <Text style={styles.detailValue}>No ratings yet</Text>
+                <Text style={styles.detailValue}>{t('route.noRatingsYet')}</Text>
               );
             })()}
             <Ionicons name="chevron-forward" size={20} color="#999" style={styles.chevron} />
@@ -218,7 +220,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
             style={[styles.detailRow, styles.detailRowLast]}
             onPress={() => navigation.navigate('CreateEditRoute', { routeId })}
           >
-            <Text style={styles.editRouteLabel}>Edit Route</Text>
+            <Text style={styles.editRouteLabel}>{t('route.editRoute')}</Text>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </TouchableOpacity>
         )}

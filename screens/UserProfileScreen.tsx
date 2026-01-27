@@ -5,10 +5,12 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { userProfilesApi } from '../lib/api';
 import UserSendsList from '../components/UserSendsList';
 
 export default function UserProfileScreen({ route, navigation }: any) {
+  const { t } = useTranslation();
   const { userId } = route.params;
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,9 +21,9 @@ export default function UserProfileScreen({ route, navigation }: any) {
 
   useEffect(() => {
     if (!loading) {
-      navigation.setOptions({ title: displayName || 'Anonymous' });
+      navigation.setOptions({ title: displayName || t('common.anonymous') });
     }
-  }, [displayName, loading, navigation]);
+  }, [displayName, loading, navigation, t]);
 
   const loadProfile = async () => {
     try {
@@ -44,8 +46,8 @@ export default function UserProfileScreen({ route, navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Sends</Text>
-      <UserSendsList userId={userId} emptyMessage="No sends yet" />
+      <Text style={styles.sectionTitle}>{t('sends.title')}</Text>
+      <UserSendsList userId={userId} emptyMessage={t('sends.noSendsYet')} />
     </View>
   );
 }

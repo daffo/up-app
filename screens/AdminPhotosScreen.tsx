@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { Database } from '../types/database.types';
 import { formatDate } from '../utils/date';
@@ -15,6 +16,7 @@ import { formatDate } from '../utils/date';
 type Photo = Database['public']['Tables']['photos']['Row'];
 
 export default function AdminPhotosScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,15 +44,15 @@ export default function AdminPhotosScreen({ navigation }: any) {
       <Image source={{ uri: item.image_url }} style={styles.thumbnail} />
       <View style={styles.photoInfo}>
         <Text style={styles.dateText}>
-          Setup: {formatDate(item.setup_date)}
+          {t('admin.setup')}: {formatDate(item.setup_date)}
         </Text>
         {item.teardown_date && (
           <Text style={styles.dateText}>
-            Teardown: {formatDate(item.teardown_date)}
+            {t('admin.teardown')}: {formatDate(item.teardown_date)}
           </Text>
         )}
         {!item.teardown_date && (
-          <Text style={styles.activeText}>Active</Text>
+          <Text style={styles.activeText}>{t('admin.active')}</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -72,7 +74,7 @@ export default function AdminPhotosScreen({ navigation }: any) {
         renderItem={renderPhoto}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No photos found</Text>
+          <Text style={styles.emptyText}>{t('admin.noPhotosFound')}</Text>
         }
       />
     </View>

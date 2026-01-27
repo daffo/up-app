@@ -8,6 +8,7 @@ import {
   TextInput,
   StyleSheet,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Hold, DetectedHold } from '../types/database.types';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import DragModeButtons from './DragModeButtons';
@@ -31,6 +32,7 @@ export default function FullScreenRouteEditor({
   onClose,
   onUpdateHolds,
 }: FullScreenRouteEditorProps) {
+  const { t } = useTranslation();
   const [holds, setHolds] = useState<Hold[]>(initialHolds);
   const [selectedHoldIndex, setSelectedHoldIndex] = useState<number | null>(null);
   const [matchingHoldIndices, setMatchingHoldIndices] = useState<number[]>([]);
@@ -163,7 +165,7 @@ export default function FullScreenRouteEditor({
       // Check if this hold is already in the route
       const alreadyUsed = holds.some(h => h.detected_hold_id === smallestDetectedHold.id);
       if (alreadyUsed) {
-        Alert.alert('Hold Already Used', 'This hold is already part of the route.');
+        Alert.alert(t('editor.holdAlreadyUsed'), t('editor.holdAlreadyUsedMessage'));
         return;
       }
 
@@ -181,7 +183,7 @@ export default function FullScreenRouteEditor({
     }
 
     // No hold detected at tap location
-    Alert.alert('No Hold', 'Tap on a detected hold to add it to the route.');
+    Alert.alert(t('editor.noHold'), t('editor.noHoldMessage'));
   };
 
   const handleEditSelected = () => {
@@ -290,11 +292,11 @@ export default function FullScreenRouteEditor({
       detectedHolds={detectedHolds}
       onClose={isMovingLabel ? cancelMoveLabel : handleDone}
       showLabels={true}
-      closeButtonText={isMovingLabel ? 'Cancel' : 'Done'}
+      closeButtonText={isMovingLabel ? t('editor.cancel') : t('editor.done')}
       helperBanner={isMovingLabel ? (
         <View style={baseStyles.helperBanner}>
           <Text style={baseStyles.helperText}>
-            Drag to move label position
+            {t('editor.dragToMoveLabel')}
           </Text>
         </View>
       ) : undefined}
@@ -309,10 +311,10 @@ export default function FullScreenRouteEditor({
       {selectedHoldIndex !== null && !isMovingLabel && (
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={handleEditSelected}>
-            <Text style={styles.actionButtonText}>Edit</Text>
+            <Text style={styles.actionButtonText}>{t('editor.edit')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, styles.actionButtonSecondary]} onPress={handleDuplicateHold}>
-            <Text style={styles.actionButtonText}>Add Again</Text>
+            <Text style={styles.actionButtonText}>{t('editor.addAgain')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -336,15 +338,15 @@ export default function FullScreenRouteEditor({
         >
           <View style={baseStyles.modalContent}>
             <Text style={baseStyles.modalTitle}>
-              Edit Hold {selectedHoldIndex !== null ? holds[selectedHoldIndex]?.order : ''}
+              {t('editor.editHold')} {selectedHoldIndex !== null ? holds[selectedHoldIndex]?.order : ''}
             </Text>
 
             <TouchableOpacity style={baseStyles.modalButton} onPress={handleOpenNoteModal}>
-              <Text style={baseStyles.modalButtonText}>Edit Note</Text>
+              <Text style={baseStyles.modalButtonText}>{t('editor.editNote')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={baseStyles.modalButton} onPress={startMoveLabel}>
-              <Text style={baseStyles.modalButtonText}>Move Label Position</Text>
+              <Text style={baseStyles.modalButtonText}>{t('editor.moveLabelPosition')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -352,7 +354,7 @@ export default function FullScreenRouteEditor({
               onPress={handleDeleteHold}
             >
               <Text style={baseStyles.modalButtonText}>
-                Delete Hold
+                {t('editor.deleteHold')}
               </Text>
             </TouchableOpacity>
 
@@ -360,7 +362,7 @@ export default function FullScreenRouteEditor({
               style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
               onPress={() => setEditModalVisible(false)}
             >
-              <Text style={baseStyles.modalButtonText}>Cancel</Text>
+              <Text style={baseStyles.modalButtonText}>{t('editor.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -379,23 +381,23 @@ export default function FullScreenRouteEditor({
           onPress={() => setNoteModalVisible(false)}
         >
           <View style={baseStyles.modalContent}>
-            <Text style={baseStyles.modalTitle}>Add Note</Text>
+            <Text style={baseStyles.modalTitle}>{t('editor.addNote')}</Text>
             <TextInput
               style={baseStyles.noteInput}
               value={noteText}
               onChangeText={setNoteText}
-              placeholder="Enter note (optional)"
+              placeholder={t('editor.enterNote')}
               multiline
               autoFocus
             />
             <TouchableOpacity style={baseStyles.modalButton} onPress={handleSaveNote}>
-              <Text style={baseStyles.modalButtonText}>Save</Text>
+              <Text style={baseStyles.modalButtonText}>{t('common.save')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
               onPress={() => setNoteModalVisible(false)}
             >
-              <Text style={baseStyles.modalButtonText}>Cancel</Text>
+              <Text style={baseStyles.modalButtonText}>{t('editor.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -414,7 +416,7 @@ export default function FullScreenRouteEditor({
           onPress={() => setHoldPickerVisible(false)}
         >
           <View style={baseStyles.modalContent}>
-            <Text style={baseStyles.modalTitle}>Which hold to edit?</Text>
+            <Text style={baseStyles.modalTitle}>{t('editor.whichHoldToEdit')}</Text>
             {matchingHoldIndices.map((index) => (
               <TouchableOpacity
                 key={index}
@@ -422,7 +424,7 @@ export default function FullScreenRouteEditor({
                 onPress={() => handlePickHoldToEdit(index)}
               >
                 <Text style={baseStyles.modalButtonText}>
-                  Hold {holds[index]?.order}{holds[index]?.note ? ` - ${holds[index].note}` : ''}
+                  {t('editor.hold')} {holds[index]?.order}{holds[index]?.note ? ` - ${holds[index].note}` : ''}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -430,7 +432,7 @@ export default function FullScreenRouteEditor({
               style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
               onPress={() => setHoldPickerVisible(false)}
             >
-              <Text style={baseStyles.modalButtonText}>Cancel</Text>
+              <Text style={baseStyles.modalButtonText}>{t('editor.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

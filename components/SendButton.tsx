@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Send } from '../types/database.types';
 import { sendsApi, cacheEvents } from '../lib/api';
 
@@ -17,19 +18,20 @@ interface SendButtonProps {
   compact?: boolean;
 }
 
-const DIFFICULTY_OPTIONS = [
-  { value: -1, label: 'Soft' },
-  { value: 0, label: 'Accurate' },
-  { value: 1, label: 'Hard' },
-];
-
 export default function SendButton({ routeId, userId, onLoginRequired, compact }: SendButtonProps) {
+  const { t } = useTranslation();
   const [send, setSend] = useState<Send | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [qualityRating, setQualityRating] = useState<number | null>(null);
   const [difficultyRating, setDifficultyRating] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const DIFFICULTY_OPTIONS = [
+    { value: -1, label: t('sends.soft') },
+    { value: 0, label: t('sends.accurate') },
+    { value: 1, label: t('sends.hard') },
+  ];
 
   useEffect(() => {
     if (userId) {
@@ -118,7 +120,7 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
             color={send ? '#28a745' : '#0066cc'}
           />
           <Text style={[styles.compactText, send && styles.compactTextSent]}>
-            {send ? 'Sent' : 'Send'}
+            {send ? t('sends.sent') : t('sends.send')}
           </Text>
         </TouchableOpacity>
       ) : (
@@ -132,7 +134,7 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
             color={send ? '#fff' : '#0066cc'}
           />
           <Text style={[styles.buttonText, send && styles.buttonTextSent]}>
-            {send ? 'Sent' : 'Log Send'}
+            {send ? t('sends.sent') : t('sends.logSend')}
           </Text>
         </TouchableOpacity>
       )}
@@ -150,14 +152,14 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
           />
           <View style={styles.sheet}>
             <View style={styles.header}>
-              <Text style={styles.title}>{send ? 'Edit Send' : 'Log Send'}</Text>
+              <Text style={styles.title}>{send ? t('sends.editSend') : t('sends.logSend')}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.closeButton}>Cancel</Text>
+                <Text style={styles.closeButton}>{t('common.cancel')}</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.content}>
-              <Text style={styles.sectionLabel}>Quality Rating</Text>
+              <Text style={styles.sectionLabel}>{t('sends.qualityRating')}</Text>
               <View style={styles.starsRow}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <TouchableOpacity
@@ -173,7 +175,7 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
                 ))}
               </View>
 
-              <Text style={styles.sectionLabel}>Difficulty for Grade</Text>
+              <Text style={styles.sectionLabel}>{t('sends.difficultyForGrade')}</Text>
               <View style={styles.difficultyRow}>
                 {DIFFICULTY_OPTIONS.map((option) => (
                   <TouchableOpacity
@@ -206,7 +208,7 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
                 disabled={saving}
               >
                 <Text style={styles.saveButtonText}>
-                  {send ? 'Update' : 'Log Send'}
+                  {send ? t('common.update') : t('sends.logSend')}
                 </Text>
               </TouchableOpacity>
 
@@ -216,7 +218,7 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
                   onPress={handleRemove}
                   disabled={saving}
                 >
-                  <Text style={styles.removeButtonText}>Remove Send</Text>
+                  <Text style={styles.removeButtonText}>{t('sends.removeSend')}</Text>
                 </TouchableOpacity>
               )}
             </View>

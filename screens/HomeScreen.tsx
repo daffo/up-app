@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { RouteFilters } from '../types/database.types';
 import RouteList from '../components/RouteList';
@@ -12,6 +13,7 @@ import FilterModal from '../components/FilterModal';
 const FILTERS_STORAGE_KEY = 'route_filters';
 
 export default function HomeScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const { user, signOut, requireAuth } = useRequireAuth();
   const [filters, setFilters] = useState<RouteFilters>({});
   const [filtersLoaded, setFiltersLoaded] = useState(false);
@@ -69,7 +71,7 @@ export default function HomeScreen({ navigation }: any) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>🧗 Up App</Text>
+        <Text style={styles.title}>{t('home.title')}</Text>
         {user ? (
           <ProfileDropdown
             onMyAccount={() => navigation.navigate('MyAccount')}
@@ -83,7 +85,7 @@ export default function HomeScreen({ navigation }: any) {
             style={styles.loginButton}
             onPress={() => navigation.navigate('Login')}
           >
-            <Text style={styles.loginText}>Login</Text>
+            <Text style={styles.loginText}>{t('home.login')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -91,7 +93,7 @@ export default function HomeScreen({ navigation }: any) {
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.contentHeader}>
-          <Text style={styles.subtitle}>Spray Wall Routes</Text>
+          <Text style={styles.subtitle}>{t('home.sprayWallRoutes')}</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity
               style={[styles.filterButton, hasActiveFilters && styles.filterButtonActive]}
@@ -124,7 +126,7 @@ export default function HomeScreen({ navigation }: any) {
             )}
             {filters.grade && (
               <View style={styles.filterChip}>
-                <Text style={styles.filterChipText}>Grade: {filters.grade}</Text>
+                <Text style={styles.filterChipText}>{t('filters.grade')}: {filters.grade}</Text>
                 <TouchableOpacity
                   onPress={() => handleApplyFilters({ ...filters, grade: undefined })}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -135,7 +137,7 @@ export default function HomeScreen({ navigation }: any) {
             )}
             {filters.creatorId && (
               <View style={styles.filterChip}>
-                <Text style={styles.filterChipText}>My Routes</Text>
+                <Text style={styles.filterChipText}>{t('home.myRoutes')}</Text>
                 <TouchableOpacity
                   onPress={() => handleApplyFilters({ ...filters, creatorId: undefined })}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
