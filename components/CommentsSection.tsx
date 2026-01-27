@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Comment } from '../types/database.types';
 import { commentsApi, userProfilesApi, cacheEvents } from '../lib/api';
 import TrimmedTextInput from './TrimmedTextInput';
+import UserNameLink from './UserNameLink';
 import { formatRelativeDate } from '../utils/date';
 
 interface CommentWithProfile extends Comment {
@@ -113,9 +114,11 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
               {comments.map((comment) => (
                 <View key={comment.id} style={styles.comment}>
                   <View style={styles.commentHeader}>
-                    <Text style={styles.commentAuthor}>
-                      {comment.displayName || 'Anonymous'}
-                    </Text>
+                    <UserNameLink
+                      userId={comment.user_id}
+                      displayName={comment.displayName}
+                      style={styles.commentAuthor}
+                    />
                     <Text style={styles.commentDate}>
                       {formatRelativeDate(comment.created_at)}
                     </Text>

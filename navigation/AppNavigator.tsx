@@ -11,6 +11,7 @@ import MyAccountScreen from '../screens/MyAccountScreen';
 import MySendsScreen from '../screens/MySendsScreen';
 import MyCommentsScreen from '../screens/MyCommentsScreen';
 import RouteSendsScreen from '../screens/RouteSendsScreen';
+import UserProfileScreen from '../screens/UserProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -102,6 +103,15 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: 'Sends',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="UserProfile"
+          component={UserProfileScreen}
+          options={{
+            headerShown: true,
+            title: 'Profile',
             headerBackTitle: 'Back',
           }}
         />

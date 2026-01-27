@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { sendsApi, userProfilesApi, cacheEvents } from '../lib/api';
 import { Send } from '../types/database.types';
+import UserNameLink from '../components/UserNameLink';
 import { formatRelativeDate } from '../utils/date';
 
 type SendWithProfile = Send & { displayName?: string };
@@ -72,7 +73,11 @@ export default function RouteSendsScreen({ route }: any) {
   const renderSend = ({ item: send }: { item: SendWithProfile }) => (
     <View style={styles.sendItem}>
       <View style={styles.sendHeader}>
-        <Text style={styles.sendUser}>{send.displayName || 'Anonymous'}</Text>
+        <UserNameLink
+          userId={send.user_id}
+          displayName={send.displayName}
+          style={styles.sendUser}
+        />
         <Text style={styles.sendDate}>{formatRelativeDate(send.sent_at)}</Text>
       </View>
       <View style={styles.sendRatings}>
