@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Database } from '../types/database.types';
+import { formatDate } from '../utils/date';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
@@ -31,10 +32,6 @@ export default function AdminPhotosScreen({ navigation }: any) {
       setPhotos(data);
     }
     setLoading(false);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
   };
 
   const renderPhoto = ({ item }: { item: Photo }) => (

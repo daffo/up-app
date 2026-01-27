@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Database } from '../types/database.types';
+import { formatDate } from '../utils/date';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 
@@ -21,7 +22,7 @@ export default function RouteCard({ route, onPress }: RouteCardProps) {
         </Text>
       )}
       <Text style={styles.date}>
-        {new Date(route.created_at).toLocaleDateString()}
+        {formatDate(route.created_at)}
       </Text>
     </TouchableOpacity>
   );

@@ -226,6 +226,17 @@ export const sendsApi = {
     return data || [];
   },
 
+  async listByUser(userId: string): Promise<(Send & { route: { id: string; title: string; grade: string } })[]> {
+    const { data, error } = await supabase
+      .from('sends')
+      .select('*, route:routes(id, title, grade)')
+      .eq('user_id', userId)
+      .order('sent_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
   async getByUserAndRoute(userId: string, routeId: string): Promise<Send | null> {
     const { data, error } = await supabase
       .from('sends')
@@ -289,6 +300,17 @@ export const commentsApi = {
       .select('*')
       .eq('route_id', routeId)
       .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async listByUser(userId: string): Promise<(Comment & { route: { id: string; title: string; grade: string } })[]> {
+    const { data, error } = await supabase
+      .from('comments')
+      .select('*, route:routes(id, title, grade)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];

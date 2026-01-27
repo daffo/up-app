@@ -8,6 +8,8 @@ import CreateEditRouteScreen from '../screens/CreateEditRouteScreen';
 import AdminPhotosScreen from '../screens/AdminPhotosScreen';
 import AdminPhotoDetailScreen from '../screens/AdminPhotoDetailScreen';
 import MyAccountScreen from '../screens/MyAccountScreen';
+import MySendsScreen from '../screens/MySendsScreen';
+import MyCommentsScreen from '../screens/MyCommentsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -72,6 +74,24 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: 'My Account',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="MySends"
+          component={MySendsScreen}
+          options={{
+            headerShown: true,
+            title: 'My Sends',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="MyComments"
+          component={MyCommentsScreen}
+          options={{
+            headerShown: true,
+            title: 'My Comments',
             headerBackTitle: 'Back',
           }}
         />
