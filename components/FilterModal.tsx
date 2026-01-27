@@ -8,6 +8,7 @@ import {
   Switch,
 } from 'react-native';
 import { RouteFilters } from '../types/database.types';
+import TrimmedTextInput from './TrimmedTextInput';
 
 interface FilterModalProps {
   visible: boolean;
@@ -26,38 +27,29 @@ export default function FilterModal({
   onApply,
   onLoginRequired,
 }: FilterModalProps) {
-  const [localFilters, setLocalFilters] = React.useState<RouteFilters>(filters);
-
-  React.useEffect(() => {
-    setLocalFilters(filters);
-  }, [filters, visible]);
-
   const handleMyRoutesToggle = (value: boolean) => {
     if (value && !userId) {
       onClose();
       onLoginRequired();
       return;
     }
-    setLocalFilters({
-      ...localFilters,
-      creatorId: value ? userId : undefined,
-    });
+    onApply({ ...filters, creatorId: value ? userId : undefined });
   };
 
-  const handleApply = () => {
-    onApply(localFilters);
-    onClose();
+  const handleSearchChange = (text: string) => {
+    onApply({ ...filters, search: text || undefined });
+  };
+
+  const handleGradeChange = (text: string) => {
+    onApply({ ...filters, grade: text || undefined });
   };
 
   const handleReset = () => {
-    const emptyFilters: RouteFilters = {};
-    setLocalFilters(emptyFilters);
-    onApply(emptyFilters);
-    onClose();
+    onApply({});
   };
 
-  const isMyRoutesEnabled = localFilters.creatorId === userId && !!userId;
-  const hasActiveFilters = !!localFilters.creatorId;
+  const isMyRoutesEnabled = filters.creatorId === userId && !!userId;
+  const hasActiveFilters = !!filters.creatorId || !!filters.grade || !!filters.search;
 
   return (
     <Modal
@@ -67,16 +59,40 @@ export default function FilterModal({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <TouchableOpacity style={styles.backdrop} onPress={handleApply} />
+        <TouchableOpacity style={styles.backdrop} onPress={onClose} />
         <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.title}>Filters</Text>
-            <TouchableOpacity onPress={handleApply}>
+            <TouchableOpacity onPress={onClose}>
               <Text style={styles.closeButton}>Done</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.content}>
+            <View style={styles.searchRow}>
+              <TrimmedTextInput
+                style={styles.searchInput}
+                value={filters.search || ''}
+                onChangeText={handleSearchChange}
+                placeholder="Search by name or description"
+                placeholderTextColor="#999"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Grade</Text>
+              <TrimmedTextInput
+                style={styles.gradeInput}
+                value={filters.grade || ''}
+                onChangeText={handleGradeChange}
+                placeholder="e.g. V5, 6a+"
+                placeholderTextColor="#999"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
             <View style={styles.filterRow}>
               <Text style={styles.filterLabel}>My Routes</Text>
               <Switch
@@ -136,6 +152,17 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
+  searchRow: {
+    paddingVertical: 12,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -144,6 +171,16 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: 16,
+  },
+  gradeInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    width: 120,
+    textAlign: 'right',
   },
   footer: {
     padding: 16,

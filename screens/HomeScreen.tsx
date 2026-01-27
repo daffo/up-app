@@ -18,7 +18,7 @@ export default function HomeScreen({ navigation }: any) {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const prevUserIdRef = useRef<string | undefined>(undefined);
 
-  const hasActiveFilters = !!filters.creatorId;
+  const hasActiveFilters = !!filters.creatorId || !!filters.grade || !!filters.search;
 
   // Load filters from storage on mount
   useEffect(() => {
@@ -109,6 +109,28 @@ export default function HomeScreen({ navigation }: any) {
 
         {hasActiveFilters && (
           <View style={styles.activeFiltersBar}>
+            {filters.search && (
+              <View style={styles.filterChip}>
+                <Text style={styles.filterChipText}>"{filters.search}"</Text>
+                <TouchableOpacity
+                  onPress={() => handleApplyFilters({ ...filters, search: undefined })}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close-circle" size={16} color="#666" />
+                </TouchableOpacity>
+              </View>
+            )}
+            {filters.grade && (
+              <View style={styles.filterChip}>
+                <Text style={styles.filterChipText}>Grade: {filters.grade}</Text>
+                <TouchableOpacity
+                  onPress={() => handleApplyFilters({ ...filters, grade: undefined })}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close-circle" size={16} color="#666" />
+                </TouchableOpacity>
+              </View>
+            )}
             {filters.creatorId && (
               <View style={styles.filterChip}>
                 <Text style={styles.filterChipText}>My Routes</Text>

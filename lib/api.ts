@@ -41,6 +41,14 @@ export const routesApi = {
       query = query.eq('user_id', filters.creatorId);
     }
 
+    if (filters?.grade) {
+      query = query.ilike('grade', `%${filters.grade}%`);
+    }
+
+    if (filters?.search) {
+      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    }
+
     const { data, error } = await query;
 
     if (error) throw error;
