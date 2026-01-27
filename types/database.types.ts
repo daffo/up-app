@@ -25,6 +25,8 @@ export interface Hold {
 
 export interface RouteFilters {
   creatorId?: string
+  grade?: string
+  search?: string
 }
 
 export interface Database {
