@@ -84,6 +84,12 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
    ```
 2. GitHub Actions builds **production AAB** and submits to Play Store internal testing track
 
+**Required GitHub Secrets** (Settings → Secrets → Actions):
+- `EXPO_TOKEN` - Expo access token for EAS CLI
+- `GOOGLE_SERVICE_ACCOUNT_KEY` - Google Play Service Account JSON (full file contents)
+
+**Note**: EAS environment variables don't work from GitHub Actions. Use GitHub secrets instead.
+
 **Note**: Preview builds only trigger when `app.json` changes AND version is different from previous commit.
 
 ## Important Notes
