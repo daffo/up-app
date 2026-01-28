@@ -5,10 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'app.json'                                                                                                                                                 
-                                                                                                                                                                        
-permissions:                                                                                                                                                          
-  contents: write 
+      - 'app.json'
+    tags:
+      - 'release-v*'
+
+permissions:
+  contents: write
 
 jobs:
   check-and-build:
@@ -20,45 +22,57 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Check if version changed
-        id: version
+      - name: Determine build type
+        id: build-type
         run: |
-          OLD_VERSION=$(git show HEAD~1:app.json | jq -r '.expo.version' 2>/dev/null || echo "")
-          NEW_VERSION=$(jq -r '.expo.version' app.json)
-          echo "old=$OLD_VERSION" >> $GITHUB_OUTPUT
-          echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
-          if [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
+          if [[ "${{ github.ref }}" == refs/tags/release-v* ]]; then
+            echo "type=production" >> $GITHUB_OUTPUT
+            echo "should_build=true" >> $GITHUB_OUTPUT
           else
-            echo "changed=false" >> $GITHUB_OUTPUT
+            # Check if version changed for preview builds
+            OLD_VERSION=$(git show HEAD~1:app.json | jq -r '.expo.version' 2>/dev/null || echo "")
+            NEW_VERSION=$(jq -r '.expo.version' app.json)
+            echo "old=$OLD_VERSION" >> $GITHUB_OUTPUT
+            echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
+            if [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
+              echo "type=preview" >> $GITHUB_OUTPUT
+              echo "should_build=true" >> $GITHUB_OUTPUT
+            else
+              echo "should_build=false" >> $GITHUB_OUTPUT
+            fi
           fi
 
-      - name: Create tag
-        if: steps.version.outputs.changed == 'true'
+      - name: Create tag for preview
+        if: steps.build-type.outputs.type == 'preview'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v${{ steps.version.outputs.new }}"
-          git push origin "v${{ steps.version.outputs.new }}"
+          VERSION=$(jq -r '.expo.version' app.json)
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
 
       - name: Setup Node
-        if: steps.version.outputs.changed == 'true'
+        if: steps.build-type.outputs.should_build == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 18.x
           cache: npm
 
       - name: Setup Expo
-        if: steps.version.outputs.changed == 'true'
+        if: steps.build-type.outputs.should_build == 'true'
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        if: steps.version.outputs.changed == 'true'
+        if: steps.build-type.outputs.should_build == 'true'
         run: npm ci
 
-      - name: Build
-        if: steps.version.outputs.changed == 'true'
+      - name: Build Preview APK
+        if: steps.build-type.outputs.type == 'preview'
         run: eas build --profile preview --platform android --non-interactive
+
+      - name: Build Production & Submit to Play Store
+        if: steps.build-type.outputs.type == 'production'
+        run: eas build --profile production --platform android --non-interactive --auto-submit
