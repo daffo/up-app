@@ -60,6 +60,7 @@ export default function SignupScreen({ navigation }: any) {
         autoCapitalize="none"
         keyboardType="email-address"
         editable={!loading}
+        accessibilityLabel={t('auth.email')}
       />
 
       <TextInput
@@ -69,6 +70,7 @@ export default function SignupScreen({ navigation }: any) {
         onChangeText={setPassword}
         secureTextEntry
         editable={!loading}
+        accessibilityLabel={t('auth.password')}
       />
 
       <TextInput
@@ -78,6 +80,7 @@ export default function SignupScreen({ navigation }: any) {
         onChangeText={setConfirmPassword}
         secureTextEntry
         editable={!loading}
+        accessibilityLabel={t('auth.confirmPassword')}
       />
 
       <TouchableOpacity

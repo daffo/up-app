@@ -76,6 +76,7 @@ export default function LoginScreen({ navigation, route }: any) {
         autoCapitalize="none"
         keyboardType="email-address"
         editable={!loading}
+        accessibilityLabel={t('auth.email')}
       />
 
       <TextInput
@@ -85,6 +86,7 @@ export default function LoginScreen({ navigation, route }: any) {
         onChangeText={setPassword}
         secureTextEntry
         editable={!loading}
+        accessibilityLabel={t('auth.password')}
       />
 
       <TouchableOpacity

@@ -91,6 +91,7 @@ export default function MyAccountScreen({ navigation }: any) {
           onChangeText={setDisplayName}
           placeholder={t('account.displayNamePlaceholder')}
           autoCapitalize="words"
+          accessibilityLabel={t('account.displayName')}
         />
       </View>
 

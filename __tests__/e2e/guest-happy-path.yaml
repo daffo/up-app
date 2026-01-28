@@ -1,0 +1,121 @@
+appId: com.daffo.upapp
+name: Guest User - Complete Happy Path
+---
+# ============================================
+# GUEST USER HAPPY PATH
+# Tests all auth-required actions redirect to login
+# ============================================
+
+# Setup
+- runFlow: shared/setup.yaml
+
+# --------------------------------------------
+# 1. HOME SCREEN - VERIFY LOGGED OUT STATE
+# --------------------------------------------
+- assertVisible: "Up App"
+- assertVisible: "Spray Wall Routes"
+- assertVisible: "Login"
+
+# Wait for routes to load
+- extendedWaitUntil:
+    visible: "[0-9]+/[0-9]+/[0-9]+"
+    timeout: 15000
+
+# --------------------------------------------
+# 2. TAP LOGIN → SEE LOGIN PAGE → BACK
+# --------------------------------------------
+- tapOn: "Login"
+- extendedWaitUntil:
+    visible: "Log In"
+    timeout: 5000
+- assertVisible: "Email"
+- assertVisible: "Password"
+- pressKey: back
+
+# Should be back on home
+- assertVisible: "Up App"
+- assertVisible: "Login"
+
+# --------------------------------------------
+# 3. TAP CREATE ROUTE (+) → SEE LOGIN PAGE → BACK
+# --------------------------------------------
+- tapOn: "+"
+- extendedWaitUntil:
+    visible: "Log In"
+    timeout: 5000
+- assertVisible: "Email"
+- pressKey: back
+
+# Should be back on home
+- assertVisible: "Up App"
+
+# --------------------------------------------
+# 4. TAP ROUTE → TAP SEND → SEE LOGIN PAGE → BACK
+# --------------------------------------------
+# Tap on first route
+- tapOn:
+    text: "[0-9]+/[0-9]+/[0-9]+"
+    index: 0
+
+- assertVisible: "Route Details"
+
+# Tap Send button
+- tapOn: "Send"
+
+# Should redirect to login
+- extendedWaitUntil:
+    visible: "Log In"
+    timeout: 5000
+- assertVisible: "Email"
+- pressKey: back
+
+# Should be back on route detail
+- assertVisible: "Route Details"
+
+# Wait for route content to load
+- extendedWaitUntil:
+    visible: "Created by"
+    timeout: 10000
+
+# --------------------------------------------
+# 5. WRITE COMMENT → TAP SEND → SEE LOGIN PAGE → BACK
+# --------------------------------------------
+# Scroll to comments
+- scrollUntilVisible:
+    element:
+      text: "Comments.*"
+    direction: DOWN
+    timeout: 5000
+
+# Type in comment input (same pattern as login fields)
+- tapOn: "Add a comment..."
+- inputText: "test comment from guest"
+
+# Tap send button - it's a blue circle icon, no text
+# Using id selector if available, otherwise position relative to input
+- tapOn:
+    point: "90%, 95%"
+
+# Should redirect to login
+- extendedWaitUntil:
+    visible: "Log In"
+    timeout: 5000
+- assertVisible: "Email"
+- pressKey: back
+
+# Should be back on route detail
+- assertVisible: "Route Details"
+
+# --------------------------------------------
+# 6. BACK TO HOME
+# --------------------------------------------
+- pressKey: back
+
+# Should be on home screen, still logged out
+- assertVisible: "Up App"
+- assertVisible: "Spray Wall Routes"
+- assertVisible: "Login"
+
+# ============================================
+# GUEST HAPPY PATH COMPLETE
+# ============================================

@@ -1,0 +1,28 @@
+appId: com.daffo.upapp
+name: Auth - Login Flow
+---
+# Setup
+- runFlow: shared/setup.yaml
+
+# Should be on Home screen with Login button (logged out)
+- assertVisible: "Up App"
+- assertVisible: "Login"
+
+# Go to login
+- tapOn: "Login"
+- assertVisible: "Log In"
+
+# Enter credentials
+- tapOn: "Email"
+- inputText: ${E2E_TEST_EMAIL}
+- tapOn: "Password"
+- inputText: ${E2E_TEST_PASSWORD}
+
+# Submit
+- tapOn: "Log In"
+
+# Should be back on Home, logged in
+- extendedWaitUntil:
+    visible: "Up App"
+    timeout: 10000
+- assertNotVisible: "Login"

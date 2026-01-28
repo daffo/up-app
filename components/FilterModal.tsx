@@ -80,6 +80,7 @@ export default function FilterModal({
                 placeholder={t('filters.searchPlaceholder')}
                 placeholderTextColor="#999"
                 autoCorrect={false}
+                accessibilityLabel={t('filters.searchPlaceholder')}
               />
             </View>
 
@@ -93,6 +94,7 @@ export default function FilterModal({
                 placeholderTextColor="#999"
                 autoCapitalize="none"
                 autoCorrect={false}
+                accessibilityLabel={t('filters.grade')}
               />
             </View>
 

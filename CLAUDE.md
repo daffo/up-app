@@ -97,7 +97,7 @@ To trigger a CI build:
 /__tests__
   /unit           - Pure function tests (utils, cache logic)
   /contracts      - DB contract tests (real Supabase + Zod validation)
-  /e2e            - End-to-end flows
+  /e2e            - E2E tests (Maestro)
 /lib
   /schemas.ts     - Zod schemas for all DB tables
 ```
@@ -113,15 +113,40 @@ To trigger a CI build:
 - Tests all tables: routes, photos, detected_holds, sends, comments, user_profiles, admins
 - Tests API query patterns (joins, aggregations)
 
-### E2E Tests (TBD)
-- Auth flow (login → home with user context)
-- Route creation (photo → holds → save)
-- Send flow (mark route as sent with ratings)
+### E2E Tests (Maestro)
+Comprehensive happy path tests covering all features for both user types:
+
+- `guest-happy-path.yaml` - Full guest user flow:
+  - Browse routes, view route details
+  - View comments and sends list
+  - Tap creator to view profile
+  - Try auth-required action → redirects to login
+
+- `auth-happy-path.yaml` - Full authenticated user flow:
+  - Login, browse and view routes
+  - Log a send with rating
+  - Add and delete a comment
+  - View My Sends, My Comments, My Account
+  - Cleanup (remove send/comment) and logout
+
+**Shared flows:**
+- `shared/setup.yaml` - Common setup (clearState, launch, handle dev client)
+- `auth-login.yaml` - Reusable login flow (used by auth-happy-path)
+
+**Test User:** `e2e-test@up-app.test` / `TestPass123!` (created in Supabase Auth, auto-confirmed)
 
 ### Running Tests
 ```bash
 npm test              # Unit tests only (fast, no network)
 npm test -- --watch   # Watch mode
-npm run test:contracts # Contract tests (requires .env with Supabase credentials)
+npm run test:contracts # Contract tests (requires .env)
 npm run test:coverage  # Coverage report
+
+# E2E (requires Maestro CLI + Android emulator + dev server running)
+# Setup environment first:
+source .env && export JAVA_HOME="/opt/homebrew/opt/openjdk@17"
+
+npm run test:e2e       # Both happy paths
+npm run test:e2e:guest # Guest user flow only
+npm run test:e2e:auth  # Auth user flow only
 ```

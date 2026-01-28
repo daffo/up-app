@@ -1,0 +1,23 @@
+appId: com.daffo.upapp
+name: Test Setup
+---
+# Clear state and launch fresh
+- clearState
+- launchApp
+
+# Dev client launcher - tap the dev server
+- extendedWaitUntil:
+    visible: "http://10.0.2.2:8081"
+    timeout: 10000
+- tapOn: "http://10.0.2.2:8081"
+
+# Wait for welcome modal, then dismiss it (press back)
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 30000
+- pressKey: back
+
+# Wait for app Home screen
+- extendedWaitUntil:
+    visible: "Spray Wall Routes"
+    timeout: 10000

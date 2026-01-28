@@ -1,0 +1,22 @@
+appId: com.daffo.upapp
+name: Auth User - Login Flow
+---
+# ============================================
+# AUTHENTICATED USER - LOGIN ONLY
+# (More features to be added)
+# ============================================
+
+# Setup and Login
+- runFlow: auth-login.yaml
+
+- assertVisible: "Up App"
+- assertNotVisible: "Login"
+
+# Verify routes load
+- extendedWaitUntil:
+    visible: "[0-9]+/[0-9]+/[0-9]+"
+    timeout: 15000
+
+# ============================================
+# AUTH LOGIN COMPLETE
+# ============================================

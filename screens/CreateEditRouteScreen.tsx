@@ -299,6 +299,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
             value={title}
             onChangeText={setTitle}
             placeholder={t('routeForm.titlePlaceholder')}
+            accessibilityLabel={t('routeForm.title')}
           />
         </View>
 
@@ -310,6 +311,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
             value={grade}
             onChangeText={setGrade}
             placeholder={t('routeForm.gradePlaceholder')}
+            accessibilityLabel={t('routeForm.grade')}
           />
         </View>
 
@@ -321,6 +323,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
             value={description}
             onChangeText={setDescription}
             placeholder={t('routeForm.descriptionPlaceholder')}
+            accessibilityLabel={t('routeForm.description')}
             multiline
             numberOfLines={3}
           />
@@ -357,6 +360,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               style={styles.imageContainer}
               onPress={() => setEditorVisible(true)}
               activeOpacity={0.8}
+              testID="open-hold-editor"
             >
               <Image
                 source={{ uri: selectedPhoto.image_url }}

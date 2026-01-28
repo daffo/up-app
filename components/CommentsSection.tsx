@@ -149,11 +149,13 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
               multiline
               editable={!submitting}
               onFocus={onInputFocus}
+              accessibilityLabel={t('comments.addComment')}
             />
             <TouchableOpacity
               style={[styles.sendButton, (!newComment.trim() || submitting) && styles.sendButtonDisabled]}
               onPress={handleSubmit}
               disabled={!newComment.trim() || submitting}
+              accessibilityLabel={t('comments.title')}
             >
               <Ionicons name="send" size={20} color="#fff" />
             </TouchableOpacity>
