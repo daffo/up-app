@@ -42,6 +42,30 @@ cacheEvents.invalidate('routes');
 /navigation     - React Navigation setup
 ```
 
+## Database Schema
+
+### SQL Files (`/sql`)
+```
+migration-000-initial.sql    - Initial schema (admins, photos, routes with coordinates)
+migration-001-update-holds.sql - Replace coordinates with holds JSONB
+migration-002-detected-holds.sql - Add detected_holds table
+migration-003-user-profiles.sql  - Add user_profiles table
+migration-004-sends-comments.sql - Add sends and comments tables
+schema-current.sql           - Complete schema (run on fresh DB)
+```
+
+### Fresh Setup
+To set up a new Supabase project, run `schema-current.sql` - it contains the complete current schema in one file.
+
+### Tables
+- `admins` - Users with photo management permissions
+- `photos` - Wall photos with setup/teardown dates
+- `detected_holds` - Hold polygons detected on photos
+- `routes` - Climbing routes with hold references
+- `user_profiles` - Display names and settings
+- `sends` - Route completions with ratings
+- `comments` - User comments on routes
+
 ## Build & Deploy
 - **Dev**: `npx expo start`
 - **Version**: In `app.json` → `expo.version`
@@ -72,8 +96,10 @@ To trigger a CI build:
 ```
 /__tests__
   /unit           - Pure function tests (utils, cache logic)
-  /api            - API layer contract tests (mocked Supabase)
+  /contracts      - DB contract tests (real Supabase + Zod validation)
   /e2e            - End-to-end flows
+/lib
+  /schemas.ts     - Zod schemas for all DB tables
 ```
 
 ### Unit Tests (Jest)
@@ -81,18 +107,21 @@ To trigger a CI build:
 - `utils/date.ts` - formatDate, formatRelativeDate
 - `lib/api.ts` - cacheEvents subscribe/invalidate pattern
 
-### API Layer Tests (Jest + Supabase mock)
-- Verify correct Supabase queries are made
-- Verify cache invalidation triggers on mutations
-- Verify error handling
+### Contract Tests (Jest + Zod + Real Supabase)
+- Validates real DB responses match expected Zod schemas
+- Catches schema drift (renamed fields, type changes, etc.)
+- Tests all tables: routes, photos, detected_holds, sends, comments, user_profiles, admins
+- Tests API query patterns (joins, aggregations)
 
-### E2E Tests (TBD - discuss DB mock strategy)
+### E2E Tests (TBD)
 - Auth flow (login → home with user context)
 - Route creation (photo → holds → save)
 - Send flow (mark route as sent with ratings)
 
 ### Running Tests
 ```bash
-npm test              # Run all tests
+npm test              # Unit tests only (fast, no network)
 npm test -- --watch   # Watch mode
+npm run test:contracts # Contract tests (requires .env with Supabase credentials)
+npm run test:coverage  # Coverage report
 ```
