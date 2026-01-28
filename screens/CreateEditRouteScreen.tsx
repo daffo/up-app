@@ -266,7 +266,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               setSaving(true);
               await routesApi.delete(routeId);
               Alert.alert(t('routeForm.deleted'), t('routeForm.routeDeleted'));
-              navigation.goBack();
+              navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
             } catch (err) {
               console.error('Error deleting route:', err);
               Alert.alert(t('common.error'), t('routeForm.errorDelete'));
@@ -300,6 +300,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
             onChangeText={setTitle}
             placeholder={t('routeForm.titlePlaceholder')}
             accessibilityLabel={t('routeForm.title')}
+            maxLength={100}
           />
         </View>
 
@@ -326,6 +327,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
             accessibilityLabel={t('routeForm.description')}
             multiline
             numberOfLines={3}
+            maxLength={500}
           />
         </View>
 

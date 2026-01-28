@@ -46,14 +46,9 @@ export default function MyAccountScreen({ navigation }: any) {
   const handleSave = async () => {
     if (!user) return;
 
-    if (!displayName.trim()) {
-      Alert.alert(t('common.error'), t('account.displayNameRequired'));
-      return;
-    }
-
     setIsSaving(true);
     try {
-      await userProfilesApi.upsert(user.id, { display_name: displayName.trim() });
+      await userProfilesApi.upsert(user.id, { display_name: displayName.trim() || null });
       Alert.alert(t('common.success'), t('account.displayNameUpdated'));
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -92,6 +87,7 @@ export default function MyAccountScreen({ navigation }: any) {
           placeholder={t('account.displayNamePlaceholder')}
           autoCapitalize="words"
           accessibilityLabel={t('account.displayName')}
+          maxLength={50}
         />
       </View>
 

@@ -83,7 +83,7 @@ export default function ProfileDropdown({
 
   return (
     <>
-      <TouchableOpacity onPress={handleOpen}>
+      <TouchableOpacity onPress={handleOpen} accessibilityLabel={t('menu.openMenu')}>
         <View ref={buttonRef} style={styles.avatar}>
           <Text style={styles.avatarText}>{getInitials()}</Text>
         </View>

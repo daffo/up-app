@@ -151,6 +151,7 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
               editable={!submitting}
               onFocus={onInputFocus}
               accessibilityLabel={t('comments.addComment')}
+              maxLength={500}
             />
             <TouchableOpacity
               style={[styles.sendButton, (!newComment.trim() || submitting) && styles.sendButtonDisabled]}

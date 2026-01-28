@@ -190,6 +190,131 @@ name: Auth User - Login Flow
 - assertVisible: "Spray Wall Routes"
 
 # ============================================
+# SET DISPLAY NAME IN MY ACCOUNT
+# ============================================
+
+# Open profile menu
+- tapOn: "Open menu"
+- extendedWaitUntil:
+    visible: "My Account"
+    timeout: 3000
+
+# Go to My Account
+- tapOn: "My Account"
+- extendedWaitUntil:
+    visible: "Display Name"
+    timeout: 5000
+
+# Verify language options are visible
+- assertVisible: "Language"
+- assertVisible:
+    text: ".*English.*"
+- assertVisible:
+    text: ".*Italiano.*"
+
+# Enter display name
+- tapOn: "Display Name"
+- inputText: "E2E Tester"
+
+# Save
+- hideKeyboard
+- tapOn: "Save"
+- extendedWaitUntil:
+    visible: "Success"
+    timeout: 5000
+- tapOn: "OK"
+
+# Go back to home
+- pressKey: back
+
+# ============================================
+# CHECK MY COMMENTS
+# ============================================
+
+# Open profile menu
+- tapOn: "Open menu"
+- tapOn: "My Comments"
+- extendedWaitUntil:
+    visible: "E2E test comment"
+    timeout: 5000
+
+# Tap comment to go to route
+- tapOn: "E2E test comment"
+- extendedWaitUntil:
+    visible: "Route Details"
+    timeout: 5000
+- assertVisible: "E2E Test Route Updated"
+
+# Go back twice (to My Comments, then to Home)
+- pressKey: back
+- pressKey: back
+
+# ============================================
+# CHECK MY SENDS
+# ============================================
+
+# Open profile menu
+- tapOn: "Open menu"
+- tapOn: "My Sends"
+- extendedWaitUntil:
+    visible: "E2E Test Route Updated"
+    timeout: 5000
+
+# Tap send to go to route
+- tapOn: "E2E Test Route Updated"
+- extendedWaitUntil:
+    visible: "Route Details"
+    timeout: 5000
+
+# Scroll down to see comment with new display name
+- swipe:
+    direction: UP
+    duration: 500
+
+# Verify display name changed from Anonymous to E2E Tester
+- assertVisible: "E2E Tester"
+- assertVisible: "E2E test comment"
+
+# Tap username to see user's sends
+- tapOn: "E2E Tester"
+- extendedWaitUntil:
+    visible: "E2E Test Route Updated"
+    timeout: 5000
+
+# Go back to home (User Profile → Route Details → My Sends → Home)
+- pressKey: back
+- pressKey: back
+- pressKey: back
+- assertVisible: "Up App"
+
+# ============================================
+# CLEAR DISPLAY NAME
+# ============================================
+
+# Open profile menu
+- tapOn: "Open menu"
+- tapOn: "My Account"
+- extendedWaitUntil:
+    visible: "Display Name"
+    timeout: 5000
+
+# Clear display name
+- tapOn: "Display Name"
+- eraseText: 20
+- hideKeyboard
+
+# Save
+- tapOn: "Save"
+- extendedWaitUntil:
+    visible: "Success"
+    timeout: 5000
+- tapOn: "OK"
+
+# Go back to home
+- pressKey: back
+- assertVisible: "Up App"
+
+# ============================================
 # TEST FILTERS
 # ============================================
 
@@ -225,5 +350,51 @@ name: Auth User - Login Flow
     timeout: 5000
 
 # ============================================
-# TODO: CLEANUP - DELETE THE TEST ROUTE
+# DELETE THE TEST ROUTE
+# ============================================
+
+# Tap on the route to go to details
+- tapOn: "E2E Test Route Updated"
+- extendedWaitUntil:
+    visible: "Route Details"
+    timeout: 5000
+
+# Tap Edit Route
+- tapOn: "Edit Route"
+- extendedWaitUntil:
+    visible: "Edit Route"
+    timeout: 5000
+
+# Scroll to Delete button
+- scrollUntilVisible:
+    element: "Delete"
+    direction: DOWN
+    timeout: 5000
+
+# Tap Delete
+- tapOn: "Delete"
+
+# Confirm deletion in alert
+- extendedWaitUntil:
+    visible: "Delete"
+    timeout: 3000
+- tapOn: "Delete"
+
+# Handle deleted alert
+- extendedWaitUntil:
+    visible: "Deleted"
+    timeout: 5000
+- tapOn: "OK"
+
+# Should be redirected to home
+- extendedWaitUntil:
+    visible: "Up App"
+    timeout: 5000
+
+# My Routes filter should still be active, verify no routes
+- assertVisible: "My Routes"
+- assertVisible: "No routes yet"
+
+# ============================================
+# TEST COMPLETE
 # ============================================

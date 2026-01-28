@@ -104,6 +104,7 @@
     "italian": "Italiano"
   },
   "menu": {
+    "openMenu": "Open menu",
     "myAccount": "My Account",
     "mySends": "My Sends",
     "myComments": "My Comments",

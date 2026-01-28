@@ -104,6 +104,7 @@
     "italian": "Italiano"
   },
   "menu": {
+    "openMenu": "Apri menu",
     "myAccount": "Il Mio Account",
     "mySends": "Le Mie Chiusure",
     "myComments": "I Miei Commenti",
