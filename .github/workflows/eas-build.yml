@@ -73,6 +73,10 @@ jobs:
         if: steps.build-type.outputs.type == 'preview'
         run: eas build --profile preview --platform android --non-interactive
 
+      - name: Create Google Service Account file
+        if: steps.build-type.outputs.type == 'production'
+        run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}' > ./google-service-account.json
+
       - name: Build Production & Submit to Play Store
         if: steps.build-type.outputs.type == 'production'
         run: eas build --profile production --platform android --non-interactive --auto-submit
