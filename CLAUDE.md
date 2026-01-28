@@ -70,13 +70,21 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 - **Dev**: `npx expo start`
 - **Version**: In `app.json` → `expo.version`
 
-### Triggering a Build
-To trigger a CI build:
+### CI/CD Workflow
+
+**Preview Build (for testing):**
 1. Bump version in `app.json` (e.g., `0.1.2-alpha` → `0.1.3-alpha`)
 2. Commit and push to `main`
-3. GitHub Actions will auto-tag and run `eas build --profile preview --platform android`
+3. GitHub Actions auto-creates `v0.1.3-alpha` tag and builds **preview APK**
 
-**Note**: The workflow only triggers when `app.json` changes AND the version number is different from the previous commit.
+**Production Release (to Play Store internal testing):**
+1. After testing preview, push a release tag:
+   ```bash
+   git tag release-v0.1.3-alpha && git push origin release-v0.1.3-alpha
+   ```
+2. GitHub Actions builds **production AAB** and submits to Play Store internal testing track
+
+**Note**: Preview builds only trigger when `app.json` changes AND version is different from previous commit.
 
 ## Important Notes
 - GestureHandlerRootView must wrap the app (in App.tsx)
