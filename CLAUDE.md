@@ -59,3 +59,40 @@ To trigger a CI build:
 - react-native-worklets pinned to 0.5.1 for Expo SDK 54 compatibility
 - DraggableFlatList inside ScrollView has gesture conflicts (known limitation)
 - Commits follow Conventional Commits format
+
+## Testing Strategy
+
+### Principles
+- All utility functions (`/utils`) must have unit tests
+- API layer logic (cache invalidation) must have unit tests
+- API layer tests verify contracts with Supabase DB
+- E2E tests cover critical user flows (skip component tests - E2E provides more value)
+
+### Test Structure
+```
+/__tests__
+  /unit           - Pure function tests (utils, cache logic)
+  /api            - API layer contract tests (mocked Supabase)
+  /e2e            - End-to-end flows
+```
+
+### Unit Tests (Jest)
+- `utils/polygon.ts` - isPointInPolygon, calculatePolygonArea, findPolygonsAtPoint
+- `utils/date.ts` - formatDate, formatRelativeDate
+- `lib/api.ts` - cacheEvents subscribe/invalidate pattern
+
+### API Layer Tests (Jest + Supabase mock)
+- Verify correct Supabase queries are made
+- Verify cache invalidation triggers on mutations
+- Verify error handling
+
+### E2E Tests (TBD - discuss DB mock strategy)
+- Auth flow (login → home with user context)
+- Route creation (photo → holds → save)
+- Send flow (mark route as sent with ratings)
+
+### Running Tests
+```bash
+npm test              # Run all tests
+npm test -- --watch   # Watch mode
+```
