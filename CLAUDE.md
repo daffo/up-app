@@ -83,6 +83,7 @@ To trigger a CI build:
 - react-native-worklets pinned to 0.5.1 for Expo SDK 54 compatibility
 - DraggableFlatList inside ScrollView has gesture conflicts (known limitation)
 - Commits follow Conventional Commits format
+- **All user-facing text must be localized** - use `t('key')` from `useTranslation()`, including accessibility labels. Add keys to both `locales/en.json` and `locales/it.json`
 
 ## Testing Strategy
 
@@ -143,10 +144,11 @@ npm run test:contracts # Contract tests (requires .env)
 npm run test:coverage  # Coverage report
 
 # E2E (requires Maestro CLI + Android emulator + dev server running)
-# Setup environment first:
-source .env && export JAVA_HOME="/opt/homebrew/opt/openjdk@17"
+export JAVA_HOME="/opt/homebrew/opt/openjdk@17"
 
 npm run test:e2e       # Both happy paths
 npm run test:e2e:guest # Guest user flow only
 npm run test:e2e:auth  # Auth user flow only
 ```
+
+**Note:** Maestro does NOT inherit shell env vars. The `test:e2e:auth` script sources `.env` and passes credentials via `-e` flags automatically.

@@ -82,13 +82,15 @@
     "difficultyForGrade": "Difficoltà per Grado",
     "soft": "Facile",
     "accurate": "Accurato",
-    "hard": "Difficile"
+    "hard": "Difficile",
+    "rateStar": "{{count}} stella"
   },
   "comments": {
     "title": "Commenti",
     "titleWithCount": "Commenti ({{count}})",
     "noCommentsYet": "Nessun commento",
-    "addComment": "Aggiungi un commento..."
+    "addComment": "Aggiungi un commento...",
+    "deleteComment": "Elimina commento"
   },
   "account": {
     "email": "Email",
@@ -116,11 +118,16 @@
   },
   "filters": {
     "title": "Filtri",
+    "openFilters": "Apri filtri",
     "searchPlaceholder": "Cerca per nome o descrizione",
     "grade": "Grado",
     "gradePlaceholder": "es. V5, 6a+",
     "myRoutes": "Le Mie Vie",
-    "resetFilters": "Reimposta Filtri"
+    "toggleMyRoutes": "Attiva filtro mie vie",
+    "resetFilters": "Reimposta Filtri",
+    "clearSearch": "Rimuovi filtro ricerca",
+    "clearGrade": "Rimuovi filtro grado",
+    "clearMyRoutes": "Rimuovi filtro mie vie"
   },
   "auth": {
     "subtitle": "Traccia le Vie della Palestra",

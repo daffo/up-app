@@ -98,6 +98,7 @@ export default function HomeScreen({ navigation }: any) {
             <TouchableOpacity
               style={[styles.filterButton, hasActiveFilters && styles.filterButtonActive]}
               onPress={() => setFilterModalVisible(true)}
+              accessibilityLabel={t('filters.openFilters')}
             >
               <Ionicons
                 name="filter"
@@ -114,37 +115,34 @@ export default function HomeScreen({ navigation }: any) {
         {hasActiveFilters && (
           <View style={styles.activeFiltersBar}>
             {filters.search && (
-              <View style={styles.filterChip}>
+              <TouchableOpacity
+                style={styles.filterChip}
+                onPress={() => handleApplyFilters({ ...filters, search: undefined })}
+                accessibilityLabel={t('filters.clearSearch')}
+              >
                 <Text style={styles.filterChipText}>"{filters.search}"</Text>
-                <TouchableOpacity
-                  onPress={() => handleApplyFilters({ ...filters, search: undefined })}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons name="close-circle" size={16} color="#666" />
-                </TouchableOpacity>
-              </View>
+                <Ionicons name="close-circle" size={16} color="#666" />
+              </TouchableOpacity>
             )}
             {filters.grade && (
-              <View style={styles.filterChip}>
+              <TouchableOpacity
+                style={styles.filterChip}
+                onPress={() => handleApplyFilters({ ...filters, grade: undefined })}
+                accessibilityLabel={t('filters.clearGrade')}
+              >
                 <Text style={styles.filterChipText}>{t('filters.grade')}: {filters.grade}</Text>
-                <TouchableOpacity
-                  onPress={() => handleApplyFilters({ ...filters, grade: undefined })}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons name="close-circle" size={16} color="#666" />
-                </TouchableOpacity>
-              </View>
+                <Ionicons name="close-circle" size={16} color="#666" />
+              </TouchableOpacity>
             )}
             {filters.creatorId && (
-              <View style={styles.filterChip}>
+              <TouchableOpacity
+                style={styles.filterChip}
+                onPress={() => handleApplyFilters({ ...filters, creatorId: undefined })}
+                accessibilityLabel={t('filters.clearMyRoutes')}
+              >
                 <Text style={styles.filterChipText}>{t('home.myRoutes')}</Text>
-                <TouchableOpacity
-                  onPress={() => handleApplyFilters({ ...filters, creatorId: undefined })}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons name="close-circle" size={16} color="#666" />
-                </TouchableOpacity>
-              </View>
+                <Ionicons name="close-circle" size={16} color="#666" />
+              </TouchableOpacity>
             )}
           </View>
         )}

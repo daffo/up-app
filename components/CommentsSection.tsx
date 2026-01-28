@@ -130,6 +130,7 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
                     <TouchableOpacity
                       style={styles.deleteButton}
                       onPress={() => handleDelete(comment.id)}
+                      accessibilityLabel={t('comments.deleteComment')}
                     >
                       <Ionicons name="trash-outline" size={16} color="#999" />
                     </TouchableOpacity>

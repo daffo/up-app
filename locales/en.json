@@ -82,13 +82,15 @@
     "difficultyForGrade": "Difficulty for Grade",
     "soft": "Soft",
     "accurate": "Accurate",
-    "hard": "Hard"
+    "hard": "Hard",
+    "rateStar": "{{count}} star"
   },
   "comments": {
     "title": "Comments",
     "titleWithCount": "Comments ({{count}})",
     "noCommentsYet": "No comments yet",
-    "addComment": "Add a comment..."
+    "addComment": "Add a comment...",
+    "deleteComment": "Delete comment"
   },
   "account": {
     "email": "Email",
@@ -116,11 +118,16 @@
   },
   "filters": {
     "title": "Filters",
+    "openFilters": "Open filters",
     "searchPlaceholder": "Search by name or description",
     "grade": "Grade",
     "gradePlaceholder": "e.g. V5, 6a+",
     "myRoutes": "My Routes",
-    "resetFilters": "Reset Filters"
+    "toggleMyRoutes": "Toggle my routes filter",
+    "resetFilters": "Reset Filters",
+    "clearSearch": "Clear search filter",
+    "clearGrade": "Clear grade filter",
+    "clearMyRoutes": "Clear my routes filter"
   },
   "auth": {
     "subtitle": "Climbing Gym Route Tracker",

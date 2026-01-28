@@ -18,5 +18,212 @@ name: Auth User - Login Flow
     timeout: 15000
 
 # ============================================
-# AUTH LOGIN COMPLETE
+# CREATE A NEW ROUTE
+# ============================================
+
+# Tap + to create route
+- tapOn: "+"
+
+# Should be on Create Route screen
+- assertVisible: "Create Route"
+
+# Fill in title
+- tapOn: "Title"
+- inputText: "E2E Test Route"
+
+# Fill in grade
+- tapOn: "Grade"
+- inputText: "V3"
+
+# Scroll down to make the image fully visible
+- swipe:
+    direction: UP
+    duration: 500
+
+# Hide keyboard and tap on the image to open hold editor
+- hideKeyboard
+- tapOn:
+    id: "open-hold-editor"
+- extendedWaitUntil:
+    visible: "Done"
+    timeout: 5000
+
+# Tap on a hold in the image (center area where holds likely exist)
+- tapOn:
+    point: "50%,50%"
+
+# Tap Done to close editor
+- tapOn: "Done"
+
+# Verify we're back on create screen with 1 hold
+- assertVisible: "Route Preview (1 holds)"
+
+# Wait for UI to settle after modal close
+- waitForAnimationToEnd
+
+# Create the route (tap at bottom where button is, not header)
+- tapOn:
+    point: "50%,95%"
+
+# Handle success alert
+- extendedWaitUntil:
+    visible: "Success"
+    timeout: 10000
+- tapOn: "OK"
+
+# Should navigate to route detail
+- extendedWaitUntil:
+    visible: "Route Details"
+    timeout: 10000
+
+# Verify our route details
+- assertVisible: "E2E Test Route"
+- assertVisible: "V3"
+
+# ============================================
+# ADD A COMMENT
+# ============================================
+
+# Scroll to comments section
+- scrollUntilVisible:
+    element:
+      text: "Add a comment.*"
+    direction: DOWN
+    timeout: 5000
+
+# Type a comment
+- tapOn: "Add a comment..."
+- inputText: "E2E test comment"
+
+# Tap send button (blue circle at bottom right)
+- tapOn:
+    point: "90%, 95%"
+
+# Wait for comment to appear and verify Anonymous name
+- extendedWaitUntil:
+    visible: "E2E test comment"
+    timeout: 5000
+- assertVisible: "Anonymous"
+
+# ============================================
+# LOG A SEND
+# ============================================
+
+# Tap Send button (in header)
+- tapOn: "Send"
+
+# Wait for send modal
+- extendedWaitUntil:
+    visible: "Log Send"
+    timeout: 5000
+
+# Tap 5th star for quality rating
+- tapOn: "5 star"
+
+# Select "Accurate" for difficulty
+- tapOn: "Accurate"
+
+# Submit the send (tap button at bottom, not title)
+- tapOn:
+    point: "50%,92%"
+
+# Wait for modal to close and verify send was logged
+- waitForAnimationToEnd
+- assertVisible: "Sent"
+
+# Tap Rating row to see sends list
+- tapOn: "Rating"
+
+# Wait for sends screen and check Anonymous is shown
+- extendedWaitUntil:
+    visible: "Sends"
+    timeout: 5000
+- assertVisible: "Anonymous"
+
+# Go back to route detail
+- pressKey: back
+
+# ============================================
+# EDIT THE ROUTE
+# ============================================
+
+# Tap Edit Route
+- tapOn: "Edit Route"
+
+# Wait for edit screen
+- extendedWaitUntil:
+    visible: "Edit Route"
+    timeout: 5000
+
+# Change the title
+- tapOn: "Title"
+- eraseText: 20
+- inputText: "E2E Test Route Updated"
+
+# Add description
+- tapOn: "Description"
+- inputText: "Updated via E2E test"
+
+# Hide keyboard and save
+- hideKeyboard
+
+# Tap Save Changes button
+- tapOn: "Save Changes"
+
+# Handle success alert
+- extendedWaitUntil:
+    visible: "Success"
+    timeout: 10000
+- tapOn: "OK"
+
+# Verify we're back on route detail with updated info
+- assertVisible: "E2E Test Route Updated"
+
+# ============================================
+# BACK TO MAIN ROUTE LIST
+# ============================================
+
+- pressKey: back
+
+# Verify we're on home screen
+- assertVisible: "Up App"
+- assertVisible: "Spray Wall Routes"
+
+# ============================================
+# TEST FILTERS
+# ============================================
+
+# Open filters
+- tapOn: "Open filters"
+
+# Wait for filter modal
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+
+# Toggle My Routes switch
+- tapOn: "Toggle my routes filter"
+
+# Search for something NOT in title/description
+- tapOn: "Search by name or description"
+- inputText: "xyznonexistent"
+
+# Close filters (hideKeyboard dismisses modal)
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Verify no routes shown (empty state or no matches)
+- assertNotVisible: "E2E Test Route Updated"
+
+# Tap on the search filter chip to remove it (keep My Routes filter)
+- tapOn: "Clear search filter"
+- waitForAnimationToEnd
+
+# Verify route is now visible
+- extendedWaitUntil:
+    visible: "E2E Test Route Updated"
+    timeout: 5000
+
+# ============================================
+# TODO: CLEANUP - DELETE THE TEST ROUTE
 # ============================================

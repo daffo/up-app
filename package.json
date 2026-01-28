@@ -11,9 +11,9 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:contracts": "jest --config jest.contracts.config.js",
-    "test:e2e": "maestro test __tests__/e2e/guest-happy-path.yaml __tests__/e2e/auth-happy-path.yaml",
+    "test:e2e": "npm run test:e2e:guest && npm run test:e2e:auth",
     "test:e2e:guest": "maestro test __tests__/e2e/guest-happy-path.yaml",
-    "test:e2e:auth": "maestro test __tests__/e2e/auth-happy-path.yaml"
+    "test:e2e:auth": "source .env && maestro test -e E2E_TEST_EMAIL=\"$E2E_TEST_EMAIL\" -e E2E_TEST_PASSWORD=\"$E2E_TEST_PASSWORD\" __tests__/e2e/auth-happy-path.yaml"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

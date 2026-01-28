@@ -104,6 +104,7 @@ export default function FilterModal({
                 value={isMyRoutesEnabled}
                 onValueChange={handleMyRoutesToggle}
                 trackColor={{ false: '#ddd', true: '#0066cc' }}
+                accessibilityLabel={t('filters.toggleMyRoutes')}
               />
             </View>
           </View>

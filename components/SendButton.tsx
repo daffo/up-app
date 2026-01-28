@@ -165,6 +165,7 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
                   <TouchableOpacity
                     key={star}
                     onPress={() => setQualityRating(qualityRating === star ? null : star)}
+                    accessibilityLabel={t('sends.rateStar', { count: star })}
                   >
                     <Ionicons
                       name={qualityRating && qualityRating >= star ? 'star' : 'star-outline'}
