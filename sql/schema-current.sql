@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-004-sends-comments
+-- Last updated: After migration-005-length-constraints
 
 -- ============================================================================
 -- TABLES
@@ -38,8 +38,8 @@ CREATE TABLE detected_holds (
 CREATE TABLE routes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT,
+  title TEXT NOT NULL CHECK (char_length(title) <= 100),
+  description TEXT CHECK (description IS NULL OR char_length(description) <= 500),
   grade TEXT NOT NULL,
   photo_id UUID REFERENCES photos(id) ON DELETE CASCADE NOT NULL,
   holds JSONB NOT NULL DEFAULT '[]'::jsonb,  -- Array of {order, detected_hold_id, labelX, labelY, note?}
@@ -49,7 +49,7 @@ CREATE TABLE routes (
 -- User profiles table (display names and account settings)
 CREATE TABLE user_profiles (
   user_id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
-  display_name TEXT,
+  display_name TEXT CHECK (display_name IS NULL OR char_length(display_name) <= 50),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -71,7 +71,7 @@ CREATE TABLE comments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   route_id UUID NOT NULL REFERENCES routes(id) ON DELETE CASCADE,
-  text TEXT NOT NULL CHECK (char_length(text) > 0),
+  text TEXT NOT NULL CHECK (char_length(text) > 0 AND char_length(text) <= 500),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
