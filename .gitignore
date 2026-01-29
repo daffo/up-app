@@ -43,3 +43,9 @@ coverage/
 # generated native folders
 /ios
 /android
+
+# IDE
+.idea/
+
+# Claude Code
+.claude/
