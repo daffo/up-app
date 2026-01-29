@@ -72,25 +72,20 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 
 ### CI/CD Workflow
 
-**Preview Build (for testing):**
+**Production Release (to Play Store internal testing):**
 1. Bump version in `app.json` (e.g., `0.1.2-alpha` → `0.1.3-alpha`)
 2. Commit and push to `main`
-3. GitHub Actions auto-creates `v0.1.3-alpha` tag and builds **preview APK**
-
-**Production Release (to Play Store internal testing):**
-1. After testing preview, push a release tag:
+3. Push a release tag:
    ```bash
    git tag release-v0.1.3-alpha && git push origin release-v0.1.3-alpha
    ```
-2. GitHub Actions builds **production AAB** and submits to Play Store internal testing track
+4. GitHub Actions builds **production AAB** and submits to Play Store internal testing track
 
 **Required GitHub Secrets** (Settings → Secrets → Actions):
 - `EXPO_TOKEN` - Expo access token for EAS CLI
 - `GOOGLE_SERVICE_ACCOUNT_KEY` - Google Play Service Account JSON (full file contents)
 
 **Note**: EAS environment variables don't work from GitHub Actions. Use GitHub secrets instead.
-
-**Note**: Preview builds only trigger when `app.json` changes AND version is different from previous commit.
 
 ## Important Notes
 - GestureHandlerRootView must wrap the app (in App.tsx)
