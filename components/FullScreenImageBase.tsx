@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, ReactNode } from 'react';
 import {
   View,
-  Image,
+  Image as RNImage,
   Modal,
   StyleSheet,
   TouchableOpacity,
@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   StatusBar,
 } from 'react-native';
+import { Image } from 'expo-image';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { Hold, DetectedHold } from '../types/database.types';
 import RouteOverlay from './RouteOverlay';
@@ -87,7 +88,7 @@ export default function FullScreenImageBase({
 
   useEffect(() => {
     if (visible) {
-      Image.getSize(photoUrl, (width, height) => {
+      RNImage.getSize(photoUrl, (width, height) => {
         setImageNaturalSize({ width, height });
       });
     }
@@ -167,7 +168,7 @@ export default function FullScreenImageBase({
             <Image
               source={{ uri: photoUrl }}
               style={styles.image}
-              resizeMode="contain"
+              contentFit="contain"
             />
 
             {displayedDimensions.width > 0 && (

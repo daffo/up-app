@@ -7,12 +7,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Image,
+  Image as RNImage,
   useWindowDimensions,
   StatusBar,
   PanResponder,
   GestureResponderEvent,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import Svg, { Circle } from 'react-native-svg';
 import { Hold, DetectedHold } from '../types/database.types';
@@ -652,7 +653,7 @@ export default function FullScreenHoldEditor({
   // Load natural image size for focused view
   React.useEffect(() => {
     if (visible && photoUrl) {
-      Image.getSize(photoUrl, (width, height) => {
+      RNImage.getSize(photoUrl, (width, height) => {
         setImageNaturalSize({ width, height });
       });
     }
@@ -900,7 +901,7 @@ export default function FullScreenHoldEditor({
                   width: props.scaledImageWidth,
                   height: props.scaledImageHeight,
                 }}
-                resizeMode="cover"
+                contentFit="cover"
               />
             </View>
             {/* Overlay for holds in this region - hide during brush painting */}
