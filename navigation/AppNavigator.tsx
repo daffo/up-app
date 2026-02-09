@@ -1,6 +1,7 @@
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import * as Linking from 'expo-linking';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -16,11 +17,31 @@ import UserProfileScreen from '../screens/UserProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
+const linking: LinkingOptions<any> = {
+  prefixes: [Linking.createURL('/')],
+  config: {
+    screens: {
+      Home: '',
+      Login: 'login',
+      Signup: 'signup',
+      RouteDetail: 'route/:routeId',
+      CreateEditRoute: 'route/edit/:routeId?',
+      AdminPhotos: 'admin/photos',
+      AdminPhotoDetail: 'admin/photo/:photoId',
+      MyAccount: 'account',
+      MySends: 'sends',
+      MyComments: 'comments',
+      RouteSends: 'route/:routeId/sends',
+      UserProfile: 'user/:userId',
+    },
+  },
+};
+
 export default function AppNavigator() {
   const { t } = useTranslation();
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator initialRouteName="Home">
         <Stack.Screen
           name="Home"
