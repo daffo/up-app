@@ -86,6 +86,7 @@ export default function FullScreenImageBase({
   // Zoom state tracking
   const zoomStateRef = useRef<ZoomState>({ scale: 1, positionX: 0, positionY: 0 });
 
+
   useEffect(() => {
     if (visible) {
       RNImage.getSize(photoUrl, (width, height) => {
