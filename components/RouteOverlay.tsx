@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Line, Defs, Marker, Polygon, G, Path } from 'react-native-svg';
 import { Hold, DetectedHold } from '../types/database.types';
 import { calculatePolygonArea } from '../utils/polygon';
+import { getHoldLabel } from '../utils/holds';
 
 interface RouteOverlayProps {
   holds: Hold[];
@@ -424,7 +425,7 @@ export default function RouteOverlay({
       {holds.map((hold, index) => {
         const labelX = (hold.labelX / 100) * width;
         const labelY = (hold.labelY / 100) * height;
-        const labelText = hold.note ? `${hold.order}. ${hold.note}` : `${hold.order}`;
+        const labelText = getHoldLabel(index, holds.length, hold.note);
 
         return (
           <View

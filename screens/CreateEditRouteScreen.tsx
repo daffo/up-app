@@ -18,6 +18,7 @@ import { useAuth } from '../lib/auth-context';
 import { Database, Hold, DetectedHold } from '../types/database.types';
 import { routesApi, photosApi, detectedHoldsApi } from '../lib/api';
 import FullScreenRouteEditor from '../components/FullScreenRouteEditor';
+import { getHoldLabel } from '../utils/holds';
 import RouteOverlay from '../components/RouteOverlay';
 import { formatDate } from '../utils/date';
 
@@ -174,7 +175,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         style={[styles.holdItem, isActive && styles.holdItemActive]}
       >
         <Text style={styles.holdItemText}>
-          {item.order}. {item.note || t('routeForm.noNote')}
+          {getHoldLabel(item.order - 1, holds.length, item.note) || t('routeForm.noNote')}
         </Text>
         <View style={styles.holdItemButtons}>
           <Text style={styles.dragHandle}>☰</Text>

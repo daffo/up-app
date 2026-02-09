@@ -13,6 +13,7 @@ import { Hold, DetectedHold } from '../types/database.types';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
+import { getHoldLabel, canSetStart, isDualStartNote } from '../utils/holds';
 import { useDragDelta } from '../hooks/useDragDelta';
 
 interface FullScreenRouteEditorProps {
@@ -262,6 +263,34 @@ export default function FullScreenRouteEditor({
     setMatchingHoldIndices([]);
   };
 
+  const handleSetSingleStart = () => {
+    if (selectedHoldIndex === null) return;
+    const otherIndex = selectedHoldIndex === 0 ? 1 : 0;
+    const updatedHolds = holds.map((hold, i) => {
+      if (i === selectedHoldIndex || i === otherIndex) return { ...hold, note: '' };
+      return hold;
+    });
+    setHolds(updatedHolds);
+    setEditModalVisible(false);
+    setSelectedHoldIndex(null);
+    setMatchingHoldIndices([]);
+  };
+
+  const handleSetDualStart = (side: 'DX' | 'SX') => {
+    if (selectedHoldIndex === null) return;
+    const otherSide = side === 'DX' ? 'SX' : 'DX';
+    const otherIndex = selectedHoldIndex === 0 ? 1 : 0;
+    const updatedHolds = holds.map((hold, i) => {
+      if (i === selectedHoldIndex) return { ...hold, note: side };
+      if (i === otherIndex) return { ...hold, note: otherSide };
+      return hold;
+    });
+    setHolds(updatedHolds);
+    setEditModalVisible(false);
+    setSelectedHoldIndex(null);
+    setMatchingHoldIndices([]);
+  };
+
   // Get holds with moving delta applied for visual feedback
   const getDisplayedHolds = () => {
     if (movingLabelIndex === null) return holds;
@@ -338,8 +367,32 @@ export default function FullScreenRouteEditor({
         >
           <View style={baseStyles.modalContent}>
             <Text style={baseStyles.modalTitle}>
-              {t('editor.editHold')} {selectedHoldIndex !== null ? holds[selectedHoldIndex]?.order : ''}
+              {t('editor.editHold')} {selectedHoldIndex !== null ? getHoldLabel(selectedHoldIndex, holds.length, holds[selectedHoldIndex]?.note) : ''}
             </Text>
+
+            {selectedHoldIndex !== null && canSetStart(selectedHoldIndex, holds.length) && (() => {
+              const currentNote = holds[selectedHoldIndex]?.note;
+              const isDual = isDualStartNote(currentNote);
+              return (
+                <>
+                  {selectedHoldIndex === 0 && isDual && (
+                    <TouchableOpacity style={baseStyles.modalButton} onPress={handleSetSingleStart}>
+                      <Text style={baseStyles.modalButtonText}>{t('editor.setStart')}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {!currentNote?.startsWith('DX') && (
+                    <TouchableOpacity style={baseStyles.modalButton} onPress={() => handleSetDualStart('DX')}>
+                      <Text style={baseStyles.modalButtonText}>{t('editor.setStartDX')}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {!currentNote?.startsWith('SX') && (
+                    <TouchableOpacity style={baseStyles.modalButton} onPress={() => handleSetDualStart('SX')}>
+                      <Text style={baseStyles.modalButtonText}>{t('editor.setStartSX')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              );
+            })()}
 
             <TouchableOpacity style={baseStyles.modalButton} onPress={handleOpenNoteModal}>
               <Text style={baseStyles.modalButtonText}>{t('editor.editNote')}</Text>
@@ -424,7 +477,7 @@ export default function FullScreenRouteEditor({
                 onPress={() => handlePickHoldToEdit(index)}
               >
                 <Text style={baseStyles.modalButtonText}>
-                  {t('editor.hold')} {holds[index]?.order}{holds[index]?.note ? ` - ${holds[index].note}` : ''}
+                  {t('editor.hold')} {getHoldLabel(index, holds.length, holds[index]?.note)}
                 </Text>
               </TouchableOpacity>
             ))}
