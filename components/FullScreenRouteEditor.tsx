@@ -3,6 +3,7 @@ import {
   View,
   Modal,
   TouchableOpacity,
+  Pressable,
   Text,
   Alert,
   TextInput,
@@ -433,7 +434,7 @@ export default function FullScreenRouteEditor({
           activeOpacity={1}
           onPress={() => setNoteModalVisible(false)}
         >
-          <View style={baseStyles.modalContent}>
+          <Pressable style={baseStyles.modalContent} onPress={(e) => e.stopPropagation()}>
             <Text style={baseStyles.modalTitle}>{t('editor.addNote')}</Text>
             <TextInput
               style={baseStyles.noteInput}
@@ -452,7 +453,7 @@ export default function FullScreenRouteEditor({
             >
               <Text style={baseStyles.modalButtonText}>{t('editor.cancel')}</Text>
             </TouchableOpacity>
-          </View>
+          </Pressable>
         </TouchableOpacity>
       </Modal>
 
