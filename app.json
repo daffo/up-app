@@ -3,7 +3,7 @@
     "name": "up-app",
     "slug": "up-app",
     "scheme": "upapp",
-    "version": "0.2.3-alpha",
+    "version": "0.2.4-alpha",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
