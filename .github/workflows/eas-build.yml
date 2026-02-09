@@ -5,6 +5,9 @@ on:
     tags:
       - 'release-v*'
 
+permissions:
+  contents: write
+
 jobs:
   deploy-web:
     name: Deploy Web (Vercel)
