@@ -116,52 +116,50 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
-        {hasActiveFilters && (
-          <View style={styles.activeFiltersBar}>
-            {filters.search && (
-              <TouchableOpacity
-                style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
-                onPress={() => handleApplyFilters({ ...filters, search: undefined })}
-                accessibilityLabel={t('filters.clearSearch')}
-              >
-                <Text style={[styles.filterChipText, { color: colors.primary }]}>"{filters.search}"</Text>
-                <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
-            {filters.grade && (
-              <TouchableOpacity
-                style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
-                onPress={() => handleApplyFilters({ ...filters, grade: undefined })}
-                accessibilityLabel={t('filters.clearGrade')}
-              >
-                <Text style={[styles.filterChipText, { color: colors.primary }]}>{t('filters.grade')}: {filters.grade}</Text>
-                <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
-            {filters.creatorId && (
-              <TouchableOpacity
-                style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
-                onPress={() => handleApplyFilters({ ...filters, creatorId: undefined })}
-                accessibilityLabel={t('filters.clearMyRoutes')}
-              >
-                <Text style={[styles.filterChipText, { color: colors.primary }]}>{t('home.myRoutes')}</Text>
-                <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
+        <View style={styles.activeFiltersBar}>
+          <TouchableOpacity
+            style={[styles.filterChip, { backgroundColor: wallStatus === 'active' ? colors.borderLight : colors.primaryLight }]}
+            onPress={() => wallStatus !== 'active' ? handleApplyFilters({ ...filters, wallStatus: 'active' }) : setFilterModalVisible(true)}
+            accessibilityLabel={wallStatus !== 'active' ? t('filters.clearWall') : t('filters.wall')}
+          >
+            <Text style={[styles.filterChipText, { color: wallStatus === 'active' ? colors.textSecondary : colors.primary }]}>
+              {t(`filters.wall${wallStatus.charAt(0).toUpperCase() + wallStatus.slice(1)}`)}
+            </Text>
             {wallStatus !== 'active' && (
-              <TouchableOpacity
-                style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
-                onPress={() => handleApplyFilters({ ...filters, wallStatus: 'active' })}
-                accessibilityLabel={t('filters.clearWall')}
-              >
-                <Text style={[styles.filterChipText, { color: colors.primary }]}>
-                  {t('filters.wall')}: {t(`filters.wall${wallStatus.charAt(0).toUpperCase() + wallStatus.slice(1)}`)}
-                </Text>
-                <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
+              <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
             )}
-          </View>
-        )}
+          </TouchableOpacity>
+          {filters.search && (
+            <TouchableOpacity
+              style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
+              onPress={() => handleApplyFilters({ ...filters, search: undefined })}
+              accessibilityLabel={t('filters.clearSearch')}
+            >
+              <Text style={[styles.filterChipText, { color: colors.primary }]}>"{filters.search}"</Text>
+              <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+          {filters.grade && (
+            <TouchableOpacity
+              style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
+              onPress={() => handleApplyFilters({ ...filters, grade: undefined })}
+              accessibilityLabel={t('filters.clearGrade')}
+            >
+              <Text style={[styles.filterChipText, { color: colors.primary }]}>{t('filters.grade')}: {filters.grade}</Text>
+              <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+          {filters.creatorId && (
+            <TouchableOpacity
+              style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
+              onPress={() => handleApplyFilters({ ...filters, creatorId: undefined })}
+              accessibilityLabel={t('filters.clearMyRoutes')}
+            >
+              <Text style={[styles.filterChipText, { color: colors.primary }]}>{t('home.myRoutes')}</Text>
+              <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
 
         {filtersLoaded && <RouteList onRoutePress={handleRoutePress} filters={filters} />}
 
