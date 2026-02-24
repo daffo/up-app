@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   Alert,
   Platform,
 } from 'react-native';
@@ -212,28 +213,17 @@ export default function AdminPhotoDetailScreen({ route }: any) {
         {!isLive && (
           showSetupDateInput ? (
             <View style={styles.dateInputRow}>
-              <View style={[styles.dateInputWrapper, { borderColor: colors.border, backgroundColor: colors.inputBackground }]}>
-                <Text
-                  style={[styles.dateInput, { color: dateInput ? colors.textPrimary : colors.placeholderText }]}
-                  onPress={() => {
-                    // Set today's date as default
-                    if (!dateInput) {
-                      setDateInput(new Date().toISOString().split('T')[0]);
-                    }
-                  }}
-                >
-                  {dateInput || 'YYYY-MM-DD'}
-                </Text>
-              </View>
+              <TextInput
+                style={[styles.dateInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
+                value={dateInput}
+                onChangeText={setDateInput}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.placeholderText}
+                autoFocus
+              />
               <TouchableOpacity
                 style={[styles.dateButton, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  if (!dateInput) {
-                    setDateInput(new Date().toISOString().split('T')[0]);
-                  } else {
-                    handleUpdateDate('setup_date');
-                  }
-                }}
+                onPress={() => handleUpdateDate('setup_date')}
               >
                 <Text style={styles.dateButtonText}>{t('common.save')}</Text>
               </TouchableOpacity>
@@ -271,27 +261,17 @@ export default function AdminPhotoDetailScreen({ route }: any) {
             ) : (
               showTeardownDateInput ? (
                 <View style={styles.dateInputRow}>
-                  <View style={[styles.dateInputWrapper, { borderColor: colors.border, backgroundColor: colors.inputBackground }]}>
-                    <Text
-                      style={[styles.dateInput, { color: dateInput ? colors.textPrimary : colors.placeholderText }]}
-                      onPress={() => {
-                        if (!dateInput) {
-                          setDateInput(new Date().toISOString().split('T')[0]);
-                        }
-                      }}
-                    >
-                      {dateInput || 'YYYY-MM-DD'}
-                    </Text>
-                  </View>
+                  <TextInput
+                    style={[styles.dateInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
+                    value={dateInput}
+                    onChangeText={setDateInput}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={colors.placeholderText}
+                    autoFocus
+                  />
                   <TouchableOpacity
                     style={[styles.dateButton, { backgroundColor: colors.primary }]}
-                    onPress={() => {
-                      if (!dateInput) {
-                        setDateInput(new Date().toISOString().split('T')[0]);
-                      } else {
-                        handleUpdateDate('teardown_date');
-                      }
-                    }}
+                    onPress={() => handleUpdateDate('teardown_date')}
                   >
                     <Text style={styles.dateButtonText}>{t('common.save')}</Text>
                   </TouchableOpacity>
@@ -420,14 +400,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 8,
   },
-  dateInputWrapper: {
+  dateInput: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-  },
-  dateInput: {
     fontSize: 16,
   },
   dateButton: {
