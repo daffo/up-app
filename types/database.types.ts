@@ -27,6 +27,7 @@ export interface RouteFilters {
   creatorId?: string
   grade?: string
   search?: string
+  wallStatus?: 'active' | 'past' | 'all'
 }
 
 export interface Send {

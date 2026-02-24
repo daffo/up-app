@@ -132,7 +132,12 @@
     "resetFilters": "Reset Filters",
     "clearSearch": "Clear search filter",
     "clearGrade": "Clear grade filter",
-    "clearMyRoutes": "Clear my routes filter"
+    "clearMyRoutes": "Clear my routes filter",
+    "wall": "Wall",
+    "wallActive": "Active",
+    "wallPast": "Past",
+    "wallAll": "All",
+    "clearWall": "Clear wall filter"
   },
   "auth": {
     "subtitle": "Climbing Gym Route Tracker",

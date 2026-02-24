@@ -132,7 +132,12 @@
     "resetFilters": "Reimposta Filtri",
     "clearSearch": "Rimuovi filtro ricerca",
     "clearGrade": "Rimuovi filtro grado",
-    "clearMyRoutes": "Rimuovi filtro mie vie"
+    "clearMyRoutes": "Rimuovi filtro mie vie",
+    "wall": "Parete",
+    "wallActive": "Attiva",
+    "wallPast": "Passata",
+    "wallAll": "Tutte",
+    "clearWall": "Rimuovi filtro parete"
   },
   "auth": {
     "subtitle": "Traccia le Vie della Palestra",

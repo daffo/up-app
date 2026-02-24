@@ -38,10 +38,23 @@ export type RouteWithStats = Route & {
 // Routes API
 export const routesApi = {
   async list(filters?: RouteFilters): Promise<RouteWithStats[]> {
+    const wallStatus = filters?.wallStatus ?? 'active';
+
     let query = supabase
       .from('routes')
-      .select('*, sends(quality_rating)')
+      .select('*, sends(quality_rating), photo:photos!inner(setup_date, teardown_date)')
       .order('created_at', { ascending: false });
+
+    // Wall status filter
+    if (wallStatus === 'active') {
+      query = query.not('photo.setup_date', 'is', null)
+                   .is('photo.teardown_date', null);
+    } else if (wallStatus === 'past') {
+      query = query.not('photo.teardown_date', 'is', null);
+    } else {
+      // 'all' — still exclude photos with null setup_date (not yet live)
+      query = query.not('photo.setup_date', 'is', null);
+    }
 
     if (filters?.creatorId) {
       query = query.eq('user_id', filters.creatorId);
@@ -60,14 +73,14 @@ export const routesApi = {
     if (error) throw error;
 
     // Compute average rating from sends
-    return (data || []).map((route: Route & { sends: { quality_rating: number | null }[] }) => {
+    return (data || []).map((route: Route & { sends: { quality_rating: number | null }[]; photo: unknown }) => {
       const ratings = route.sends
         .map(s => s.quality_rating)
         .filter((r): r is number => r !== null);
       const avgRating = ratings.length > 0
         ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
         : null;
-      const { sends, ...routeData } = route;
+      const { sends, photo, ...routeData } = route;
       return {
         ...routeData,
         avgRating,
@@ -149,6 +162,7 @@ export const photosApi = {
     const { data, error } = await supabase
       .from('photos')
       .select('*')
+      .not('setup_date', 'is', null)
       .or('teardown_date.is.null,teardown_date.gte.' + new Date().toISOString())
       .order('setup_date', { ascending: false });
 

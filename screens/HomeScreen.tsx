@@ -17,19 +17,21 @@ export default function HomeScreen({ navigation }: any) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { user, signOut, requireAuth } = useRequireAuth();
-  const [filters, setFilters] = useState<RouteFilters>({});
+  const [filters, setFilters] = useState<RouteFilters>({ wallStatus: 'active' });
   const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const prevUserIdRef = useRef<string | undefined>(undefined);
 
-  const hasActiveFilters = !!filters.creatorId || !!filters.grade || !!filters.search;
+  const wallStatus = filters.wallStatus ?? 'active';
+  const hasActiveFilters = !!filters.creatorId || !!filters.grade || !!filters.search || wallStatus !== 'active';
 
   // Load filters from storage on mount
   useEffect(() => {
     AsyncStorage.getItem(FILTERS_STORAGE_KEY).then((stored) => {
       if (stored) {
         try {
-          setFilters(JSON.parse(stored));
+          const parsed = JSON.parse(stored);
+          setFilters({ wallStatus: 'active', ...parsed });
         } catch (e) {
           console.error('Failed to parse stored filters:', e);
         }
@@ -143,6 +145,18 @@ export default function HomeScreen({ navigation }: any) {
                 accessibilityLabel={t('filters.clearMyRoutes')}
               >
                 <Text style={[styles.filterChipText, { color: colors.primary }]}>{t('home.myRoutes')}</Text>
+                <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+            {wallStatus !== 'active' && (
+              <TouchableOpacity
+                style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
+                onPress={() => handleApplyFilters({ ...filters, wallStatus: 'active' })}
+                accessibilityLabel={t('filters.clearWall')}
+              >
+                <Text style={[styles.filterChipText, { color: colors.primary }]}>
+                  {t('filters.wall')}: {t(`filters.wall${wallStatus.charAt(0).toUpperCase() + wallStatus.slice(1)}`)}
+                </Text>
                 <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
               </TouchableOpacity>
             )}

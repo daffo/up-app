@@ -49,12 +49,17 @@ export default function FilterModal({
     onApply({ ...filters, grade: text || undefined });
   };
 
+  const handleWallStatusChange = (status: 'active' | 'past' | 'all') => {
+    onApply({ ...filters, wallStatus: status });
+  };
+
   const handleReset = () => {
-    onApply({});
+    onApply({ wallStatus: 'active' });
   };
 
   const isMyRoutesEnabled = filters.creatorId === userId && !!userId;
-  const hasActiveFilters = !!filters.creatorId || !!filters.grade || !!filters.search;
+  const wallStatus = filters.wallStatus ?? 'active';
+  const hasActiveFilters = !!filters.creatorId || !!filters.grade || !!filters.search || (wallStatus !== 'active');
 
   return (
     <Modal
@@ -108,6 +113,33 @@ export default function FilterModal({
                 trackColor={{ false: colors.border, true: colors.primary }}
                 accessibilityLabel={t('filters.toggleMyRoutes')}
               />
+            </View>
+
+            <View style={styles.filterRow}>
+              <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.wall')}</Text>
+              <View style={[styles.segmentedControl, { borderColor: colors.border }]}>
+                {(['active', 'past', 'all'] as const).map((status) => (
+                  <TouchableOpacity
+                    key={status}
+                    style={[
+                      styles.segmentButton,
+                      wallStatus === status && { backgroundColor: colors.primary },
+                    ]}
+                    onPress={() => handleWallStatusChange(status)}
+                    accessibilityLabel={t(`filters.wall${status.charAt(0).toUpperCase() + status.slice(1)}`)}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        { color: colors.textPrimary },
+                        wallStatus === status && { color: '#fff' },
+                      ]}
+                    >
+                      {t(`filters.wall${status.charAt(0).toUpperCase() + status.slice(1)}`)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           </View>
 
@@ -184,6 +216,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     width: 120,
     textAlign: 'right',
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  segmentButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  segmentText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   footer: {
     padding: 16,
