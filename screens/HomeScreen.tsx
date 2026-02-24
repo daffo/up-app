@@ -9,11 +9,13 @@ import { RouteFilters } from '../types/database.types';
 import RouteList from '../components/RouteList';
 import ProfileDropdown from '../components/ProfileDropdown';
 import FilterModal from '../components/FilterModal';
+import { useThemeColors } from '../lib/theme-context';
 
 const FILTERS_STORAGE_KEY = 'route_filters';
 
 export default function HomeScreen({ navigation }: any) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const { user, signOut, requireAuth } = useRequireAuth();
   const [filters, setFilters] = useState<RouteFilters>({});
   const [filtersLoaded, setFiltersLoaded] = useState(false);
@@ -68,10 +70,10 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.screenBackground }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('home.title')}</Text>
+      <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('home.title')}</Text>
         {user ? (
           <ProfileDropdown
             onMyAccount={() => navigation.navigate('MyAccount')}
@@ -82,7 +84,7 @@ export default function HomeScreen({ navigation }: any) {
           />
         ) : (
           <TouchableOpacity
-            style={styles.loginButton}
+            style={[styles.loginButton, { backgroundColor: colors.primary }]}
             onPress={() => navigation.navigate('Login')}
           >
             <Text style={styles.loginText}>{t('home.login')}</Text>
@@ -93,20 +95,20 @@ export default function HomeScreen({ navigation }: any) {
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.contentHeader}>
-          <Text style={styles.subtitle}>{t('home.sprayWallRoutes')}</Text>
+          <Text style={[styles.subtitle, { color: colors.textPrimary }]}>{t('home.sprayWallRoutes')}</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity
-              style={[styles.filterButton, hasActiveFilters && styles.filterButtonActive]}
+              style={[styles.filterButton, { backgroundColor: colors.borderLight }, hasActiveFilters && { backgroundColor: colors.primary }]}
               onPress={() => setFilterModalVisible(true)}
               accessibilityLabel={t('filters.openFilters')}
             >
               <Ionicons
                 name="filter"
                 size={20}
-                color={hasActiveFilters ? '#fff' : '#666'}
+                color={hasActiveFilters ? '#fff' : colors.textSecondary}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.addButton} onPress={handleAddRoute}>
+            <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary }]} onPress={handleAddRoute}>
               <Text style={styles.addButtonText}>+</Text>
             </TouchableOpacity>
           </View>
@@ -116,32 +118,32 @@ export default function HomeScreen({ navigation }: any) {
           <View style={styles.activeFiltersBar}>
             {filters.search && (
               <TouchableOpacity
-                style={styles.filterChip}
+                style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
                 onPress={() => handleApplyFilters({ ...filters, search: undefined })}
                 accessibilityLabel={t('filters.clearSearch')}
               >
-                <Text style={styles.filterChipText}>"{filters.search}"</Text>
-                <Ionicons name="close-circle" size={16} color="#666" />
+                <Text style={[styles.filterChipText, { color: colors.primary }]}>"{filters.search}"</Text>
+                <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
             {filters.grade && (
               <TouchableOpacity
-                style={styles.filterChip}
+                style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
                 onPress={() => handleApplyFilters({ ...filters, grade: undefined })}
                 accessibilityLabel={t('filters.clearGrade')}
               >
-                <Text style={styles.filterChipText}>{t('filters.grade')}: {filters.grade}</Text>
-                <Ionicons name="close-circle" size={16} color="#666" />
+                <Text style={[styles.filterChipText, { color: colors.primary }]}>{t('filters.grade')}: {filters.grade}</Text>
+                <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
             {filters.creatorId && (
               <TouchableOpacity
-                style={styles.filterChip}
+                style={[styles.filterChip, { backgroundColor: colors.primaryLight }]}
                 onPress={() => handleApplyFilters({ ...filters, creatorId: undefined })}
                 accessibilityLabel={t('filters.clearMyRoutes')}
               >
-                <Text style={styles.filterChipText}>{t('home.myRoutes')}</Text>
-                <Ionicons name="close-circle" size={16} color="#666" />
+                <Text style={[styles.filterChipText, { color: colors.primary }]}>{t('home.myRoutes')}</Text>
+                <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -165,16 +167,13 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
   },
   title: {
     fontSize: 24,
@@ -183,7 +182,6 @@ const styles = StyleSheet.create({
   loginButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#0066cc',
     borderRadius: 6,
   },
   loginText: {
@@ -217,10 +215,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eee',
-  },
-  filterButtonActive: {
-    backgroundColor: '#0066cc',
   },
   activeFiltersBar: {
     flexDirection: 'row',
@@ -232,7 +226,6 @@ const styles = StyleSheet.create({
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e3f2fd',
     paddingVertical: 6,
     paddingLeft: 12,
     paddingRight: 8,
@@ -241,10 +234,8 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 14,
-    color: '#0066cc',
   },
   addButton: {
-    backgroundColor: '#0066cc',
     width: 40,
     height: 40,
     borderRadius: 20,

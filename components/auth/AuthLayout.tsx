@@ -6,7 +6,7 @@ import {
   Platform,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { authStyles } from './authStyles';
+import { useAuthStyles } from './authStyles';
 
 interface AuthLayoutProps {
   subtitle: string;
@@ -15,16 +15,17 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ subtitle, children }: AuthLayoutProps) {
   const { t } = useTranslation();
+  const { styles } = useAuthStyles();
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={authStyles.container}
+      style={styles.container}
     >
-      <View style={authStyles.content}>
-        <Text style={authStyles.title}>{t('home.title')}</Text>
-        <Text style={authStyles.subtitle}>{subtitle}</Text>
-        <View style={authStyles.form}>{children}</View>
+      <View style={styles.content}>
+        <Text style={styles.title}>{t('home.title')}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+        <View style={styles.form}>{children}</View>
       </View>
     </KeyboardAvoidingView>
   );

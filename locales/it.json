@@ -101,7 +101,11 @@
     "failedToSave": "Salvataggio fallito",
     "language": "Lingua",
     "english": "English",
-    "italian": "Italiano"
+    "italian": "Italiano",
+    "theme": "Tema",
+    "themeLight": "Chiaro",
+    "themeDark": "Scuro",
+    "themeSystem": "Sistema"
   },
   "menu": {
     "openMenu": "Apri menu",

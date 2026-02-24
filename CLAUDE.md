@@ -31,6 +31,33 @@ cacheEvents.invalidate('routes');
 - `FullScreenRouteEditor`: For editing routes (add/remove/reorder holds)
 - `FullScreenHoldEditor`: Admin tool for editing detected hold shapes
 
+### Theming (lib/theme-context.tsx)
+The app supports Light, Dark, and System (follows device) themes. Preference is persisted in AsyncStorage (`@app_theme`).
+
+```typescript
+// In components/screens - get themed colors:
+const colors = useThemeColors();
+
+// Apply via style array pattern (structural styles stay static, colors are dynamic):
+<View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+<Text style={[styles.title, { color: colors.textPrimary }]}>
+
+// For full context (preference, isDark, setter) - used in settings UI:
+const { themePreference, isDark, colors, setThemePreference } = useTheme();
+
+// For TextInputs - always set placeholderTextColor explicitly:
+<TextInput placeholderTextColor={colors.placeholderText} />
+```
+
+**Semantic color tokens**: `screenBackground`, `cardBackground`, `inputBackground`, `textPrimary`, `textSecondary`, `textTertiary`, `textOnPrimary`, `border`, `borderLight`, `separator`, `primary`, `primaryLight`, `primaryLightAlt`, `danger`, `star`, `cancelButton`, `disabledButton`, `placeholderText`, `chevron`, `shadowColor`
+
+**Theme exceptions** (keep hardcoded dark colors, do NOT use theme):
+- `FullScreenImageBase`, `FullScreenRouteEditor`, `FullScreenHoldEditor`, `FullScreenRouteViewer` - image viewers with black backgrounds
+- `DragModeButtons`, `RouteOverlay` - render on top of images with rgba() colors
+- `RouteVisualization` - container bg follows theme, but overlays/image rendering stay static
+
+**Auth styles** use a hook pattern: `const { styles, colors } = useAuthStyles()` from `components/auth/authStyles.ts`
+
 ## Project Structure
 ```
 /components     - Reusable UI components
@@ -93,6 +120,7 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 - DraggableFlatList inside ScrollView has gesture conflicts (known limitation)
 - Commits follow Conventional Commits format
 - **All user-facing text must be localized** - use `t('key')` from `useTranslation()`, including accessibility labels. Add keys to both `locales/en.json` and `locales/it.json`
+- **All colors must use theme tokens** - use `useThemeColors()` from `lib/theme-context.tsx`, never hardcode colors in themed screens/components. Exception: fullscreen image editors and overlays (see theme exceptions above)
 
 ## Testing Strategy
 

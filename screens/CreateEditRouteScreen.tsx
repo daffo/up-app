@@ -19,6 +19,7 @@ import { Database, Hold, DetectedHold } from '../types/database.types';
 import { routesApi, photosApi, detectedHoldsApi } from '../lib/api';
 import FullScreenRouteEditor from '../components/FullScreenRouteEditor';
 import { getHoldLabel } from '../utils/holds';
+import { useThemeColors } from '../lib/theme-context';
 import RouteOverlay from '../components/RouteOverlay';
 import { formatDate } from '../utils/date';
 
@@ -33,6 +34,7 @@ interface CreateEditRouteScreenProps {
 export default function CreateEditRouteScreen({ navigation, route }: CreateEditRouteScreenProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const colors = useThemeColors();
   const { routeId } = route.params || {};
   const isEditMode = !!routeId;
 
@@ -172,23 +174,27 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
       <TouchableOpacity
         onLongPress={drag}
         disabled={isActive}
-        style={[styles.holdItem, isActive && styles.holdItemActive]}
+        style={[
+          styles.holdItem,
+          { backgroundColor: colors.cardBackground, borderColor: colors.border },
+          isActive && { backgroundColor: colors.primaryLight, shadowColor: colors.shadowColor },
+        ]}
       >
-        <Text style={styles.holdItemText}>
+        <Text style={[styles.holdItemText, { color: colors.textPrimary }]}>
           {getHoldLabel(item.order - 1, holds.length, item.note) || t('routeForm.noNote')}
         </Text>
         <View style={styles.holdItemButtons}>
-          <Text style={styles.dragHandle}>☰</Text>
+          <Text style={[styles.dragHandle, { color: colors.textTertiary }]}>☰</Text>
           <TouchableOpacity
             onPress={() => deleteHold(item)}
-            style={[styles.holdActionButton, styles.holdDeleteButton]}
+            style={[styles.holdActionButton, { backgroundColor: colors.danger }]}
           >
             <Text style={styles.holdActionButtonText}>✕</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
     </ScaleDecorator>
-  ), [holds, t]);
+  ), [holds, t, colors]);
 
   const handleSave = async () => {
     if (!user) {
@@ -282,24 +288,25 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
+      <View style={[styles.centerContainer, { backgroundColor: colors.screenBackground }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.form}>
         {/* Title */}
         <View style={styles.field}>
-          <Text style={styles.label}>{t('routeForm.title')} *</Text>
+          <Text style={[styles.label, { color: colors.textPrimary }]}>{t('routeForm.title')} *</Text>
           <TrimmedTextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
             value={title}
             onChangeText={setTitle}
             placeholder={t('routeForm.titlePlaceholder')}
+            placeholderTextColor={colors.placeholderText}
             accessibilityLabel={t('routeForm.title')}
             maxLength={100}
           />
@@ -307,24 +314,26 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
         {/* Grade */}
         <View style={styles.field}>
-          <Text style={styles.label}>{t('routeForm.grade')} *</Text>
+          <Text style={[styles.label, { color: colors.textPrimary }]}>{t('routeForm.grade')} *</Text>
           <TrimmedTextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
             value={grade}
             onChangeText={setGrade}
             placeholder={t('routeForm.gradePlaceholder')}
+            placeholderTextColor={colors.placeholderText}
             accessibilityLabel={t('routeForm.grade')}
           />
         </View>
 
         {/* Description */}
         <View style={styles.field}>
-          <Text style={styles.label}>{t('routeForm.description')}</Text>
+          <Text style={[styles.label, { color: colors.textPrimary }]}>{t('routeForm.description')}</Text>
           <TrimmedTextInput
-            style={[styles.input, styles.textArea]}
+            style={[styles.input, styles.textArea, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
             value={description}
             onChangeText={setDescription}
             placeholder={t('routeForm.descriptionPlaceholder')}
+            placeholderTextColor={colors.placeholderText}
             accessibilityLabel={t('routeForm.description')}
             multiline
             numberOfLines={3}
@@ -334,19 +343,20 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
         {/* Photo Selection */}
         <View style={styles.field}>
-          <Text style={styles.label}>{t('routeForm.sprayWallPhoto')} *</Text>
+          <Text style={[styles.label, { color: colors.textPrimary }]}>{t('routeForm.sprayWallPhoto')} *</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoSelector}>
             {photos.map((photo) => (
               <TouchableOpacity
                 key={photo.id}
                 style={[
                   styles.photoOption,
-                  selectedPhotoId === photo.id && styles.photoOptionSelected,
+                  { borderColor: colors.border },
+                  selectedPhotoId === photo.id && { borderColor: colors.primary, borderWidth: 3 },
                 ]}
                 onPress={() => setSelectedPhotoId(photo.id)}
               >
                 <Image source={{ uri: photo.image_url }} style={styles.photoThumbnail} />
-                <Text style={styles.photoDate}>
+                <Text style={[styles.photoDate, { backgroundColor: colors.cardBackground, color: colors.textPrimary }]}>
                   {formatDate(photo.setup_date)}
                 </Text>
               </TouchableOpacity>
@@ -357,10 +367,10 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         {/* Hold Placement */}
         {selectedPhoto && displayWidth > 0 && (
           <View style={styles.field}>
-            <Text style={styles.label}>{t('routeForm.routePreview', { count: holds.length })}</Text>
-            <Text style={styles.helperText}>{t('routeForm.tapToEdit')}</Text>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>{t('routeForm.routePreview', { count: holds.length })}</Text>
+            <Text style={[styles.helperText, { color: colors.textSecondary }]}>{t('routeForm.tapToEdit')}</Text>
             <TouchableOpacity
-              style={styles.imageContainer}
+              style={[styles.imageContainer, { backgroundColor: colors.cardBackground }]}
               onPress={() => setEditorVisible(true)}
               activeOpacity={0.8}
               testID="open-hold-editor"
@@ -380,8 +390,8 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
             {/* Hold List - Drag to reorder */}
             {holds.length > 0 && (
-              <View style={styles.holdsList}>
-                <Text style={styles.holdsListTitle}>{t('routeForm.holdsListTitle')}</Text>
+              <View style={[styles.holdsList, { backgroundColor: colors.screenBackground }]}>
+                <Text style={[styles.holdsListTitle, { color: colors.textSecondary }]}>{t('routeForm.holdsListTitle')}</Text>
                 <GestureHandlerRootView>
                   <DraggableFlatList
                     data={holds}
@@ -399,11 +409,11 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
       </ScrollView>
 
       {/* Sticky Footer Buttons */}
-      <View style={styles.stickyFooter}>
+      <View style={[styles.stickyFooter, { backgroundColor: colors.screenBackground, borderTopColor: colors.border }]}>
         <View style={styles.footerButtons}>
           {isEditMode && (
             <TouchableOpacity
-              style={[styles.footerButton, styles.deleteButton]}
+              style={[styles.footerButton, { backgroundColor: colors.danger }]}
               onPress={handleDelete}
               disabled={saving}
             >
@@ -411,7 +421,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={[styles.footerButton, styles.saveButton, saving && styles.buttonDisabled]}
+            style={[styles.footerButton, { backgroundColor: colors.primary }, saving && styles.buttonDisabled]}
             onPress={handleSave}
             disabled={saving}
           >
@@ -444,7 +454,6 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollView: {
     flex: 1,
@@ -456,7 +465,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
   },
   form: {
     padding: 20,
@@ -464,9 +472,7 @@ const styles = StyleSheet.create({
   stickyFooter: {
     padding: 20,
     paddingTop: 12,
-    backgroundColor: '#f5f5f5',
     borderTopWidth: 1,
-    borderTopColor: '#ddd',
   },
   field: {
     marginBottom: 20,
@@ -475,18 +481,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333',
   },
   helperText: {
     fontSize: 12,
-    color: '#666',
     marginBottom: 8,
     fontStyle: 'italic',
   },
   input: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
@@ -501,13 +503,8 @@ const styles = StyleSheet.create({
   photoOption: {
     marginRight: 12,
     borderWidth: 2,
-    borderColor: '#ddd',
     borderRadius: 8,
     overflow: 'hidden',
-  },
-  photoOptionSelected: {
-    borderColor: '#0066cc',
-    borderWidth: 3,
   },
   photoThumbnail: {
     width: 100,
@@ -517,16 +514,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textAlign: 'center',
     padding: 4,
-    backgroundColor: '#fff',
   },
   imageContainer: {
-    backgroundColor: '#fff',
     borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 12,
   },
   holdsList: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 12,
     marginTop: 12,
@@ -534,32 +528,20 @@ const styles = StyleSheet.create({
   holdsListTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
     marginBottom: 8,
   },
   holdItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderRadius: 6,
     padding: 10,
     marginVertical: 3,
     borderWidth: 1,
-    borderColor: '#ddd',
   },
   holdItemText: {
     fontSize: 14,
-    color: '#333',
     flex: 1,
-  },
-  holdItemActive: {
-    backgroundColor: '#e3f2fd',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
   holdItemButtons: {
     flexDirection: 'row',
@@ -568,7 +550,6 @@ const styles = StyleSheet.create({
   },
   dragHandle: {
     fontSize: 18,
-    color: '#999',
   },
   holdActionButton: {
     width: 32,
@@ -576,9 +557,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  holdDeleteButton: {
-    backgroundColor: '#dc3545',
   },
   holdActionButtonText: {
     color: '#fff',
@@ -594,12 +572,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-  },
-  saveButton: {
-    backgroundColor: '#0066cc',
-  },
-  deleteButton: {
-    backgroundColor: '#dc3545',
   },
   buttonDisabled: {
     opacity: 0.6,

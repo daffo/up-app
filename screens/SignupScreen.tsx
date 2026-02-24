@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
 import TrimmedTextInput from '../components/TrimmedTextInput';
 import AuthLayout from '../components/auth/AuthLayout';
-import { authStyles } from '../components/auth/authStyles';
+import { useAuthStyles } from '../components/auth/authStyles';
 
 export default function SignupScreen({ navigation }: any) {
   const { t } = useTranslation();
@@ -18,6 +18,7 @@ export default function SignupScreen({ navigation }: any) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
+  const { styles, colors } = useAuthStyles();
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword) {
@@ -53,8 +54,9 @@ export default function SignupScreen({ navigation }: any) {
   return (
     <AuthLayout subtitle={t('auth.createAccount')}>
       <TrimmedTextInput
-        style={authStyles.input}
+        style={styles.input}
         placeholder={t('auth.email')}
+        placeholderTextColor={colors.placeholderText}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -64,8 +66,9 @@ export default function SignupScreen({ navigation }: any) {
       />
 
       <TextInput
-        style={authStyles.input}
+        style={styles.input}
         placeholder={t('auth.passwordMin')}
+        placeholderTextColor={colors.placeholderText}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -74,8 +77,9 @@ export default function SignupScreen({ navigation }: any) {
       />
 
       <TextInput
-        style={authStyles.input}
+        style={styles.input}
         placeholder={t('auth.confirmPassword')}
+        placeholderTextColor={colors.placeholderText}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry
@@ -84,21 +88,21 @@ export default function SignupScreen({ navigation }: any) {
       />
 
       <TouchableOpacity
-        style={[authStyles.button, loading && authStyles.buttonDisabled]}
+        style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleSignup}
         disabled={loading}
       >
-        <Text style={authStyles.buttonText}>
+        <Text style={styles.buttonText}>
           {loading ? t('auth.creatingAccount') : t('auth.signUp')}
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={authStyles.linkButton}
+        style={styles.linkButton}
         onPress={() => navigation.navigate('Login')}
         disabled={loading}
       >
-        <Text style={authStyles.linkText}>
+        <Text style={styles.linkText}>
           {t('auth.hasAccount')}
         </Text>
       </TouchableOpacity>

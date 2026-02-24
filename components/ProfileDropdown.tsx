@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
+import { useThemeColors } from '../lib/theme-context';
 
 interface ProfileDropdownProps {
   onMyAccount: () => void;
@@ -27,6 +28,7 @@ export default function ProfileDropdown({
 }: ProfileDropdownProps) {
   const { t } = useTranslation();
   const { user, isAdmin } = useAuth();
+  const colors = useThemeColors();
   const [visible, setVisible] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const buttonRef = useRef<View>(null);
@@ -84,7 +86,7 @@ export default function ProfileDropdown({
   return (
     <>
       <TouchableOpacity onPress={handleOpen} accessibilityLabel={t('menu.openMenu')}>
-        <View ref={buttonRef} style={styles.avatar}>
+        <View ref={buttonRef} style={[styles.avatar, { backgroundColor: colors.primary }]}>
           <Text style={styles.avatarText}>{getInitials()}</Text>
         </View>
       </TouchableOpacity>
@@ -103,31 +105,31 @@ export default function ProfileDropdown({
           <View
             style={[
               styles.dropdown,
-              { top: dropdownPosition.top, right: dropdownPosition.right },
+              { top: dropdownPosition.top, right: dropdownPosition.right, backgroundColor: colors.cardBackground, shadowColor: colors.shadowColor },
             ]}
           >
             <TouchableOpacity style={styles.menuItem} onPress={handleMyAccount}>
-              <Text style={styles.menuItemText}>{t('menu.myAccount')}</Text>
+              <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.myAccount')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={handleMySends}>
-              <Text style={styles.menuItemText}>{t('menu.mySends')}</Text>
+              <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.mySends')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={handleMyComments}>
-              <Text style={styles.menuItemText}>{t('menu.myComments')}</Text>
+              <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.myComments')}</Text>
             </TouchableOpacity>
 
             {isAdmin && onAdmin && (
               <TouchableOpacity style={styles.menuItem} onPress={handleAdmin}>
-                <Text style={styles.menuItemText}>{t('menu.admin')}</Text>
+                <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.admin')}</Text>
               </TouchableOpacity>
             )}
 
-            <View style={styles.separator} />
+            <View style={[styles.separator, { backgroundColor: colors.borderLight }]} />
 
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <Text style={[styles.menuItemText, styles.logoutText]}>{t('menu.logout')}</Text>
+              <Text style={[styles.menuItemText, { color: colors.danger }]}>{t('menu.logout')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -141,7 +143,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#0066cc',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -155,11 +156,9 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     position: 'absolute',
-    backgroundColor: '#fff',
     borderRadius: 8,
     paddingVertical: 4,
     minWidth: 160,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -171,14 +170,9 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: '#333',
   },
   separator: {
     height: 1,
-    backgroundColor: '#eee',
     marginVertical: 4,
-  },
-  logoutText: {
-    color: '#dc3545',
   },
 });

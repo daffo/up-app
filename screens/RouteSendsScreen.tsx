@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { sendsApi, userProfilesApi, cacheEvents } from '../lib/api';
 import { Send } from '../types/database.types';
+import { useThemeColors } from '../lib/theme-context';
 import UserNameLink from '../components/UserNameLink';
 import { formatRelativeDate } from '../utils/date';
 
@@ -17,6 +18,7 @@ type SendWithProfile = Send & { displayName?: string };
 
 export default function RouteSendsScreen({ route }: any) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const { routeId } = route.params;
   const [sends, setSends] = useState<SendWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,25 +75,25 @@ export default function RouteSendsScreen({ route }: any) {
   };
 
   const renderSend = ({ item: send }: { item: SendWithProfile }) => (
-    <View style={styles.sendItem}>
+    <View style={[styles.sendItem, { backgroundColor: colors.cardBackground, borderBottomColor: colors.separator }]}>
       <View style={styles.sendHeader}>
         <UserNameLink
           userId={send.user_id}
           displayName={send.displayName}
-          style={styles.sendUser}
+          style={[styles.sendUser, { color: colors.textPrimary }]}
         />
-        <Text style={styles.sendDate}>{formatRelativeDate(send.sent_at)}</Text>
+        <Text style={[styles.sendDate, { color: colors.textTertiary }]}>{formatRelativeDate(send.sent_at)}</Text>
       </View>
       <View style={styles.sendRatings}>
         {send.quality_rating && (
           <View style={styles.ratingBadge}>
-            <Ionicons name="star" size={14} color="#f5a623" />
-            <Text style={styles.ratingText}>{send.quality_rating}</Text>
+            <Ionicons name="star" size={14} color={colors.star} />
+            <Text style={[styles.ratingText, { color: colors.textSecondary }]}>{send.quality_rating}</Text>
           </View>
         )}
         {send.difficulty_rating !== null && (
-          <View style={styles.difficultyBadge}>
-            <Text style={styles.difficultyText}>
+          <View style={[styles.difficultyBadge, { backgroundColor: colors.primaryLight }]}>
+            <Text style={[styles.difficultyText, { color: colors.primary }]}>
               {getDifficultyLabel(send.difficulty_rating)}
             </Text>
           </View>
@@ -102,21 +104,21 @@ export default function RouteSendsScreen({ route }: any) {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.screenBackground }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
       <FlatList
         data={sends}
         keyExtractor={(item) => item.id}
         renderItem={renderSend}
         contentContainerStyle={sends.length === 0 ? styles.emptyContainer : undefined}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>{t('sends.noSendsYet')}</Text>
+          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{t('sends.noSendsYet')}</Text>
         }
         refreshing={refreshing}
         onRefresh={handleRefresh}
@@ -128,11 +130,9 @@ export default function RouteSendsScreen({ route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -142,14 +142,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#999',
     fontSize: 16,
   },
   sendItem: {
     padding: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   sendHeader: {
     flexDirection: 'row',
@@ -160,11 +157,9 @@ const styles = StyleSheet.create({
   sendUser: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
   },
   sendDate: {
     fontSize: 12,
-    color: '#999',
   },
   sendRatings: {
     flexDirection: 'row',
@@ -177,16 +172,13 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 14,
-    color: '#666',
   },
   difficultyBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: '#e3f2fd',
     borderRadius: 4,
   },
   difficultyText: {
     fontSize: 12,
-    color: '#0066cc',
   },
 });

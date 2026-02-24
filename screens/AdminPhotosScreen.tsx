@@ -11,12 +11,14 @@ import {
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { Database } from '../types/database.types';
+import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
 export default function AdminPhotosScreen({ navigation }: any) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,16 +40,16 @@ export default function AdminPhotosScreen({ navigation }: any) {
 
   const renderPhoto = ({ item }: { item: Photo }) => (
     <TouchableOpacity
-      style={styles.photoCard}
+      style={[styles.photoCard, { backgroundColor: colors.cardBackground, shadowColor: colors.shadowColor }]}
       onPress={() => navigation.navigate('AdminPhotoDetail', { photoId: item.id })}
     >
       <Image source={{ uri: item.image_url }} style={styles.thumbnail} />
       <View style={styles.photoInfo}>
-        <Text style={styles.dateText}>
+        <Text style={[styles.dateText, { color: colors.textPrimary }]}>
           {t('admin.setup')}: {formatDate(item.setup_date)}
         </Text>
         {item.teardown_date && (
-          <Text style={styles.dateText}>
+          <Text style={[styles.dateText, { color: colors.textPrimary }]}>
             {t('admin.teardown')}: {formatDate(item.teardown_date)}
           </Text>
         )}
@@ -61,20 +63,20 @@ export default function AdminPhotosScreen({ navigation }: any) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0066cc" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
       <FlatList
         data={photos}
         keyExtractor={(item) => item.id}
         renderItem={renderPhoto}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>{t('admin.noPhotosFound')}</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('admin.noPhotosFound')}</Text>
         }
       />
     </View>
@@ -84,7 +86,6 @@ export default function AdminPhotosScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   centered: {
     flex: 1,
@@ -96,12 +97,10 @@ const styles = StyleSheet.create({
   },
   photoCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     borderRadius: 8,
     marginBottom: 12,
     overflow: 'hidden',
     elevation: 2,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -117,7 +116,6 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 14,
-    color: '#333',
     marginBottom: 4,
   },
   activeText: {
@@ -127,7 +125,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    color: '#666',
     fontSize: 16,
     marginTop: 32,
   },

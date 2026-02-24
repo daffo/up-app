@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Comment } from '../types/database.types';
 import { commentsApi, userProfilesApi, cacheEvents } from '../lib/api';
+import { useThemeColors } from '../lib/theme-context';
 import TrimmedTextInput from './TrimmedTextInput';
 import UserNameLink from './UserNameLink';
 import { formatRelativeDate } from '../utils/date';
@@ -27,6 +28,7 @@ interface CommentsSectionProps {
 
 export default function CommentsSection({ routeId, userId, onLoginRequired, onInputFocus }: CommentsSectionProps) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const [comments, setComments] = useState<CommentWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
@@ -100,39 +102,39 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.sectionTitle}>
+    <View style={[styles.container, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
         {comments.length > 0 ? t('comments.titleWithCount', { count: comments.length }) : t('comments.title')}
       </Text>
 
       {loading ? (
-        <ActivityIndicator size="small" color="#0066cc" style={styles.loader} />
+        <ActivityIndicator size="small" color={colors.primary} style={styles.loader} />
       ) : (
         <>
           {comments.length === 0 ? (
-            <Text style={styles.emptyText}>{t('comments.noCommentsYet')}</Text>
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{t('comments.noCommentsYet')}</Text>
           ) : (
             <View style={styles.commentsList}>
               {comments.map((comment) => (
-                <View key={comment.id} style={styles.comment}>
+                <View key={comment.id} style={[styles.comment, { borderBottomColor: colors.separator }]}>
                   <View style={styles.commentHeader}>
                     <UserNameLink
                       userId={comment.user_id}
                       displayName={comment.displayName}
-                      style={styles.commentAuthor}
+                      style={[styles.commentAuthor, { color: colors.textPrimary }]}
                     />
-                    <Text style={styles.commentDate}>
+                    <Text style={[styles.commentDate, { color: colors.textTertiary }]}>
                       {formatRelativeDate(comment.created_at)}
                     </Text>
                   </View>
-                  <Text style={styles.commentText}>{comment.text}</Text>
+                  <Text style={[styles.commentText, { color: colors.textSecondary }]}>{comment.text}</Text>
                   {userId === comment.user_id && (
                     <TouchableOpacity
                       style={styles.deleteButton}
                       onPress={() => handleDelete(comment.id)}
                       accessibilityLabel={t('comments.deleteComment')}
                     >
-                      <Ionicons name="trash-outline" size={16} color="#999" />
+                      <Ionicons name="trash-outline" size={16} color={colors.textTertiary} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -142,11 +144,11 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
 
           <View style={styles.inputRow}>
             <TrimmedTextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
               value={newComment}
               onChangeText={setNewComment}
               placeholder={t('comments.addComment')}
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.placeholderText}
               multiline
               editable={!submitting}
               onFocus={onInputFocus}
@@ -154,7 +156,7 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
               maxLength={500}
             />
             <TouchableOpacity
-              style={[styles.sendButton, (!newComment.trim() || submitting) && styles.sendButtonDisabled]}
+              style={[styles.sendButton, { backgroundColor: colors.primary }, (!newComment.trim() || submitting) && { backgroundColor: colors.disabledButton }]}
               onPress={handleSubmit}
               disabled={!newComment.trim() || submitting}
               accessibilityLabel={t('comments.title')}
@@ -170,12 +172,10 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
     marginTop: 12,
     paddingVertical: 16,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#ddd',
   },
   sectionTitle: {
     fontSize: 16,
@@ -187,7 +187,6 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   emptyText: {
-    color: '#999',
     textAlign: 'center',
     marginVertical: 16,
   },
@@ -198,7 +197,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
     position: 'relative',
   },
   commentHeader: {
@@ -210,15 +208,12 @@ const styles = StyleSheet.create({
   commentAuthor: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
   },
   commentDate: {
     fontSize: 12,
-    color: '#999',
   },
   commentText: {
     fontSize: 15,
-    color: '#444',
     lineHeight: 20,
   },
   deleteButton: {
@@ -236,7 +231,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -247,11 +241,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#0066cc',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#ccc',
   },
 });

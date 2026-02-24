@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
 import { commentsApi, cacheEvents } from '../lib/api';
 import { Comment } from '../types/database.types';
+import { useThemeColors } from '../lib/theme-context';
 import { formatRelativeDate } from '../utils/date';
 
 type CommentWithRoute = Comment & { route: { id: string; title: string; grade: string } };
@@ -19,6 +20,7 @@ type CommentWithRoute = Comment & { route: { id: string; title: string; grade: s
 export default function MyCommentsScreen({ navigation }: any) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const colors = useThemeColors();
   const [comments, setComments] = useState<CommentWithRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,40 +53,40 @@ export default function MyCommentsScreen({ navigation }: any) {
 
   const renderComment = ({ item: comment }: { item: CommentWithRoute }) => (
     <TouchableOpacity
-      style={styles.commentItem}
+      style={[styles.commentItem, { backgroundColor: colors.cardBackground, borderBottomColor: colors.separator }]}
       onPress={() => navigation.navigate('RouteDetail', { routeId: comment.route.id })}
     >
       <View style={styles.commentHeader}>
-        <Text style={styles.routeTitle}>{comment.route.title}</Text>
-        <Text style={styles.routeGrade}>{comment.route.grade}</Text>
+        <Text style={[styles.routeTitle, { color: colors.textPrimary }]}>{comment.route.title}</Text>
+        <Text style={[styles.routeGrade, { color: colors.primary }]}>{comment.route.grade}</Text>
       </View>
-      <Text style={styles.commentText} numberOfLines={2}>
+      <Text style={[styles.commentText, { color: colors.textSecondary }]} numberOfLines={2}>
         {comment.text}
       </Text>
-      <Text style={styles.commentDate}>{formatRelativeDate(comment.created_at)}</Text>
+      <Text style={[styles.commentDate, { color: colors.textTertiary }]}>{formatRelativeDate(comment.created_at)}</Text>
       <View style={styles.chevron}>
-        <Ionicons name="chevron-forward" size={20} color="#ccc" />
+        <Ionicons name="chevron-forward" size={20} color={colors.chevron} />
       </View>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.screenBackground }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
       <FlatList
         data={comments}
         keyExtractor={(item) => item.id}
         renderItem={renderComment}
         contentContainerStyle={comments.length === 0 ? styles.emptyContainer : undefined}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>{t('comments.noCommentsYet')}</Text>
+          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{t('comments.noCommentsYet')}</Text>
         }
         refreshing={refreshing}
         onRefresh={handleRefresh}
@@ -96,11 +98,9 @@ export default function MyCommentsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -110,14 +110,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#999',
     fontSize: 16,
   },
   commentItem: {
     padding: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
     position: 'relative',
   },
   commentHeader: {
@@ -129,23 +126,19 @@ const styles = StyleSheet.create({
   routeTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
   },
   routeGrade: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0066cc',
   },
   commentText: {
     fontSize: 15,
-    color: '#666',
     lineHeight: 20,
     marginBottom: 4,
     paddingRight: 24,
   },
   commentDate: {
     fontSize: 12,
-    color: '#999',
   },
   chevron: {
     position: 'absolute',

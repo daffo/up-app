@@ -5,6 +5,7 @@ import { Hold, DetectedHold } from '../types/database.types';
 import FullScreenRouteViewer from './FullScreenRouteViewer';
 import FullScreenHoldEditor from './FullScreenHoldEditor';
 import RouteOverlay from './RouteOverlay';
+import { useThemeColors } from '../lib/theme-context';
 
 interface RouteVisualizationProps {
   photoUrl: string;
@@ -30,6 +31,7 @@ export default function RouteVisualization({
   onUpdateDetectedHold,
   onAddDetectedHold,
 }: RouteVisualizationProps) {
+  const colors = useThemeColors();
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
   const [fullScreenVisible, setFullScreenVisible] = useState(false);
@@ -77,7 +79,7 @@ export default function RouteVisualization({
 
   return (
     <>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
         <TouchableOpacity
           onPress={() => setFullScreenVisible(true)}
           activeOpacity={0.9}
@@ -145,7 +147,6 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: '#f0f0f0',
     position: 'relative',
   },
   image: {

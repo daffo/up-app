@@ -10,12 +10,14 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { Database, DetectedHold, Hold } from '../types/database.types';
 import RouteVisualization from '../components/RouteVisualization';
+import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
 export default function AdminPhotoDetailScreen({ route }: any) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const { photoId } = route.params;
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [detectedHolds, setDetectedHolds] = useState<DetectedHold[]>([]);
@@ -86,7 +88,7 @@ export default function AdminPhotoDetailScreen({ route }: any) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0066cc" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -94,35 +96,35 @@ export default function AdminPhotoDetailScreen({ route }: any) {
   if (!photo) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{t('admin.photoNotFound')}</Text>
+        <Text style={[styles.errorText, { color: colors.textSecondary }]}>{t('admin.photoNotFound')}</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.infoSection}>
-        <Text style={styles.label}>{t('admin.setupDate')}</Text>
-        <Text style={styles.value}>{formatDate(photo.setup_date)}</Text>
+    <ScrollView style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+      <View style={[styles.infoSection, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('admin.setupDate')}</Text>
+        <Text style={[styles.value, { color: colors.textPrimary }]}>{formatDate(photo.setup_date)}</Text>
 
         {photo.teardown_date && (
           <>
-            <Text style={styles.label}>{t('admin.teardownDate')}</Text>
-            <Text style={styles.value}>{formatDate(photo.teardown_date)}</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('admin.teardownDate')}</Text>
+            <Text style={[styles.value, { color: colors.textPrimary }]}>{formatDate(photo.teardown_date)}</Text>
           </>
         )}
 
-        <Text style={styles.label}>{t('admin.detectedHolds')}</Text>
-        <Text style={styles.value}>{t('admin.holdsCount', { count: detectedHolds.length })}</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('admin.detectedHolds')}</Text>
+        <Text style={[styles.value, { color: colors.textPrimary }]}>{t('admin.holdsCount', { count: detectedHolds.length })}</Text>
       </View>
 
-      <View style={styles.previewSection}>
-        <Text style={styles.sectionTitle}>{t('admin.allHoldsPreview')}</Text>
-        <Text style={styles.hint}>{t('admin.tapToOpenFullscreen')}</Text>
+      <View style={[styles.previewSection, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{t('admin.allHoldsPreview')}</Text>
+        <Text style={[styles.hint, { color: colors.textTertiary }]}>{t('admin.tapToOpenFullscreen')}</Text>
         {!visualizationReady ? (
           <View style={styles.visualizationLoading}>
-            <ActivityIndicator size="large" color="#0066cc" />
-            <Text style={styles.loadingText}>{t('admin.renderingHolds', { count: detectedHolds.length })}</Text>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('admin.renderingHolds', { count: detectedHolds.length })}</Text>
           </View>
         ) : (
           <RouteVisualization
@@ -145,7 +147,6 @@ export default function AdminPhotoDetailScreen({ route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   centered: {
     flex: 1,
@@ -154,25 +155,20 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#666',
   },
   infoSection: {
-    backgroundColor: '#fff',
     padding: 16,
     marginBottom: 16,
   },
   label: {
     fontSize: 12,
-    color: '#666',
     marginTop: 12,
   },
   value: {
     fontSize: 16,
-    color: '#333',
     marginTop: 4,
   },
   previewSection: {
-    backgroundColor: '#fff',
     padding: 16,
   },
   sectionTitle: {
@@ -182,7 +178,6 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontSize: 12,
-    color: '#999',
     marginBottom: 12,
   },
   visualizationLoading: {
@@ -194,7 +189,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: '#666',
     fontSize: 14,
   },
 });

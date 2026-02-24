@@ -101,7 +101,11 @@
     "failedToSave": "Failed to save display name",
     "language": "Language",
     "english": "English",
-    "italian": "Italiano"
+    "italian": "Italiano",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System"
   },
   "menu": {
     "openMenu": "Open menu",

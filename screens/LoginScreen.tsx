@@ -11,7 +11,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../lib/auth-context';
 import TrimmedTextInput from '../components/TrimmedTextInput';
 import AuthLayout from '../components/auth/AuthLayout';
-import { authStyles } from '../components/auth/authStyles';
+import { useAuthStyles } from '../components/auth/authStyles';
 
 export default function LoginScreen({ navigation, route }: any) {
   const { t } = useTranslation();
@@ -20,6 +20,7 @@ export default function LoginScreen({ navigation, route }: any) {
   const [loading, setLoading] = useState(false);
   const { signIn, signInWithGoogle, signInWithFacebook } = useAuth();
   const { redirectTo } = route.params || {};
+  const { styles, colors } = useAuthStyles();
 
   const handleLoginSuccess = () => {
     navigation.replace(redirectTo || 'Home');
@@ -69,8 +70,9 @@ export default function LoginScreen({ navigation, route }: any) {
   return (
     <AuthLayout subtitle={t('auth.subtitle')}>
       <TrimmedTextInput
-        style={authStyles.input}
+        style={styles.input}
         placeholder={t('auth.email')}
+        placeholderTextColor={colors.placeholderText}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -80,8 +82,9 @@ export default function LoginScreen({ navigation, route }: any) {
       />
 
       <TextInput
-        style={authStyles.input}
+        style={styles.input}
         placeholder={t('auth.password')}
+        placeholderTextColor={colors.placeholderText}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -90,47 +93,47 @@ export default function LoginScreen({ navigation, route }: any) {
       />
 
       <TouchableOpacity
-        style={[authStyles.button, loading && authStyles.buttonDisabled]}
+        style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleLogin}
         disabled={loading}
       >
-        <Text style={authStyles.buttonText}>
+        <Text style={styles.buttonText}>
           {loading ? t('auth.loggingIn') : t('auth.logIn')}
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={authStyles.linkButton}
+        style={styles.linkButton}
         onPress={() => navigation.navigate('Signup')}
         disabled={loading}
       >
-        <Text style={authStyles.linkText}>
+        <Text style={styles.linkText}>
           {t('auth.noAccount')}
         </Text>
       </TouchableOpacity>
 
-      <View style={authStyles.divider}>
-        <View style={authStyles.dividerLine} />
-        <Text style={authStyles.dividerText}>{t('auth.orContinueWith')}</Text>
-        <View style={authStyles.dividerLine} />
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>{t('auth.orContinueWith')}</Text>
+        <View style={styles.dividerLine} />
       </View>
 
       <TouchableOpacity
-        style={[authStyles.googleButton, loading && authStyles.buttonDisabled]}
+        style={[styles.googleButton, loading && styles.buttonDisabled]}
         onPress={handleGoogleLogin}
         disabled={loading}
       >
         <FontAwesome name="google" size={20} color="#4285F4" />
-        <Text style={authStyles.googleButtonText}>Google</Text>
+        <Text style={styles.googleButtonText}>Google</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[authStyles.googleButton, loading && authStyles.buttonDisabled]}
+        style={[styles.googleButton, loading && styles.buttonDisabled]}
         onPress={handleFacebookLogin}
         disabled={loading}
       >
         <FontAwesome name="instagram" size={20} color="#E4405F" />
-        <Text style={authStyles.googleButtonText}>Instagram/Facebook</Text>
+        <Text style={styles.googleButtonText}>Instagram/Facebook</Text>
       </TouchableOpacity>
     </AuthLayout>
   );

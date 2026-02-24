@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { sendsApi, cacheEvents } from '../lib/api';
 import { Send } from '../types/database.types';
+import { useThemeColors } from '../lib/theme-context';
 import { formatRelativeDate } from '../utils/date';
 
 type SendWithRoute = Send & { route: { id: string; title: string; grade: string } };
@@ -23,6 +24,7 @@ interface UserSendsListProps {
 
 export default function UserSendsList({ userId, emptyMessage }: UserSendsListProps) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const navigation = useNavigation<any>();
   const [sends, setSends] = useState<SendWithRoute[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,35 +62,35 @@ export default function UserSendsList({ userId, emptyMessage }: UserSendsListPro
 
   const renderSend = ({ item: send }: { item: SendWithRoute }) => (
     <TouchableOpacity
-      style={styles.sendItem}
+      style={[styles.sendItem, { backgroundColor: colors.cardBackground, borderBottomColor: colors.separator }]}
       onPress={() => navigation.navigate('RouteDetail', { routeId: send.route.id })}
     >
       <View style={styles.sendInfo}>
-        <Text style={styles.sendTitle}>{send.route.title}</Text>
+        <Text style={[styles.sendTitle, { color: colors.textPrimary }]}>{send.route.title}</Text>
         <View style={styles.sendMeta}>
-          <Text style={styles.sendGrade}>{send.route.grade}</Text>
+          <Text style={[styles.sendGrade, { color: colors.primary }]}>{send.route.grade}</Text>
           {send.quality_rating && (
             <View style={styles.sendRating}>
-              <Ionicons name="star" size={12} color="#f5a623" />
-              <Text style={styles.sendRatingText}>{send.quality_rating}</Text>
+              <Ionicons name="star" size={12} color={colors.star} />
+              <Text style={[styles.sendRatingText, { color: colors.textSecondary }]}>{send.quality_rating}</Text>
             </View>
           )}
           {send.difficulty_rating !== null && (
-            <Text style={styles.sendDifficulty}>
+            <Text style={[styles.sendDifficulty, { color: colors.textSecondary }]}>
               {getDifficultyLabel(send.difficulty_rating)}
             </Text>
           )}
         </View>
-        <Text style={styles.sendDate}>{formatRelativeDate(send.sent_at)}</Text>
+        <Text style={[styles.sendDate, { color: colors.textTertiary }]}>{formatRelativeDate(send.sent_at)}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#ccc" />
+      <Ionicons name="chevron-forward" size={20} color={colors.chevron} />
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -100,7 +102,7 @@ export default function UserSendsList({ userId, emptyMessage }: UserSendsListPro
       renderItem={renderSend}
       contentContainerStyle={sends.length === 0 ? styles.emptyContainer : undefined}
       ListEmptyComponent={
-        <Text style={styles.emptyText}>{emptyMessage || t('sends.noSendsYet')}</Text>
+        <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{emptyMessage || t('sends.noSendsYet')}</Text>
       }
       refreshing={refreshing}
       onRefresh={handleRefresh}
@@ -120,16 +122,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#999',
     fontSize: 16,
   },
   sendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   sendInfo: {
     flex: 1,
@@ -148,7 +147,6 @@ const styles = StyleSheet.create({
   sendGrade: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0066cc',
   },
   sendRating: {
     flexDirection: 'row',
@@ -157,14 +155,11 @@ const styles = StyleSheet.create({
   },
   sendRatingText: {
     fontSize: 12,
-    color: '#666',
   },
   sendDifficulty: {
     fontSize: 12,
-    color: '#666',
   },
   sendDate: {
     fontSize: 12,
-    color: '#999',
   },
 });

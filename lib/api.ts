@@ -219,7 +219,7 @@ export const userProfilesApi = {
     return data;
   },
 
-  async upsert(userId: string, updates: { display_name: string }) {
+  async upsert(userId: string, updates: { display_name: string | null }) {
     const { data, error } = await supabase
       .from('user_profiles')
       .upsert({

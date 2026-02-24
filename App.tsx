@@ -4,17 +4,28 @@ import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './lib/auth-context';
+import { ThemeProvider, initTheme, useTheme } from './lib/theme-context';
 import { initI18n } from './lib/i18n';
 import AppNavigator from './navigation/AppNavigator';
 
+function AppContent() {
+  const { isDark } = useTheme();
+  return (
+    <>
+      <AppNavigator />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+    </>
+  );
+}
+
 export default function App() {
-  const [i18nReady, setI18nReady] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    initI18n().then(() => setI18nReady(true));
+    Promise.all([initI18n(), initTheme()]).then(() => setReady(true));
   }, []);
 
-  if (!i18nReady) {
+  if (!ready) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#0066cc" />
@@ -25,10 +36,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <AppNavigator />
-          <StatusBar style="auto" />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

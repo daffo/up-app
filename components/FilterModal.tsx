@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { RouteFilters } from '../types/database.types';
+import { useThemeColors } from '../lib/theme-context';
 import TrimmedTextInput from './TrimmedTextInput';
 
 interface FilterModalProps {
@@ -29,6 +30,7 @@ export default function FilterModal({
   onLoginRequired,
 }: FilterModalProps) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
 
   const handleMyRoutesToggle = (value: boolean) => {
     if (value && !userId) {
@@ -63,35 +65,35 @@ export default function FilterModal({
     >
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} onPress={onClose} />
-        <View style={styles.sheet}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{t('filters.title')}</Text>
+        <View style={[styles.sheet, { backgroundColor: colors.cardBackground }]}>
+          <View style={[styles.header, { borderBottomColor: colors.borderLight }]}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>{t('filters.title')}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.closeButton}>{t('common.done')}</Text>
+              <Text style={[styles.closeButton, { color: colors.primary }]}>{t('common.done')}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.content}>
             <View style={styles.searchRow}>
               <TrimmedTextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
                 value={filters.search || ''}
                 onChangeText={handleSearchChange}
                 placeholder={t('filters.searchPlaceholder')}
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.placeholderText}
                 autoCorrect={false}
                 accessibilityLabel={t('filters.searchPlaceholder')}
               />
             </View>
 
             <View style={styles.filterRow}>
-              <Text style={styles.filterLabel}>{t('filters.grade')}</Text>
+              <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.grade')}</Text>
               <TrimmedTextInput
-                style={styles.gradeInput}
+                style={[styles.gradeInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
                 value={filters.grade || ''}
                 onChangeText={handleGradeChange}
                 placeholder={t('filters.gradePlaceholder')}
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.placeholderText}
                 autoCapitalize="none"
                 autoCorrect={false}
                 accessibilityLabel={t('filters.grade')}
@@ -99,11 +101,11 @@ export default function FilterModal({
             </View>
 
             <View style={styles.filterRow}>
-              <Text style={styles.filterLabel}>{t('filters.myRoutes')}</Text>
+              <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.myRoutes')}</Text>
               <Switch
                 value={isMyRoutesEnabled}
                 onValueChange={handleMyRoutesToggle}
-                trackColor={{ false: '#ddd', true: '#0066cc' }}
+                trackColor={{ false: colors.border, true: colors.primary }}
                 accessibilityLabel={t('filters.toggleMyRoutes')}
               />
             </View>
@@ -112,7 +114,7 @@ export default function FilterModal({
           <View style={styles.footer}>
             {hasActiveFilters && (
               <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-                <Text style={styles.resetButtonText}>{t('filters.resetFilters')}</Text>
+                <Text style={[styles.resetButtonText, { color: colors.danger }]}>{t('filters.resetFilters')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -132,7 +134,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   sheet: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     minHeight: 200,
@@ -144,7 +145,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   title: {
     fontSize: 18,
@@ -152,7 +152,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 16,
-    color: '#0066cc',
     fontWeight: '600',
   },
   content: {
@@ -163,7 +162,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -180,7 +178,6 @@ const styles = StyleSheet.create({
   },
   gradeInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -198,6 +195,5 @@ const styles = StyleSheet.create({
   },
   resetButtonText: {
     fontSize: 16,
-    color: '#dc3545',
   },
 });

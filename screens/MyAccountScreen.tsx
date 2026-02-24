@@ -13,10 +13,18 @@ import TrimmedTextInput from '../components/TrimmedTextInput';
 import { useAuth } from '../lib/auth-context';
 import { userProfilesApi } from '../lib/api';
 import { SUPPORTED_LANGUAGES, changeLanguage, getCurrentLanguage, LanguageCode } from '../lib/i18n';
+import { useTheme, ThemePreference } from '../lib/theme-context';
+
+const THEME_OPTIONS: { value: ThemePreference; labelKey: string; icon: string }[] = [
+  { value: 'light', labelKey: 'account.themeLight', icon: '\u2600\uFE0F' },
+  { value: 'dark', labelKey: 'account.themeDark', icon: '\uD83C\uDF19' },
+  { value: 'system', labelKey: 'account.themeSystem', icon: '\uD83D\uDCF1' },
+];
 
 export default function MyAccountScreen({ navigation }: any) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { themePreference, setThemePreference, colors } = useTheme();
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -65,26 +73,27 @@ export default function MyAccountScreen({ navigation }: any) {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.screenBackground }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
       <View style={styles.section}>
-        <Text style={styles.label}>{t('account.email')}</Text>
-        <Text style={styles.emailText}>{user?.email}</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('account.email')}</Text>
+        <Text style={[styles.emailText, { color: colors.textPrimary }]}>{user?.email}</Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>{t('account.displayName')}</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('account.displayName')}</Text>
         <TrimmedTextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
           value={displayName}
           onChangeText={setDisplayName}
           placeholder={t('account.displayNamePlaceholder')}
+          placeholderTextColor={colors.placeholderText}
           autoCapitalize="words"
           accessibilityLabel={t('account.displayName')}
           maxLength={50}
@@ -92,7 +101,7 @@ export default function MyAccountScreen({ navigation }: any) {
       </View>
 
       <TouchableOpacity
-        style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+        style={[styles.saveButton, { backgroundColor: colors.primary }, isSaving && styles.saveButtonDisabled]}
         onPress={handleSave}
         disabled={isSaving}
       >
@@ -102,27 +111,59 @@ export default function MyAccountScreen({ navigation }: any) {
       </TouchableOpacity>
 
       <View style={styles.languageSection}>
-        <Text style={styles.label}>{t('account.language')}</Text>
-        <View style={styles.languageOptions}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('account.language')}</Text>
+        <View style={[styles.optionGroup, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           {SUPPORTED_LANGUAGES.map((lang) => (
             <TouchableOpacity
               key={lang.code}
               style={[
-                styles.languageOption,
-                currentLang === lang.code && styles.languageOptionSelected,
+                styles.optionItem,
+                { borderBottomColor: colors.separator },
+                currentLang === lang.code && { backgroundColor: colors.primaryLightAlt },
               ]}
               onPress={() => handleLanguageChange(lang.code)}
             >
               <Text
                 style={[
-                  styles.languageOptionText,
-                  currentLang === lang.code && styles.languageOptionTextSelected,
+                  styles.optionText,
+                  { color: colors.textPrimary },
+                  currentLang === lang.code && { color: colors.primary, fontWeight: '600' },
                 ]}
               >
                 {lang.flag}  {lang.nativeName}
               </Text>
               {currentLang === lang.code && (
-                <Ionicons name="checkmark" size={20} color="#0066cc" />
+                <Ionicons name="checkmark" size={20} color={colors.primary} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.themeSection}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('account.theme')}</Text>
+        <View style={[styles.optionGroup, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+          {THEME_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.optionItem,
+                { borderBottomColor: colors.separator },
+                themePreference === option.value && { backgroundColor: colors.primaryLightAlt },
+              ]}
+              onPress={() => setThemePreference(option.value)}
+            >
+              <Text
+                style={[
+                  styles.optionText,
+                  { color: colors.textPrimary },
+                  themePreference === option.value && { color: colors.primary, fontWeight: '600' },
+                ]}
+              >
+                {option.icon}  {t(option.labelKey)}
+              </Text>
+              {themePreference === option.value && (
+                <Ionicons name="checkmark" size={20} color={colors.primary} />
               )}
             </TouchableOpacity>
           ))}
@@ -135,12 +176,10 @@ export default function MyAccountScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     padding: 16,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -150,23 +189,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
     marginBottom: 8,
   },
   emailText: {
     fontSize: 16,
-    color: '#333',
   },
   input: {
-    backgroundColor: '#fff',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
   },
   saveButton: {
-    backgroundColor: '#0066cc',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -183,30 +217,22 @@ const styles = StyleSheet.create({
   languageSection: {
     marginTop: 8,
   },
-  languageOptions: {
-    backgroundColor: '#fff',
+  themeSection: {
+    marginTop: 24,
+  },
+  optionGroup: {
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
     overflow: 'hidden',
   },
-  languageOption: {
+  optionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
-  languageOptionSelected: {
-    backgroundColor: '#f0f7ff',
-  },
-  languageOptionText: {
+  optionText: {
     fontSize: 16,
-    color: '#333',
-  },
-  languageOptionTextSelected: {
-    color: '#0066cc',
-    fontWeight: '600',
   },
 });

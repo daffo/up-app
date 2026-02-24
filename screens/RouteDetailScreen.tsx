@@ -18,6 +18,7 @@ import SendButton from '../components/SendButton';
 import CommentsSection from '../components/CommentsSection';
 import UserNameLink from '../components/UserNameLink';
 import { useRequireAuth } from '../hooks/useRequireAuth';
+import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 
 type Route = Database['public']['Tables']['routes']['Row'];
@@ -30,6 +31,7 @@ interface RouteWithPhoto extends Route {
 
 export default function RouteDetailScreen({ route, navigation }: any) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const { routeId } = route.params;
   const { user, requireAuth } = useRequireAuth();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -134,16 +136,16 @@ export default function RouteDetailScreen({ route, navigation }: any) {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
+      <View style={[styles.centerContainer, { backgroundColor: colors.screenBackground }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (error || !routeData) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>
+      <View style={[styles.centerContainer, { backgroundColor: colors.screenBackground }]}>
+        <Text style={[styles.errorText, { color: colors.danger }]}>
           {error || 'Route not found'}
         </Text>
       </View>
@@ -153,23 +155,23 @@ export default function RouteDetailScreen({ route, navigation }: any) {
   return (
       <ScrollView
         ref={scrollViewRef}
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.screenBackground }]}
         contentContainerStyle={{ paddingBottom: keyboardHeight }}
         keyboardShouldPersistTaps="handled"
       >
-      <View style={styles.header}>
-        <Text style={styles.title}>{routeData.title}</Text>
+      <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{routeData.title}</Text>
         <View style={styles.headerMeta}>
-          <Text style={styles.grade}>{routeData.grade}</Text>
-          <Text style={styles.holdCount}>{t('route.holds', { count: routeData.holds.length })}</Text>
+          <Text style={[styles.grade, { color: colors.primary }]}>{routeData.grade}</Text>
+          <Text style={[styles.holdCount, { color: colors.textSecondary }]}>{t('route.holds', { count: routeData.holds.length })}</Text>
         </View>
         {routeData.description && (
-          <Text style={styles.description}>{routeData.description}</Text>
+          <Text style={[styles.description, { color: colors.textSecondary }]}>{routeData.description}</Text>
         )}
       </View>
 
       {routeData.photo && (
-        <View style={styles.imageSection}>
+        <View style={[styles.imageSection, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <RouteVisualization
             photoUrl={routeData.photo.image_url}
             holds={routeData.holds}
@@ -178,50 +180,50 @@ export default function RouteDetailScreen({ route, navigation }: any) {
         </View>
       )}
 
-      <View style={styles.detailsSection}>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>{t('route.createdBy')}</Text>
+      <View style={[styles.detailsSection, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+        <View style={[styles.detailRow, { borderBottomColor: colors.separator }]}>
+          <Text style={[styles.detailLabel, { color: colors.textPrimary }]}>{t('route.createdBy')}</Text>
           <UserNameLink
             userId={routeData.user_id}
             displayName={routeData.creatorDisplayName}
-            style={styles.detailValue}
+            style={[styles.detailValue, { color: colors.textSecondary }]}
           />
         </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>{t('route.created')}</Text>
-          <Text style={styles.detailValue}>
+        <View style={[styles.detailRow, { borderBottomColor: colors.separator }]}>
+          <Text style={[styles.detailLabel, { color: colors.textPrimary }]}>{t('route.created')}</Text>
+          <Text style={[styles.detailValue, { color: colors.textSecondary }]}>
             {formatDate(routeData.created_at)}
           </Text>
         </View>
         <TouchableOpacity
-          style={[styles.detailRow, !(user && routeData.user_id === user.id) && styles.detailRowLast]}
+          style={[styles.detailRow, { borderBottomColor: colors.separator }, !(user && routeData.user_id === user.id) && styles.detailRowLast]}
           onPress={() => navigation.navigate('RouteSends', { routeId })}
         >
-          <Text style={styles.detailLabel}>{t('route.rating')}</Text>
+          <Text style={[styles.detailLabel, { color: colors.textPrimary }]}>{t('route.rating')}</Text>
           <View style={styles.ratingValue}>
             {(() => {
               const ratings = sends.map(s => s.quality_rating).filter((r): r is number => r !== null);
               const avg = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : null;
               return avg !== null ? (
                 <>
-                  <Ionicons name="star" size={16} color="#f5a623" />
-                  <Text style={styles.ratingText}>{avg.toFixed(1)}</Text>
-                  <Text style={styles.sendCountText}>({sends.length})</Text>
+                  <Ionicons name="star" size={16} color={colors.star} />
+                  <Text style={[styles.ratingText, { color: colors.star }]}>{avg.toFixed(1)}</Text>
+                  <Text style={[styles.sendCountText, { color: colors.textTertiary }]}>({sends.length})</Text>
                 </>
               ) : (
-                <Text style={styles.detailValue}>{t('route.noRatingsYet')}</Text>
+                <Text style={[styles.detailValue, { color: colors.textSecondary }]}>{t('route.noRatingsYet')}</Text>
               );
             })()}
-            <Ionicons name="chevron-forward" size={20} color="#999" style={styles.chevron} />
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} style={styles.chevron} />
           </View>
         </TouchableOpacity>
         {user && routeData.user_id === user.id && (
           <TouchableOpacity
-            style={[styles.detailRow, styles.detailRowLast]}
+            style={[styles.detailRow, styles.detailRowLast, { borderBottomColor: colors.separator }]}
             onPress={() => navigation.navigate('CreateEditRoute', { routeId })}
           >
-            <Text style={styles.editRouteLabel}>{t('route.editRoute')}</Text>
-            <Ionicons name="chevron-forward" size={20} color="#999" />
+            <Text style={[styles.editRouteLabel, { color: colors.primary }]}>{t('route.editRoute')}</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
         )}
       </View>
@@ -243,24 +245,19 @@ export default function RouteDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
   },
   errorText: {
     fontSize: 16,
-    color: '#dc3545',
     textAlign: 'center',
   },
   header: {
-    backgroundColor: '#fff',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
   },
   title: {
     fontSize: 24,
@@ -276,50 +273,40 @@ const styles = StyleSheet.create({
   grade: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0066cc',
   },
   holdCount: {
     fontSize: 14,
-    color: '#666',
   },
   description: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#666',
   },
   imageSection: {
-    backgroundColor: '#fff',
     marginTop: 12,
     padding: 16,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#ddd',
   },
   detailsSection: {
-    backgroundColor: '#fff',
     marginTop: 12,
     paddingHorizontal: 16,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#ddd',
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   detailRowLast: {
     borderBottomWidth: 0,
   },
   detailLabel: {
     fontSize: 15,
-    color: '#333',
   },
   detailValue: {
     fontSize: 15,
-    color: '#666',
   },
   ratingValue: {
     flexDirection: 'row',
@@ -329,17 +316,14 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#f5a623',
   },
   sendCountText: {
     fontSize: 14,
-    color: '#999',
   },
   chevron: {
     marginLeft: 4,
   },
   editRouteLabel: {
     fontSize: 15,
-    color: '#0066cc',
   },
 });

@@ -1,7 +1,8 @@
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import * as Linking from 'expo-linking';
+import { useTheme } from '../lib/theme-context';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -39,9 +40,23 @@ const linking: LinkingOptions<any> = {
 
 export default function AppNavigator() {
   const { t } = useTranslation();
+  const { isDark, colors } = useTheme();
+
+  const navigationTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+      primary: colors.primary,
+      background: colors.screenBackground,
+      card: colors.cardBackground,
+      text: colors.textPrimary,
+      border: colors.border,
+      notification: colors.danger,
+    },
+  };
 
   return (
-    <NavigationContainer linking={linking}>
+    <NavigationContainer linking={linking} theme={navigationTheme}>
       <Stack.Navigator initialRouteName="Home">
         <Stack.Screen
           name="Home"

@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Send } from '../types/database.types';
 import { sendsApi, cacheEvents } from '../lib/api';
+import { useThemeColors } from '../lib/theme-context';
 
 interface SendButtonProps {
   routeId: string;
@@ -20,6 +21,7 @@ interface SendButtonProps {
 
 export default function SendButton({ routeId, userId, onLoginRequired, compact }: SendButtonProps) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const [send, setSend] = useState<Send | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -117,23 +119,23 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
           <Ionicons
             name={send ? 'checkmark-circle' : 'checkmark-circle-outline'}
             size={18}
-            color={send ? '#28a745' : '#0066cc'}
+            color={send ? '#28a745' : colors.primary}
           />
-          <Text style={[styles.compactText, send && styles.compactTextSent]}>
+          <Text style={[styles.compactText, { color: colors.primary }, send && styles.compactTextSent]}>
             {send ? t('sends.sent') : t('sends.send')}
           </Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
-          style={[styles.button, send && styles.buttonSent]}
+          style={[styles.button, { borderColor: colors.primary, backgroundColor: colors.cardBackground }, send && { backgroundColor: colors.primary }]}
           onPress={handlePress}
         >
           <Ionicons
             name={send ? 'checkmark-circle' : 'checkmark-circle-outline'}
             size={20}
-            color={send ? '#fff' : '#0066cc'}
+            color={send ? '#fff' : colors.primary}
           />
-          <Text style={[styles.buttonText, send && styles.buttonTextSent]}>
+          <Text style={[styles.buttonText, { color: colors.primary }, send && styles.buttonTextSent]}>
             {send ? t('sends.sent') : t('sends.logSend')}
           </Text>
         </TouchableOpacity>
@@ -150,16 +152,16 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
             style={styles.backdrop}
             onPress={() => setModalVisible(false)}
           />
-          <View style={styles.sheet}>
-            <View style={styles.header}>
-              <Text style={styles.title}>{send ? t('sends.editSend') : t('sends.logSend')}</Text>
+          <View style={[styles.sheet, { backgroundColor: colors.cardBackground }]}>
+            <View style={[styles.header, { borderBottomColor: colors.borderLight }]}>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>{send ? t('sends.editSend') : t('sends.logSend')}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.closeButton}>{t('common.cancel')}</Text>
+                <Text style={[styles.closeButton, { color: colors.textSecondary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.content}>
-              <Text style={styles.sectionLabel}>{t('sends.qualityRating')}</Text>
+              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t('sends.qualityRating')}</Text>
               <View style={styles.starsRow}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <TouchableOpacity
@@ -170,20 +172,21 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
                     <Ionicons
                       name={qualityRating && qualityRating >= star ? 'star' : 'star-outline'}
                       size={32}
-                      color="#f5a623"
+                      color={colors.star}
                     />
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.sectionLabel}>{t('sends.difficultyForGrade')}</Text>
+              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t('sends.difficultyForGrade')}</Text>
               <View style={styles.difficultyRow}>
                 {DIFFICULTY_OPTIONS.map((option) => (
                   <TouchableOpacity
                     key={option.value}
                     style={[
                       styles.difficultyOption,
-                      difficultyRating === option.value && styles.difficultyOptionSelected,
+                      { borderColor: colors.border },
+                      difficultyRating === option.value && { borderColor: colors.primary, backgroundColor: colors.primaryLight },
                     ]}
                     onPress={() =>
                       setDifficultyRating(difficultyRating === option.value ? null : option.value)
@@ -192,7 +195,8 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
                     <Text
                       style={[
                         styles.difficultyText,
-                        difficultyRating === option.value && styles.difficultyTextSelected,
+                        { color: colors.textSecondary },
+                        difficultyRating === option.value && { color: colors.primary, fontWeight: '600' },
                       ]}
                     >
                       {option.label}
@@ -204,7 +208,7 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
 
             <View style={styles.footer}>
               <TouchableOpacity
-                style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+                style={[styles.saveButton, { backgroundColor: colors.primary }, saving && styles.saveButtonDisabled]}
                 onPress={handleSave}
                 disabled={saving}
               >
@@ -219,7 +223,7 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
                   onPress={handleRemove}
                   disabled={saving}
                 >
-                  <Text style={styles.removeButtonText}>{t('sends.removeSend')}</Text>
+                  <Text style={[styles.removeButtonText, { color: colors.danger }]}>{t('sends.removeSend')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -239,7 +243,6 @@ const styles = StyleSheet.create({
   compactText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0066cc',
   },
   compactTextSent: {
     color: '#28a745',
@@ -253,17 +256,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#0066cc',
-    backgroundColor: '#fff',
-  },
-  buttonSent: {
-    backgroundColor: '#0066cc',
-    borderColor: '#0066cc',
   },
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0066cc',
   },
   buttonTextSent: {
     color: '#fff',
@@ -277,7 +273,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   sheet: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingBottom: 34,
@@ -288,7 +283,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   title: {
     fontSize: 18,
@@ -296,7 +290,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 16,
-    color: '#666',
   },
   content: {
     padding: 16,
@@ -304,7 +297,6 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
     marginBottom: 12,
     marginTop: 8,
   },
@@ -322,27 +314,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
     alignItems: 'center',
-  },
-  difficultyOptionSelected: {
-    borderColor: '#0066cc',
-    backgroundColor: '#e3f2fd',
   },
   difficultyText: {
     fontSize: 14,
-    color: '#666',
-  },
-  difficultyTextSelected: {
-    color: '#0066cc',
-    fontWeight: '600',
   },
   footer: {
     padding: 16,
     gap: 12,
   },
   saveButton: {
-    backgroundColor: '#0066cc',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -360,7 +341,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   removeButtonText: {
-    color: '#dc3545',
     fontSize: 16,
   },
 });

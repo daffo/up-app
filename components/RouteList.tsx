@@ -3,6 +3,7 @@ import { View, FlatList, Text, StyleSheet, ActivityIndicator, RefreshControl } f
 import { useTranslation } from 'react-i18next';
 import { RouteFilters } from '../types/database.types';
 import { routesApi, cacheEvents, RouteWithStats } from '../lib/api';
+import { useThemeColors } from '../lib/theme-context';
 import RouteCard from './RouteCard';
 
 interface RouteListProps {
@@ -12,6 +13,7 @@ interface RouteListProps {
 
 export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const [routes, setRoutes] = useState<RouteWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,7 +55,7 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -61,7 +63,7 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   if (error) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{t('routes.error', { message: error })}</Text>
+        <Text style={[styles.errorText, { color: colors.danger }]}>{t('routes.error', { message: error })}</Text>
       </View>
     );
   }
@@ -69,8 +71,8 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   if (routes.length === 0) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>{t('routes.noRoutesYet')}</Text>
-        <Text style={styles.emptySubtext}>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('routes.noRoutesYet')}</Text>
+        <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>
           {t('routes.beFirstToAdd')}
         </Text>
       </View>
@@ -86,7 +88,12 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
       )}
       contentContainerStyle={styles.listContainer}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
       }
     />
   );
@@ -104,17 +111,14 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#dc3545',
     textAlign: 'center',
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#666',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
   },
 });
