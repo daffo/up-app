@@ -34,7 +34,7 @@ export const PhotoSchema = z.object({
   id: z.string().uuid(),
   created_at: z.string(),
   image_url: z.string().url(),
-  setup_date: z.string(),
+  setup_date: z.string().nullable(),
   teardown_date: z.string().nullable(),
   user_id: z.string().uuid(),
 });

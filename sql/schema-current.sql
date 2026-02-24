@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-005-length-constraints
+-- Last updated: After migration-006-nullable-setup-date
 
 -- ============================================================================
 -- TABLES
@@ -19,7 +19,7 @@ CREATE TABLE photos (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   image_url TEXT NOT NULL,
-  setup_date DATE NOT NULL,
+  setup_date DATE,
   teardown_date DATE,
   user_id UUID REFERENCES auth.users NOT NULL
 );

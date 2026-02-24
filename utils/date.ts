@@ -3,7 +3,8 @@ import i18n from '../lib/i18n';
 /**
  * Format date as absolute date string using device locale
  */
-export function formatDate(dateString: string): string {
+export function formatDate(dateString: string | null): string {
+  if (!dateString) return '-';
   return new Date(dateString).toLocaleDateString(i18n.language);
 }
 

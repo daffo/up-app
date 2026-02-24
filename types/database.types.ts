@@ -95,7 +95,7 @@ export interface Database {
           id: string
           created_at: string
           image_url: string
-          setup_date: string
+          setup_date: string | null
           teardown_date: string | null
           user_id: string
         }
@@ -103,7 +103,7 @@ export interface Database {
           id?: string
           created_at?: string
           image_url: string
-          setup_date: string
+          setup_date?: string | null
           teardown_date?: string | null
           user_id: string
         }
@@ -111,7 +111,7 @@ export interface Database {
           id?: string
           created_at?: string
           image_url?: string
-          setup_date?: string
+          setup_date?: string | null
           teardown_date?: string | null
           user_id?: string
         }
