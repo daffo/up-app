@@ -168,6 +168,7 @@
   "admin": {
     "setup": "Montaggio",
     "teardown": "Smontaggio",
+    "draft": "Bozza",
     "active": "Attiva",
     "noPhotosFound": "Nessuna foto trovata",
     "photoNotFound": "Foto non trovata",
@@ -182,6 +183,7 @@
     "regenerateHolds": "Rigenera Prese",
     "detecting": "Rilevamento prese... ({{current}}/{{total}} sezioni)",
     "detectSuccess": "Rilevate {{count}} prese",
+    "savingHolds": "Salvataggio prese...",
     "detectError": "Rilevamento Fallito",
     "regenerateConfirm": "Eliminare tutte le {{count}} prese e rilevare di nuovo?",
     "setSetupDate": "Imposta Data Montaggio",

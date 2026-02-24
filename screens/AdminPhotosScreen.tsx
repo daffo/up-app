@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../lib/supabase';
 import { Database } from '../types/database.types';
+import { photosApi, cacheEvents } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 
@@ -22,21 +22,17 @@ export default function AdminPhotosScreen({ navigation }: any) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPhotos();
+  const fetchPhotos = useCallback(async () => {
+    const data = await photosApi.listAll();
+    setPhotos(data as Photo[]);
+    setLoading(false);
   }, []);
 
-  const fetchPhotos = async () => {
-    const { data, error } = await supabase
-      .from('photos')
-      .select('*')
-      .order('setup_date', { ascending: false });
-
-    if (!error && data) {
-      setPhotos(data);
-    }
-    setLoading(false);
-  };
+  useEffect(() => {
+    fetchPhotos();
+    const unsubscribe = cacheEvents.subscribe('photos', fetchPhotos);
+    return unsubscribe;
+  }, [fetchPhotos]);
 
   const renderPhoto = ({ item }: { item: Photo }) => (
     <TouchableOpacity
@@ -45,16 +41,21 @@ export default function AdminPhotosScreen({ navigation }: any) {
     >
       <Image source={{ uri: item.image_url }} style={styles.thumbnail} />
       <View style={styles.photoInfo}>
-        <Text style={[styles.dateText, { color: colors.textPrimary }]}>
-          {t('admin.setup')}: {formatDate(item.setup_date)}
-        </Text>
-        {item.teardown_date && (
-          <Text style={[styles.dateText, { color: colors.textPrimary }]}>
-            {t('admin.teardown')}: {formatDate(item.teardown_date)}
-          </Text>
-        )}
-        {!item.teardown_date && (
-          <Text style={styles.activeText}>{t('admin.active')}</Text>
+        {!item.setup_date ? (
+          <Text style={styles.draftText}>{t('admin.draft')}</Text>
+        ) : (
+          <>
+            <Text style={[styles.dateText, { color: colors.textPrimary }]}>
+              {t('admin.setup')}: {formatDate(item.setup_date)}
+            </Text>
+            {item.teardown_date ? (
+              <Text style={[styles.dateText, { color: colors.textPrimary }]}>
+                {t('admin.teardown')}: {formatDate(item.teardown_date)}
+              </Text>
+            ) : (
+              <Text style={styles.activeText}>{t('admin.active')}</Text>
+            )}
+          </>
         )}
       </View>
     </TouchableOpacity>
@@ -117,6 +118,11 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 14,
     marginBottom: 4,
+  },
+  draftText: {
+    fontSize: 14,
+    color: '#e67e22',
+    fontWeight: '600',
   },
   activeText: {
     fontSize: 14,

@@ -168,6 +168,7 @@
   "admin": {
     "setup": "Setup",
     "teardown": "Teardown",
+    "draft": "Draft",
     "active": "Active",
     "noPhotosFound": "No photos found",
     "photoNotFound": "Photo not found",
@@ -182,6 +183,7 @@
     "regenerateHolds": "Regenerate Holds",
     "detecting": "Detecting holds... ({{current}}/{{total}} tiles)",
     "detectSuccess": "Detected {{count}} holds",
+    "savingHolds": "Saving holds...",
     "detectError": "Detection Failed",
     "regenerateConfirm": "Delete all {{count}} holds and re-detect?",
     "setSetupDate": "Set Setup Date",
