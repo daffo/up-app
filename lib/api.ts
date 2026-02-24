@@ -180,6 +180,17 @@ export const photosApi = {
     if (error) throw error;
     return data;
   },
+
+  async update(photoId: string, updates: { setup_date?: string | null; teardown_date?: string | null }) {
+    const { error } = await supabase
+      .from('photos')
+      .update(updates)
+      .eq('id', photoId);
+
+    if (error) throw error;
+
+    cacheEvents.invalidate('photos');
+  },
 };
 
 // Detected Holds API
@@ -217,6 +228,32 @@ export const detectedHoldsApi = {
     cacheEvents.invalidate('detected_holds');
 
     return data as DetectedHold;
+  },
+
+  async createMany(holds: Omit<DetectedHold, 'id'>[]): Promise<DetectedHold[]> {
+    if (holds.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from('detected_holds')
+      .insert(holds)
+      .select();
+
+    if (error) throw error;
+
+    cacheEvents.invalidate('detected_holds');
+
+    return (data || []) as DetectedHold[];
+  },
+
+  async deleteByPhoto(photoId: string): Promise<void> {
+    const { error } = await supabase
+      .from('detected_holds')
+      .delete()
+      .eq('photo_id', photoId);
+
+    if (error) throw error;
+
+    cacheEvents.invalidate('detected_holds');
   },
 };
 

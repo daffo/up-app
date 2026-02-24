@@ -21,6 +21,11 @@ cacheEvents.subscribe('routes', fetchRoutes);
 cacheEvents.invalidate('routes');
 ```
 
+### API Layer (`lib/api.ts`)
+- **All database access from screens/components must go through the API layer** — never import `supabase` directly in screens
+- The API layer handles cache invalidation, typing, and query patterns
+- Available APIs: `routesApi`, `photosApi`, `detectedHoldsApi`, `userProfilesApi`, `sendsApi`, `commentsApi`
+
 ### Hold System
 - `DetectedHold`: ML-detected holds with polygon coordinates (percentage-based)
 - `Hold`: User-placed holds in a route, referencing detected_hold_id

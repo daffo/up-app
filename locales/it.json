@@ -177,7 +177,18 @@
     "holdsCount": "{{count}} prese",
     "allHoldsPreview": "Anteprima Tutte le Prese",
     "tapToOpenFullscreen": "Tocca per aprire a schermo intero, poi tocca una presa per eliminarla",
-    "renderingHolds": "Caricamento {{count}} prese..."
+    "renderingHolds": "Caricamento {{count}} prese...",
+    "detectHolds": "Rileva Prese",
+    "regenerateHolds": "Rigenera Prese",
+    "detecting": "Rilevamento prese... ({{current}}/{{total}} sezioni)",
+    "detectSuccess": "Rilevate {{count}} prese",
+    "detectError": "Rilevamento Fallito",
+    "regenerateConfirm": "Eliminare tutte le {{count}} prese e rilevare di nuovo?",
+    "setSetupDate": "Imposta Data Montaggio",
+    "setTeardownDate": "Imposta Data Smontaggio",
+    "notSet": "Non impostata",
+    "cannotSetSetup": "Rileva le prese prima di impostare la data di montaggio",
+    "dateUpdated": "Data aggiornata"
   },
   "editor": {
     "done": "Fatto",
