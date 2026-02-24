@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
   Image as RNImage,
   useWindowDimensions,
   StatusBar,
@@ -62,6 +63,7 @@ export default function FullScreenHoldEditor({
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [routesUsingHold, setRoutesUsingHold] = useState<string[]>([]);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // Focus mode state
   const [focusMode, setFocusMode] = useState<FocusMode>('none');
@@ -571,24 +573,17 @@ export default function FullScreenHoldEditor({
   };
 
   const handleDeleteHold = () => {
+    setConfirmingDelete(true);
+  };
+
+  const confirmDelete = () => {
     if (selectedHoldId === null) return;
 
     const selectedHold = detectedHolds.find(h => h.id === selectedHoldId);
     if (!selectedHold) return;
 
-    // Confirm deletion - this is permanent
-    Alert.alert(
-      t('editor.deleteHold'),
-      t('editor.deleteHoldConfirm'),
-      [
-        { text: t('editor.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: () => performDeleteHold(selectedHold),
-        },
-      ]
-    );
+    setConfirmingDelete(false);
+    performDeleteHold(selectedHold);
   };
 
   const performDeleteHold = async (selectedHold: DetectedHold) => {
@@ -642,6 +637,7 @@ export default function FullScreenHoldEditor({
     setDeleteModalVisible(false);
     setSelectedHoldId(null);
     setRoutesUsingHold([]);
+    setConfirmingDelete(false);
   };
 
   // Handle dimensions from base component
@@ -1025,59 +1021,81 @@ export default function FullScreenHoldEditor({
         onPress={closeModal}
       >
         <TouchableOpacity activeOpacity={1} style={baseStyles.modalContent}>
-          <Text style={baseStyles.modalTitle}>{t('editor.editHold')}</Text>
-
-          {routesUsingHold.length > 0 && (
+          {confirmingDelete ? (
             <>
-              <Text style={styles.warningText}>
-                {t('editor.cannotDelete', { count: routesUsingHold.length })}
-              </Text>
-              {routesUsingHold.map((title, i) => (
-                <Text key={i} style={styles.routeListItem}>• {title}</Text>
-              ))}
-            </>
-          )}
-
-          {/* Move and Redraw only available in focused mode */}
-          {inFocusedMode ? (
-            <>
+              <Text style={baseStyles.modalTitle}>{t('editor.deleteHold')}</Text>
+              <Text style={styles.confirmText}>{t('editor.deleteHoldConfirm')}</Text>
               <TouchableOpacity
-                style={baseStyles.modalButton}
-                onPress={startMoveHold}
+                style={[baseStyles.modalButton, baseStyles.modalButtonDanger]}
+                onPress={confirmDelete}
+                disabled={isDeleting}
               >
-                <Text style={baseStyles.modalButtonText}>{t('editor.moveHold')}</Text>
+                {isDeleting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={baseStyles.modalButtonText}>{t('common.delete')}</Text>
+                )}
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={baseStyles.modalButton}
-                onPress={startRedraw}
+                style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
+                onPress={() => setConfirmingDelete(false)}
               >
-                <Text style={baseStyles.modalButtonText}>{t('editor.redrawShape')}</Text>
+                <Text style={baseStyles.modalButtonText}>{t('editor.cancel')}</Text>
               </TouchableOpacity>
             </>
           ) : (
-            <Text style={styles.hintText}>
-              {t('editor.useFocusHint')}
-            </Text>
-          )}
+            <>
+              <Text style={baseStyles.modalTitle}>{t('editor.editHold')}</Text>
 
-          <TouchableOpacity
-            style={[baseStyles.modalButton, baseStyles.modalButtonDanger]}
-            onPress={handleDeleteHold}
-            disabled={isDeleting || routesUsingHold.length > 0}
-          >
-            {isDeleting ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={baseStyles.modalButtonText}>{t('editor.deleteHold')}</Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
-            onPress={closeModal}
-          >
-            <Text style={baseStyles.modalButtonText}>{t('editor.cancel')}</Text>
-          </TouchableOpacity>
+              {routesUsingHold.length > 0 && (
+                <>
+                  <Text style={styles.warningText}>
+                    {t('editor.cannotDelete', { count: routesUsingHold.length })}
+                  </Text>
+                  {routesUsingHold.map((title, i) => (
+                    <Text key={i} style={styles.routeListItem}>• {title}</Text>
+                  ))}
+                </>
+              )}
+
+              {/* Move and Redraw only available in focused mode */}
+              {inFocusedMode ? (
+                <>
+                  <TouchableOpacity
+                    style={baseStyles.modalButton}
+                    onPress={startMoveHold}
+                  >
+                    <Text style={baseStyles.modalButtonText}>{t('editor.moveHold')}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={baseStyles.modalButton}
+                    onPress={startRedraw}
+                  >
+                    <Text style={baseStyles.modalButtonText}>{t('editor.redrawShape')}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={styles.hintText}>
+                  {t('editor.useFocusHint')}
+                </Text>
+              )}
+
+              <TouchableOpacity
+                style={[baseStyles.modalButton, baseStyles.modalButtonDanger]}
+                onPress={handleDeleteHold}
+                disabled={isDeleting || routesUsingHold.length > 0}
+              >
+                <Text style={baseStyles.modalButtonText}>{t('editor.deleteHold')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[baseStyles.modalButton, baseStyles.modalButtonCancel]}
+                onPress={closeModal}
+              >
+                <Text style={baseStyles.modalButtonText}>{t('editor.cancel')}</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -1136,6 +1154,12 @@ export default function FullScreenHoldEditor({
 }
 
 const styles = StyleSheet.create({
+  confirmText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
   warningText: {
     fontSize: 14,
     color: '#dc3545',
