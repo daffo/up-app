@@ -25,6 +25,11 @@ import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
 import { useDragDelta } from '../hooks/useDragDelta';
 
+const ZOOM_MIN = 10;   // 10x magnification, tightest crop
+const ZOOM_MAX = 60;   // ~1.7x magnification, widest view
+const ZOOM_STEP = 5;
+const ZOOM_DEFAULT = 15;
+
 interface FullScreenHoldEditorProps {
   visible: boolean;
   photoUrl: string;
@@ -68,6 +73,7 @@ export default function FullScreenHoldEditor({
   // Focus mode state
   const [focusMode, setFocusMode] = useState<FocusMode>('none');
   const [focusRegion, setFocusRegion] = useState<FocusRegion | null>(null);
+  const [zoomSize, setZoomSize] = useState(ZOOM_DEFAULT);
 
   // Image dimensions for coordinate conversion
   const [imageDimensions, setImageDimensions] = useState<ImageDimensions>({ width: 0, height: 0 });
@@ -676,8 +682,6 @@ export default function FullScreenHoldEditor({
     const centerX = Math.max(0, Math.min(100, percent.x));
     const centerY = Math.max(0, Math.min(100, percent.y));
 
-    // Fixed zoom size (15% = ~6.6x zoom)
-    const zoomSize = 15;
     const halfSize = zoomSize / 2;
 
     let minX = centerX - halfSize;
@@ -723,10 +727,47 @@ export default function FullScreenHoldEditor({
     setFocusMode('selecting');
   };
 
+  // Adjust zoom level while in focused mode
+  const adjustZoom = (newZoomSize: number) => {
+    if (!focusRegion) return;
+    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoomSize));
+    setZoomSize(clamped);
+
+    // Recalculate focus region around current center
+    const currentCenterX = focusRegion.x + focusRegion.width / 2;
+    const currentCenterY = focusRegion.y + focusRegion.height / 2;
+    const halfSize = clamped / 2;
+
+    let minX = currentCenterX - halfSize;
+    let maxX = currentCenterX + halfSize;
+    let minY = currentCenterY - halfSize;
+    let maxY = currentCenterY + halfSize;
+
+    // Shift region to stay within bounds
+    if (minX < 0) { maxX -= minX; minX = 0; }
+    if (maxX > 100) { minX -= (maxX - 100); maxX = 100; }
+    if (minY < 0) { maxY -= minY; minY = 0; }
+    if (maxY > 100) { minY -= (maxY - 100); maxY = 100; }
+
+    // Final clamp
+    minX = Math.max(0, minX);
+    minY = Math.max(0, minY);
+    maxX = Math.min(100, maxX);
+    maxY = Math.min(100, maxY);
+
+    setFocusRegion({
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+    });
+  };
+
   // Exit focus mode
   const exitFocusMode = () => {
     setFocusMode('none');
     setFocusRegion(null);
+    setZoomSize(ZOOM_DEFAULT);
     focusedViewDimensionsRef.current = { width: 0, height: 0 };
     focusedViewOffsetRef.current = { x: 0, y: 0 };
   };
@@ -751,13 +792,24 @@ export default function FullScreenHoldEditor({
     });
   };
 
-  // Handle hold press in focused mode - need to map index correctly
-  const handleFocusedHoldPress = (index: number) => {
-    const holdsInRegion = getHoldsInRegion();
-    const hold = holdsInRegion[index];
-    if (hold) {
-      // Toggle selection
-      setSelectedHoldId(hold.id === selectedHoldId ? null : hold.id);
+  // Handle tap in focused view - manual hit testing (works on web unlike SVG onPressIn)
+  const handleFocusedViewTap = (event: GestureResponderEvent) => {
+    if (focusMode !== 'focused' || !focusRegion) return;
+
+    const { locationX, locationY } = event.nativeEvent;
+    const dims = focusedViewDimensionsRef.current;
+    if (dims.width === 0) return;
+
+    // Convert tap coordinates to original image percentage coordinates
+    const xPercent = focusRegion.x + (locationX / dims.width) * focusRegion.width;
+    const yPercent = focusRegion.y + (locationY / dims.height) * focusRegion.height;
+
+    // Find tapped hold (uses displayed holds which include move delta)
+    const tappedHold = findSmallestPolygonAtPoint(xPercent, yPercent, getDisplayedDetectedHolds());
+    if (tappedHold) {
+      setSelectedHoldId(tappedHold.id === selectedHoldId ? null : tappedHold.id);
+    } else {
+      setSelectedHoldId(null);
     }
   };
 
@@ -875,7 +927,7 @@ export default function FullScreenHoldEditor({
       <Modal visible={true} animationType="fade" statusBarTranslucent>
         <StatusBar hidden />
         <View style={styles.focusedContainer}>
-          {/* Clipped image container - pan handlers here so buttons work */}
+          {/* Clipped image container - pan handlers when editing, tap handler otherwise */}
           <View
             style={{
               position: 'absolute',
@@ -885,7 +937,10 @@ export default function FullScreenHoldEditor({
               height: props.displayHeight,
               overflow: 'hidden',
             }}
-            {...(isEditing ? activePanHandlers : {})}
+            {...(isEditing ? activePanHandlers : {
+              onStartShouldSetResponder: () => true,
+              onResponderRelease: handleFocusedViewTap,
+            })}
           >
             <View pointerEvents="none">
               <Image
@@ -907,9 +962,8 @@ export default function FullScreenHoldEditor({
                 detectedHolds={mappedDetectedHolds}
                 width={props.displayWidth}
                 height={props.displayHeight}
-                pointerEvents={isMoving ? 'none' : 'auto'}
+                pointerEvents="none"
                 showLabels={false}
-                onHoldPress={isMoving ? undefined : handleFocusedHoldPress}
                 selectedHoldId={movingHoldId || selectedHoldId}
                 zoomScale={100 / (focusRegion?.width || 100)}
               />
@@ -999,6 +1053,28 @@ export default function FullScreenHoldEditor({
               <Text style={styles.addHoldButtonText}>{t('editor.addHold')}</Text>
             </TouchableOpacity>
           )}
+
+          {/* Zoom +/- buttons - show when not editing */}
+          {!isEditing && (
+            <View style={styles.zoomButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.zoomButton, zoomSize <= ZOOM_MIN && styles.zoomButtonDisabled]}
+                onPress={() => adjustZoom(zoomSize - ZOOM_STEP)}
+                disabled={zoomSize <= ZOOM_MIN}
+                accessibilityLabel={t('editor.zoomIn')}
+              >
+                <Text style={[styles.zoomButtonText, zoomSize <= ZOOM_MIN && styles.zoomButtonTextDisabled]}>+</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.zoomButton, zoomSize >= ZOOM_MAX && styles.zoomButtonDisabled]}
+                onPress={() => adjustZoom(zoomSize + ZOOM_STEP)}
+                disabled={zoomSize >= ZOOM_MAX}
+                accessibilityLabel={t('editor.zoomOut')}
+              >
+                <Text style={[styles.zoomButtonText, zoomSize >= ZOOM_MAX && styles.zoomButtonTextDisabled]}>−</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </Modal>
     );
@@ -1077,7 +1153,7 @@ export default function FullScreenHoldEditor({
                 </>
               ) : (
                 <Text style={styles.hintText}>
-                  {t('editor.useFocusHint')}
+                  {t('editor.usePrecisionHint')}
                 </Text>
               )}
 
@@ -1128,7 +1204,7 @@ export default function FullScreenHoldEditor({
       {/* Focus Area button - only show when not in selecting mode and no hold selected */}
       {focusMode === 'none' && !selectedHoldId && (
         <TouchableOpacity style={styles.focusButton} onPress={startFocusSelection}>
-          <Text style={styles.focusButtonText}>{t('editor.focusArea')}</Text>
+          <Text style={styles.focusButtonText}>{t('editor.precisionMode')}</Text>
         </TouchableOpacity>
       )}
 
@@ -1286,5 +1362,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontSize: 16,
     fontWeight: '600',
+  },
+  zoomButtonsContainer: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    marginTop: -52, // Half of total height (2 buttons × 44 + 8 gap) / 2
+    gap: 8,
+  },
+  zoomButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoomButtonDisabled: {
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+  },
+  zoomButtonText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '600',
+    lineHeight: 28,
+  },
+  zoomButtonTextDisabled: {
+    color: 'rgba(255, 255, 255, 0.4)',
   },
 });
