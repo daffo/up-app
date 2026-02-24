@@ -588,7 +588,6 @@ export default function FullScreenHoldEditor({
     const selectedHold = detectedHolds.find(h => h.id === selectedHoldId);
     if (!selectedHold) return;
 
-    setConfirmingDelete(false);
     performDeleteHold(selectedHold);
   };
 
@@ -611,9 +610,10 @@ export default function FullScreenHoldEditor({
       }
     }
 
-    // If hold is used in routes, show error and abort
+    // If hold is used in routes, go back to edit view to show route list
     if (usingRoutes.length > 0) {
       setIsDeleting(false);
+      setConfirmingDelete(false);
       setRoutesUsingHold(usingRoutes);
       return;
     }
