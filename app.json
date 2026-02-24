@@ -37,7 +37,8 @@
     "owner": "daffo",
     "plugins": [
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

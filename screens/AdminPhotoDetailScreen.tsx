@@ -6,10 +6,11 @@ import {
   ActivityIndicator,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Alert,
   Platform,
+  Modal,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { Database, DetectedHold, Hold } from '../types/database.types';
 import { detectedHoldsApi, photosApi } from '../lib/api';
@@ -20,6 +21,50 @@ import { detectHolds } from '../lib/holdDetection';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
+function showAlert(title: string, message?: string) {
+  if (Platform.OS === 'web') {
+    window.alert(message ? `${title}\n\n${message}` : title);
+  } else {
+    Alert.alert(title, message);
+  }
+}
+
+function toYMD(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+function WebDateInput({ value, onChange, colors }: {
+  value: Date;
+  onChange: (date: Date) => void;
+  colors: ReturnType<typeof useThemeColors>;
+}) {
+  return (
+    <input
+      type="date"
+      value={toYMD(value)}
+      onChange={(e) => {
+        if (e.target.value) {
+          onChange(new Date(e.target.value + 'T00:00:00'));
+        }
+      }}
+      style={{
+        flex: 1,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        paddingLeft: 12,
+        paddingRight: 12,
+        paddingTop: 10,
+        paddingBottom: 10,
+        fontSize: 16,
+        color: colors.textPrimary,
+        backgroundColor: colors.inputBackground,
+        borderStyle: 'solid',
+      }}
+    />
+  );
+}
+
 export default function AdminPhotoDetailScreen({ route }: any) {
   const { t } = useTranslation();
   const colors = useThemeColors();
@@ -29,27 +74,31 @@ export default function AdminPhotoDetailScreen({ route }: any) {
   const [loading, setLoading] = useState(true);
   const [visualizationReady, setVisualizationReady] = useState(false);
   const [detecting, setDetecting] = useState(false);
-  const [detectProgress, setDetectProgress] = useState('');
-  const [dateInput, setDateInput] = useState('');
-  const [showSetupDateInput, setShowSetupDateInput] = useState(false);
-  const [showTeardownDateInput, setShowTeardownDateInput] = useState(false);
+  const [detectTile, setDetectTile] = useState(0);
+  const [detectTotal, setDetectTotal] = useState(9);
+  const [detectPhase, setDetectPhase] = useState<'tiles' | 'saving'>('tiles');
+  const [editingField, setEditingField] = useState<'setup_date' | 'teardown_date' | null>(null);
+  const [pickerDate, setPickerDate] = useState(new Date());
 
   useEffect(() => {
     fetchPhotoData();
   }, [photoId]);
 
-  // Delay visualization rendering to allow spinner to show
+  // Delay visualization rendering to allow spinner to show (only for large hold counts)
   useEffect(() => {
-    if (!loading && detectedHolds.length > 0) {
-      const timer = setTimeout(() => {
+    if (!loading) {
+      if (detectedHolds.length === 0) {
         setVisualizationReady(true);
-      }, 100);
-      return () => clearTimeout(timer);
+      } else {
+        const timer = setTimeout(() => {
+          setVisualizationReady(true);
+        }, 100);
+        return () => clearTimeout(timer);
+      }
     }
   }, [loading, detectedHolds.length]);
 
   const fetchPhotoData = async () => {
-    // Fetch photo and detected holds in parallel
     const [photoData, holdsData] = await Promise.all([
       photosApi.get(photoId),
       detectedHoldsApi.listByPhoto(photoId),
@@ -96,11 +145,10 @@ export default function AdminPhotoDetailScreen({ route }: any) {
       });
       if (!confirmed) return;
 
-      // Delete all existing detected holds for this photo
       try {
         await detectedHoldsApi.deleteByPhoto(photoId);
       } catch (err) {
-        Alert.alert(t('common.error'), err instanceof Error ? err.message : String(err));
+        showAlert(t('common.error'), err instanceof Error ? err.message : String(err));
         return;
       }
       setDetectedHolds([]);
@@ -109,12 +157,13 @@ export default function AdminPhotoDetailScreen({ route }: any) {
 
     const apiKey = process.env.EXPO_PUBLIC_ROBOFLOW_API_KEY;
     if (!apiKey) {
-      Alert.alert(t('common.error'), 'EXPO_PUBLIC_ROBOFLOW_API_KEY not set');
+      showAlert(t('common.error'), 'EXPO_PUBLIC_ROBOFLOW_API_KEY not set');
       return;
     }
 
     setDetecting(true);
-    setDetectProgress(t('admin.detecting', { current: 0, total: 9 }));
+    setDetectTile(0);
+    setDetectPhase('tiles');
 
     try {
       const results = await detectHolds(
@@ -122,11 +171,13 @@ export default function AdminPhotoDetailScreen({ route }: any) {
         apiKey,
         0.5,
         (tile, total) => {
-          setDetectProgress(t('admin.detecting', { current: tile, total }));
+          setDetectTile(tile);
+          setDetectTotal(total);
         },
       );
 
-      // Insert detected holds into database
+      setDetectPhase('saving');
+
       const inserts = results.map((r) => ({
         photo_id: photoId,
         polygon: r.polygon,
@@ -137,39 +188,59 @@ export default function AdminPhotoDetailScreen({ route }: any) {
       if (inserts.length > 0) {
         const newHolds = await detectedHoldsApi.createMany(inserts);
         setDetectedHolds(newHolds);
-        setVisualizationReady(false); // Will re-trigger the delay effect
+        setVisualizationReady(false);
       }
-      Alert.alert(t('common.success'), t('admin.detectSuccess', { count: results.length }));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      Alert.alert(t('admin.detectError'), message);
-    } finally {
+
       setDetecting(false);
-      setDetectProgress('');
+      showAlert(t('common.success'), t('admin.detectSuccess', { count: results.length }));
+    } catch (err) {
+      setDetecting(false);
+      const message = err instanceof Error ? err.message : String(err);
+      showAlert(t('admin.detectError'), message);
     }
   };
 
-  const handleUpdateDate = async (field: 'setup_date' | 'teardown_date') => {
+  const openDatePicker = (field: 'setup_date' | 'teardown_date') => {
+    setPickerDate(new Date());
+    setEditingField(field);
+  };
+
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    // On Android, the picker dismisses on any action
+    if (Platform.OS === 'android') {
+      setEditingField(null);
+      if (event.type === 'dismissed' || !selectedDate) return;
+      saveDate(editingField!, toYMD(selectedDate));
+      return;
+    }
+    // On iOS, update the picker value; user will tap Save
+    if (selectedDate) {
+      setPickerDate(selectedDate);
+    }
+  };
+
+  const handleWebDateChange = (date: Date) => {
+    setPickerDate(date);
+  };
+
+  const saveDate = async (field: 'setup_date' | 'teardown_date', dateStr: string) => {
     if (!photo) return;
 
-    // Validate YYYY-MM-DD format
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-      Alert.alert(t('common.error'), 'Use YYYY-MM-DD format');
-      return;
-    }
-
     try {
-      await photosApi.update(photoId, { [field]: dateInput });
+      await photosApi.update(photoId, { [field]: dateStr });
     } catch (err) {
-      Alert.alert(t('common.error'), err instanceof Error ? err.message : String(err));
+      showAlert(t('common.error'), err instanceof Error ? err.message : String(err));
       return;
     }
 
-    setPhoto({ ...photo, [field]: dateInput });
-    setDateInput('');
-    setShowSetupDateInput(false);
-    setShowTeardownDateInput(false);
-    Alert.alert(t('common.success'), t('admin.dateUpdated'));
+    setPhoto({ ...photo, [field]: dateStr });
+    setEditingField(null);
+    showAlert(t('common.success'), t('admin.dateUpdated'));
+  };
+
+  const handleSavePickerDate = () => {
+    if (!editingField) return;
+    saveDate(editingField, toYMD(pickerDate));
   };
 
   // Create holds array that highlights ALL detected holds
@@ -177,7 +248,7 @@ export default function AdminPhotoDetailScreen({ route }: any) {
     order: index + 1,
     detected_hold_id: dh.id,
     labelX: dh.center.x,
-    labelY: dh.center.y - 5, // Slightly above center
+    labelY: dh.center.y - 5,
   }));
 
   const hasHolds = detectedHolds.length > 0;
@@ -199,6 +270,42 @@ export default function AdminPhotoDetailScreen({ route }: any) {
     );
   }
 
+  const renderDatePicker = (field: 'setup_date' | 'teardown_date') => {
+    if (editingField !== field) return null;
+
+    return (
+      <View style={styles.pickerContainer}>
+        {Platform.OS === 'web' ? (
+          <WebDateInput value={pickerDate} onChange={handleWebDateChange} colors={colors} />
+        ) : (
+          <DateTimePicker
+            value={pickerDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            onChange={handleDateChange}
+          />
+        )}
+        {/* Save/Cancel buttons (not needed on Android — picker auto-dismisses) */}
+        {Platform.OS !== 'android' && (
+          <View style={styles.pickerButtons}>
+            <TouchableOpacity
+              style={[styles.pickerButton, { backgroundColor: colors.primary }]}
+              onPress={handleSavePickerDate}
+            >
+              <Text style={styles.pickerButtonText}>{t('common.save')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.pickerButton, { backgroundColor: colors.cancelButton }]}
+              onPress={() => setEditingField(null)}
+            >
+              <Text style={styles.pickerButtonText}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.screenBackground }]}>
       {/* Info Section */}
@@ -210,47 +317,22 @@ export default function AdminPhotoDetailScreen({ route }: any) {
         ) : (
           <Text style={[styles.value, { color: colors.textTertiary }]}>{t('admin.notSet')}</Text>
         )}
-        {!isLive && (
-          showSetupDateInput ? (
-            <View style={styles.dateInputRow}>
-              <TextInput
-                style={[styles.dateInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
-                value={dateInput}
-                onChangeText={setDateInput}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.placeholderText}
-                autoFocus
-              />
-              <TouchableOpacity
-                style={[styles.dateButton, { backgroundColor: colors.primary }]}
-                onPress={() => handleUpdateDate('setup_date')}
-              >
-                <Text style={styles.dateButtonText}>{t('common.save')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.dateButton, { backgroundColor: colors.cancelButton }]}
-                onPress={() => { setShowSetupDateInput(false); setDateInput(''); }}
-              >
-                <Text style={styles.dateButtonText}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: colors.primary, opacity: hasHolds ? 1 : 0.5 }]}
-              onPress={() => {
-                if (!hasHolds) {
-                  Alert.alert(t('admin.cannotSetSetup'));
-                  return;
-                }
-                setDateInput(new Date().toISOString().split('T')[0]);
-                setShowSetupDateInput(true);
-              }}
-              disabled={detecting}
-            >
-              <Text style={styles.actionButtonText}>{t('admin.setSetupDate')}</Text>
-            </TouchableOpacity>
-          )
+        {!isLive && editingField !== 'setup_date' && (
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: colors.primary, opacity: hasHolds ? 1 : 0.5 }]}
+            onPress={() => {
+              if (!hasHolds) {
+                showAlert(t('admin.cannotSetSetup'));
+                return;
+              }
+              openDatePicker('setup_date');
+            }}
+            disabled={detecting}
+          >
+            <Text style={styles.actionButtonText}>{t('admin.setSetupDate')}</Text>
+          </TouchableOpacity>
         )}
+        {renderDatePicker('setup_date')}
 
         {/* Teardown Date */}
         {isLive && (
@@ -259,40 +341,17 @@ export default function AdminPhotoDetailScreen({ route }: any) {
             {photo.teardown_date ? (
               <Text style={[styles.value, { color: colors.textPrimary }]}>{formatDate(photo.teardown_date)}</Text>
             ) : (
-              showTeardownDateInput ? (
-                <View style={styles.dateInputRow}>
-                  <TextInput
-                    style={[styles.dateInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
-                    value={dateInput}
-                    onChangeText={setDateInput}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={colors.placeholderText}
-                    autoFocus
-                  />
+              <>
+                {editingField !== 'teardown_date' && (
                   <TouchableOpacity
-                    style={[styles.dateButton, { backgroundColor: colors.primary }]}
-                    onPress={() => handleUpdateDate('teardown_date')}
+                    style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                    onPress={() => openDatePicker('teardown_date')}
                   >
-                    <Text style={styles.dateButtonText}>{t('common.save')}</Text>
+                    <Text style={styles.actionButtonText}>{t('admin.setTeardownDate')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.dateButton, { backgroundColor: colors.cancelButton }]}
-                    onPress={() => { setShowTeardownDateInput(false); setDateInput(''); }}
-                  >
-                    <Text style={styles.dateButtonText}>{t('common.cancel')}</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                  onPress={() => {
-                    setDateInput(new Date().toISOString().split('T')[0]);
-                    setShowTeardownDateInput(true);
-                  }}
-                >
-                  <Text style={styles.actionButtonText}>{t('admin.setTeardownDate')}</Text>
-                </TouchableOpacity>
-              )
+                )}
+                {renderDatePicker('teardown_date')}
+              </>
             )}
           </>
         )}
@@ -323,13 +382,22 @@ export default function AdminPhotoDetailScreen({ route }: any) {
         </View>
       )}
 
-      {/* Detection Progress */}
-      {detecting && (
-        <View style={[styles.detectSection, { backgroundColor: colors.cardBackground }]}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{detectProgress}</Text>
+      {/* Detection Progress Modal */}
+      <Modal visible={detecting} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.cardBackground }]}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+              {detectPhase === 'saving' ? t('admin.savingHolds') : t('admin.detecting', { current: detectTile, total: detectTotal })}
+            </Text>
+            {detectPhase === 'tiles' && (
+              <View style={[styles.progressBarBg, { backgroundColor: colors.borderLight }]}>
+                <View style={[styles.progressBarFill, { backgroundColor: colors.primary, width: `${(detectTile / detectTotal) * 100}%` }]} />
+              </View>
+            )}
+          </View>
         </View>
-      )}
+      </Modal>
 
       {/* All Holds Preview */}
       <View style={[styles.previewSection, { backgroundColor: colors.cardBackground }]}>
@@ -394,26 +462,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  dateInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  pickerContainer: {
     marginTop: 8,
+  },
+  pickerButtons: {
+    flexDirection: 'row',
     gap: 8,
+    marginTop: 8,
   },
-  dateInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  dateButton: {
+  pickerButton: {
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
   },
-  dateButtonText: {
+  pickerButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
@@ -425,6 +487,34 @@ const styles = StyleSheet.create({
   },
   detectButton: {
     width: '100%',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    minWidth: 280,
+    gap: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  progressBarBg: {
+    width: '100%',
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
   },
   previewSection: {
     padding: 16,
