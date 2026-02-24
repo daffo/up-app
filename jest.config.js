@@ -10,6 +10,7 @@ module.exports = {
   collectCoverageFrom: [
     'utils/**/*.ts',
     'lib/api.ts',
+    'lib/holdDetection.ts',
     '!**/*.d.ts',
   ],
 };

@@ -9,7 +9,7 @@ interface RoboflowPoint {
   y: number;
 }
 
-interface RoboflowPrediction {
+export interface RoboflowPrediction {
   points?: RoboflowPoint[];
   x?: number;
   y?: number;
@@ -68,7 +68,7 @@ async function callApi(
   return [];
 }
 
-function deduplicatePredictions(
+export function deduplicatePredictions(
   predictions: RoboflowPrediction[],
   thresholdPercent: number,
   imageWidth: number,
