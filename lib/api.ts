@@ -89,6 +89,16 @@ export const routesApi = {
     });
   },
 
+  async listByPhoto(photoId: string): Promise<Route[]> {
+    const { data, error } = await supabase
+      .from('routes')
+      .select('*')
+      .eq('photo_id', photoId);
+
+    if (error) throw error;
+    return (data || []) as Route[];
+  },
+
   async get(routeId: string) {
     const { data, error } = await supabase
       .from('routes')
@@ -158,6 +168,16 @@ export const routesApi = {
 
 // Photos API
 export const photosApi = {
+  async listAll() {
+    const { data, error } = await supabase
+      .from('photos')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
   async listActive() {
     const { data, error } = await supabase
       .from('photos')
@@ -243,6 +263,17 @@ export const detectedHoldsApi = {
     cacheEvents.invalidate('detected_holds');
 
     return (data || []) as DetectedHold[];
+  },
+
+  async delete(holdId: string): Promise<void> {
+    const { error } = await supabase
+      .from('detected_holds')
+      .delete()
+      .eq('id', holdId);
+
+    if (error) throw error;
+
+    cacheEvents.invalidate('detected_holds');
   },
 
   async deleteByPhoto(photoId: string): Promise<void> {

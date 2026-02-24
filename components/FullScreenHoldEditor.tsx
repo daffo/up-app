@@ -18,7 +18,7 @@ import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import Svg, { Circle } from 'react-native-svg';
 import { Hold, DetectedHold } from '../types/database.types';
-import { supabase } from '../lib/supabase';
+import { detectedHoldsApi, routesApi } from '../lib/api';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import RouteOverlay from './RouteOverlay';
 import DragModeButtons from './DragModeButtons';
@@ -206,17 +206,15 @@ export default function FullScreenHoldEditor({
     };
 
     // Update in database
-    const { error } = await supabase
-      .from('detected_holds')
-      .update({ polygon: newPolygon, center: newCenter })
-      .eq('id', movingHoldId);
-
-    setIsSavingMove(false);
-
-    if (error) {
-      Alert.alert(t('common.error'), t('editor.errorMoveHold') + ': ' + error.message);
+    try {
+      await detectedHoldsApi.update(movingHoldId, { polygon: newPolygon, center: newCenter });
+    } catch (err) {
+      setIsSavingMove(false);
+      Alert.alert(t('common.error'), t('editor.errorMoveHold') + ': ' + (err instanceof Error ? err.message : String(err)));
       return;
     }
+
+    setIsSavingMove(false);
 
     // Notify parent to update state
     if (onUpdateDetectedHold) {
@@ -271,17 +269,15 @@ export default function FullScreenHoldEditor({
     };
 
     // Update in database
-    const { error } = await supabase
-      .from('detected_holds')
-      .update({ polygon: newPolygon, center: newCenter })
-      .eq('id', redrawHoldId);
-
-    setIsSavingRedraw(false);
-
-    if (error) {
-      Alert.alert(t('common.error'), t('editor.errorRedrawHold') + ': ' + error.message);
+    try {
+      await detectedHoldsApi.update(redrawHoldId, { polygon: newPolygon, center: newCenter });
+    } catch (err) {
+      setIsSavingRedraw(false);
+      Alert.alert(t('common.error'), t('editor.errorRedrawHold') + ': ' + (err instanceof Error ? err.message : String(err)));
       return;
     }
+
+    setIsSavingRedraw(false);
 
     // Notify parent to update state
     if (onUpdateDetectedHold) {
@@ -336,30 +332,25 @@ export default function FullScreenHoldEditor({
     };
 
     // Insert new hold into database
-    const { data, error } = await supabase
-      .from('detected_holds')
-      .insert({
+    let newHold: DetectedHold;
+    try {
+      newHold = await detectedHoldsApi.create({
         photo_id: photoId,
         polygon: newPolygon,
         center: newCenter,
-      })
-      .select()
-      .single();
-
-    setIsSavingRedraw(false);
-
-    if (error) {
-      Alert.alert(t('common.error'), t('editor.errorAddHold') + ': ' + error.message);
+        created_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      setIsSavingRedraw(false);
+      Alert.alert(t('common.error'), t('editor.errorAddHold') + ': ' + (err instanceof Error ? err.message : String(err)));
       return;
     }
 
+    setIsSavingRedraw(false);
+
     // Notify parent to update state
-    if (onAddDetectedHold && data) {
-      onAddDetectedHold({
-        ...data,
-        polygon: newPolygon,
-        center: newCenter,
-      });
+    if (onAddDetectedHold) {
+      onAddDetectedHold(newHold);
     }
 
     setIsAddingHold(false);
@@ -595,41 +586,34 @@ export default function FullScreenHoldEditor({
     setIsDeleting(true);
 
     // Check if this hold is used in any route
-    const { data: routes } = await supabase
-      .from('routes')
-      .select('id, title, holds')
-      .eq('photo_id', photoId);
+    try {
+      const routes = await routesApi.listByPhoto(photoId);
 
-    const usingRoutes: string[] = [];
-    if (routes) {
-      for (const route of routes) {
-        const routeHolds = route.holds as Hold[];
+      const usingRoutes: string[] = [];
+      for (const r of routes) {
+        const routeHolds = r.holds as Hold[];
         if (routeHolds.some(h => h.detected_hold_id === selectedHold.id)) {
-          usingRoutes.push(route.title);
+          usingRoutes.push(r.title);
         }
       }
-    }
 
-    // If hold is used in routes, go back to edit view to show route list
-    if (usingRoutes.length > 0) {
+      // If hold is used in routes, go back to edit view to show route list
+      if (usingRoutes.length > 0) {
+        setIsDeleting(false);
+        setConfirmingDelete(false);
+        setRoutesUsingHold(usingRoutes);
+        return;
+      }
+
+      // Delete the hold
+      await detectedHoldsApi.delete(selectedHold.id);
+    } catch (err) {
       setIsDeleting(false);
-      setConfirmingDelete(false);
-      setRoutesUsingHold(usingRoutes);
+      Alert.alert(t('common.error'), err instanceof Error ? err.message : String(err));
       return;
     }
-
-    // Delete the hold
-    const { error } = await supabase
-      .from('detected_holds')
-      .delete()
-      .eq('id', selectedHold.id);
 
     setIsDeleting(false);
-
-    if (error) {
-      Alert.alert(t('common.error'), error.message);
-      return;
-    }
 
     // Notify parent to update state
     if (onDeleteDetectedHold) {
