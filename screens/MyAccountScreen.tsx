@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -23,11 +24,12 @@ const THEME_OPTIONS: { value: ThemePreference; labelKey: string; icon: string }[
 
 export default function MyAccountScreen({ navigation }: any) {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, deleteAccount } = useAuth();
   const { themePreference, setThemePreference, colors } = useTheme();
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [currentLang, setCurrentLang] = useState<LanguageCode>(getCurrentLanguage());
 
   useEffect(() => {
@@ -71,6 +73,41 @@ export default function MyAccountScreen({ navigation }: any) {
     setCurrentLang(langCode);
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      t('account.deleteAccountTitle'),
+      t('account.deleteAccountMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              t('account.deleteAccountConfirmTitle'),
+              t('account.deleteAccountConfirmMessage'),
+              [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                  text: t('account.deleteAccountButton'),
+                  style: 'destructive',
+                  onPress: async () => {
+                    setIsDeleting(true);
+                    const { error } = await deleteAccount();
+                    if (error) {
+                      setIsDeleting(false);
+                      Alert.alert(t('common.error'), t('account.deleteAccountError'));
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  };
+
   if (isLoading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.screenBackground }]}>
@@ -80,7 +117,7 @@ export default function MyAccountScreen({ navigation }: any) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.screenBackground }]} contentContainerStyle={styles.contentContainer}>
       <View style={styles.section}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>{t('account.email')}</Text>
         <Text style={[styles.emailText, { color: colors.textPrimary }]}>{user?.email}</Text>
@@ -169,14 +206,27 @@ export default function MyAccountScreen({ navigation }: any) {
           ))}
         </View>
       </View>
-    </View>
+
+      <TouchableOpacity
+        style={[styles.deleteButton, { borderColor: colors.danger }, isDeleting && styles.saveButtonDisabled]}
+        onPress={handleDeleteAccount}
+        disabled={isDeleting}
+      >
+        <Text style={[styles.deleteButtonText, { color: colors.danger }]}>
+          {isDeleting ? t('account.deleting') : t('account.deleteAccount')}
+        </Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentContainer: {
     padding: 16,
+    paddingBottom: 40,
   },
   loadingContainer: {
     flex: 1,
@@ -234,5 +284,16 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 16,
+  },
+  deleteButton: {
+    marginTop: 40,
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
 });

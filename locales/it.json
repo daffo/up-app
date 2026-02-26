@@ -105,7 +105,15 @@
     "theme": "Tema",
     "themeLight": "Chiaro",
     "themeDark": "Scuro",
-    "themeSystem": "Sistema"
+    "themeSystem": "Sistema",
+    "deleteAccount": "Elimina Account",
+    "deleteAccountTitle": "Eliminare l'account?",
+    "deleteAccountMessage": "Tutti i tuoi dati verranno eliminati permanentemente, incluse le vie, le chiusure e i commenti.",
+    "deleteAccountConfirmTitle": "Sei assolutamente sicuro?",
+    "deleteAccountConfirmMessage": "Questa azione non può essere annullata. Tutti i tuoi dati verranno eliminati permanentemente.",
+    "deleteAccountButton": "Elimina il Mio Account",
+    "deleteAccountError": "Eliminazione account fallita. Riprova.",
+    "deleting": "Eliminazione..."
   },
   "menu": {
     "openMenu": "Apri menu",

@@ -105,7 +105,15 @@
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "themeSystem": "System"
+    "themeSystem": "System",
+    "deleteAccount": "Delete Account",
+    "deleteAccountTitle": "Delete Account?",
+    "deleteAccountMessage": "This will permanently delete all your data including your routes, sends, and comments.",
+    "deleteAccountConfirmTitle": "Are you absolutely sure?",
+    "deleteAccountConfirmMessage": "This action cannot be undone. All your data will be permanently deleted.",
+    "deleteAccountButton": "Delete My Account",
+    "deleteAccountError": "Failed to delete account. Please try again.",
+    "deleting": "Deleting..."
   },
   "menu": {
     "openMenu": "Open menu",

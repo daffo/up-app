@@ -5,6 +5,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { accountApi } from './api';
 
 // Required for proper browser session dismissal on mobile
 WebBrowser.maybeCompleteAuthSession();
@@ -19,6 +20,7 @@ type AuthContextType = {
   signInWithGoogle: () => Promise<{ error: any }>;
   signInWithFacebook: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<{ error: any }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -222,6 +224,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null };
   };
 
+  const deleteAccount = async () => {
+    if (!user) return { error: new Error('Not logged in') };
+
+    try {
+      await accountApi.deleteAllUserData(user.id);
+      await signOut();
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut({ scope: 'local' });
@@ -255,6 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithGoogle,
         signInWithFacebook,
         signOut,
+        deleteAccount,
       }}
     >
       {children}

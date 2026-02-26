@@ -288,6 +288,40 @@ export const detectedHoldsApi = {
   },
 };
 
+// Account API
+export const accountApi = {
+  async deleteAllUserData(userId: string): Promise<void> {
+    // Delete in order: sends, comments, routes, profile
+    const { error: sendsError } = await supabase
+      .from('sends')
+      .delete()
+      .eq('user_id', userId);
+    if (sendsError) throw sendsError;
+
+    const { error: commentsError } = await supabase
+      .from('comments')
+      .delete()
+      .eq('user_id', userId);
+    if (commentsError) throw commentsError;
+
+    const { error: routesError } = await supabase
+      .from('routes')
+      .delete()
+      .eq('user_id', userId);
+    if (routesError) throw routesError;
+
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .delete()
+      .eq('user_id', userId);
+    if (profileError) throw profileError;
+
+    cacheEvents.invalidate('sends');
+    cacheEvents.invalidate('comments');
+    cacheEvents.invalidate('routes');
+  },
+};
+
 // User Profiles API
 export const userProfilesApi = {
   async get(userId: string): Promise<UserProfile | null> {
