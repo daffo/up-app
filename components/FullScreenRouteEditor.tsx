@@ -16,6 +16,7 @@ import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
 import { getHoldLabel, canSetStart, isDualStartNote } from '../utils/holds';
 import { useDragDelta } from '../hooks/useDragDelta';
+import { useThemeColors } from '../lib/theme-context';
 
 interface FullScreenRouteEditorProps {
   visible: boolean;
@@ -35,6 +36,7 @@ export default function FullScreenRouteEditor({
   onUpdateHolds,
 }: FullScreenRouteEditorProps) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const [holds, setHolds] = useState<Hold[]>(initialHolds);
   const [selectedHoldIndex, setSelectedHoldIndex] = useState<number | null>(null);
   const [matchingHoldIndices, setMatchingHoldIndices] = useState<number[]>([]);
@@ -366,8 +368,8 @@ export default function FullScreenRouteEditor({
           activeOpacity={1}
           onPress={() => setEditModalVisible(false)}
         >
-          <View style={baseStyles.modalContent}>
-            <Text style={baseStyles.modalTitle}>
+          <View style={[baseStyles.modalContent, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[baseStyles.modalTitle, { color: colors.textPrimary }]}>
               {t('editor.editHold')} {selectedHoldIndex !== null ? getHoldLabel(selectedHoldIndex, holds.length, holds[selectedHoldIndex]?.note) : ''}
             </Text>
 
@@ -434,13 +436,14 @@ export default function FullScreenRouteEditor({
           activeOpacity={1}
           onPress={() => setNoteModalVisible(false)}
         >
-          <Pressable style={baseStyles.modalContent} onPress={(e) => e.stopPropagation()}>
-            <Text style={baseStyles.modalTitle}>{t('editor.addNote')}</Text>
+          <Pressable style={[baseStyles.modalContent, { backgroundColor: colors.cardBackground }]} onPress={(e) => e.stopPropagation()}>
+            <Text style={[baseStyles.modalTitle, { color: colors.textPrimary }]}>{t('editor.addNote')}</Text>
             <TextInput
-              style={baseStyles.noteInput}
+              style={[baseStyles.noteInput, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
               value={noteText}
               onChangeText={setNoteText}
               placeholder={t('editor.enterNote')}
+              placeholderTextColor={colors.placeholderText}
               multiline
               autoFocus
             />
@@ -469,8 +472,8 @@ export default function FullScreenRouteEditor({
           activeOpacity={1}
           onPress={() => setHoldPickerVisible(false)}
         >
-          <View style={baseStyles.modalContent}>
-            <Text style={baseStyles.modalTitle}>{t('editor.whichHoldToEdit')}</Text>
+          <View style={[baseStyles.modalContent, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[baseStyles.modalTitle, { color: colors.textPrimary }]}>{t('editor.whichHoldToEdit')}</Text>
             {matchingHoldIndices.map((index) => (
               <TouchableOpacity
                 key={index}

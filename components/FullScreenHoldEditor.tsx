@@ -24,6 +24,7 @@ import RouteOverlay from './RouteOverlay';
 import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
 import { useDragDelta } from '../hooks/useDragDelta';
+import { useThemeColors } from '../lib/theme-context';
 
 const ZOOM_MIN = 10;   // 10x magnification, tightest crop
 const ZOOM_MAX = 60;   // ~1.7x magnification, widest view
@@ -63,6 +64,7 @@ export default function FullScreenHoldEditor({
   onAddDetectedHold,
 }: FullScreenHoldEditorProps) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const windowDimensions = useWindowDimensions();
   const [selectedHoldId, setSelectedHoldId] = useState<string | null>(null);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -1080,11 +1082,11 @@ export default function FullScreenHoldEditor({
         activeOpacity={1}
         onPress={closeModal}
       >
-        <TouchableOpacity activeOpacity={1} style={baseStyles.modalContent}>
+        <TouchableOpacity activeOpacity={1} style={[baseStyles.modalContent, { backgroundColor: colors.cardBackground }]}>
           {confirmingDelete ? (
             <>
-              <Text style={baseStyles.modalTitle}>{t('editor.deleteHold')}</Text>
-              <Text style={styles.confirmText}>{t('editor.deleteHoldConfirm')}</Text>
+              <Text style={[baseStyles.modalTitle, { color: colors.textPrimary }]}>{t('editor.deleteHold')}</Text>
+              <Text style={[styles.confirmText, { color: colors.textSecondary }]}>{t('editor.deleteHoldConfirm')}</Text>
               <TouchableOpacity
                 style={[baseStyles.modalButton, baseStyles.modalButtonDanger]}
                 onPress={confirmDelete}
@@ -1105,7 +1107,7 @@ export default function FullScreenHoldEditor({
             </>
           ) : (
             <>
-              <Text style={baseStyles.modalTitle}>{t('editor.editHold')}</Text>
+              <Text style={[baseStyles.modalTitle, { color: colors.textPrimary }]}>{t('editor.editHold')}</Text>
 
               {routesUsingHold.length > 0 && (
                 <>
@@ -1113,7 +1115,7 @@ export default function FullScreenHoldEditor({
                     {t('editor.cannotDelete', { count: routesUsingHold.length })}
                   </Text>
                   {routesUsingHold.map((title, i) => (
-                    <Text key={i} style={styles.routeListItem}>• {title}</Text>
+                    <Text key={i} style={[styles.routeListItem, { color: colors.textSecondary }]}>• {title}</Text>
                   ))}
                 </>
               )}
@@ -1136,7 +1138,7 @@ export default function FullScreenHoldEditor({
                   </TouchableOpacity>
                 </>
               ) : (
-                <Text style={styles.hintText}>
+                <Text style={[styles.hintText, { color: colors.textTertiary }]}>
                   {t('editor.usePrecisionHint')}
                 </Text>
               )}
