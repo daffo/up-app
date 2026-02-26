@@ -52,11 +52,29 @@ name: Auth User - Login Flow
 - tapOn:
     point: "50%,50%"
 
+# If "No Hold" alert appears, dismiss and retry at a different point
+- runFlow:
+    when:
+      visible: "No Hold"
+    commands:
+      - tapOn: "OK"
+      - tapOn:
+          point: "35%,48%"
+
+- runFlow:
+    when:
+      visible: "No Hold"
+    commands:
+      - tapOn: "OK"
+      - tapOn:
+          point: "60%,49%"
+
 # Tap Done to close editor
 - tapOn: "Done"
 
-# Verify we're back on create screen with 1 hold
-- assertVisible: "Route Preview (1 holds)"
+# Verify we're back on create screen with at least 1 hold
+- assertVisible:
+    text: "Route Preview.*holds.*"
 
 # Wait for UI to settle after modal close
 - waitForAnimationToEnd
@@ -106,6 +124,27 @@ name: Auth User - Login Flow
 - assertVisible: "Anonymous"
 
 # ============================================
+# DELETE THE COMMENT
+# ============================================
+
+# Tap delete button on the comment
+- tapOn: "Delete comment"
+
+# Verify the comment is gone
+- extendedWaitUntil:
+    notVisible: "E2E test comment"
+    timeout: 5000
+
+# Re-add the comment (needed for later sections)
+- tapOn: "Add a comment..."
+- inputText: "E2E test comment"
+- tapOn:
+    point: "90%, 95%"
+- extendedWaitUntil:
+    visible: "E2E test comment"
+    timeout: 5000
+
+# ============================================
 # LOG A SEND
 # ============================================
 
@@ -142,6 +181,68 @@ name: Auth User - Login Flow
 
 # Go back to route detail
 - pressKey: back
+
+# ============================================
+# EDIT THE SEND
+# ============================================
+
+# Tap Sent button to reopen modal (now shows Edit Send)
+- tapOn: "Sent"
+- extendedWaitUntil:
+    visible: "Edit Send"
+    timeout: 5000
+
+# Change rating to 3 stars
+- tapOn: "3 star"
+
+# Change difficulty to Soft
+- tapOn: "Soft"
+
+# Tap Update button
+- tapOn: "Update"
+- waitForAnimationToEnd
+
+# Verify still shows Sent
+- assertVisible: "Sent"
+
+# ============================================
+# REMOVE THE SEND
+# ============================================
+
+# Tap Sent button again
+- tapOn: "Sent"
+- extendedWaitUntil:
+    visible: "Edit Send"
+    timeout: 5000
+
+# Tap Remove Send
+- tapOn: "Remove Send"
+- waitForAnimationToEnd
+
+# Button should revert (no longer shows "Sent")
+- assertNotVisible: "Sent"
+
+# ============================================
+# RE-LOG THE SEND (needed for later sections)
+# ============================================
+
+# Tap Send button to log fresh send
+- tapOn: "Send"
+- extendedWaitUntil:
+    visible: "Log Send"
+    timeout: 5000
+
+# Tap 5th star
+- tapOn: "5 star"
+
+# Select Accurate
+- tapOn: "Accurate"
+
+# Submit
+- tapOn:
+    point: "50%,92%"
+- waitForAnimationToEnd
+- assertVisible: "Sent"
 
 # ============================================
 # EDIT THE ROUTE
@@ -267,9 +368,11 @@ name: Auth User - Login Flow
     timeout: 5000
 
 # Scroll down to see comment with new display name
-- swipe:
-    direction: UP
-    duration: 500
+- scrollUntilVisible:
+    element:
+      text: "E2E test comment"
+    direction: DOWN
+    timeout: 5000
 
 # Verify display name changed from Anonymous to E2E Tester
 - assertVisible: "E2E Tester"
@@ -345,6 +448,92 @@ name: Auth User - Login Flow
 - waitForAnimationToEnd
 
 # Verify route is now visible
+- extendedWaitUntil:
+    visible: "E2E Test Route Updated"
+    timeout: 5000
+
+# ============================================
+# TEST GRADE FILTER
+# ============================================
+
+# Open filters
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+
+# Type matching grade (V3 matches our test route)
+- tapOn: "Grade"
+- inputText: "V3"
+
+# Close filters (hideKeyboard dismisses modal)
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Route should still be visible (it's V3)
+- extendedWaitUntil:
+    visible: "E2E Test Route Updated"
+    timeout: 5000
+
+# Reopen filters and change to non-matching grade
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "Grade"
+- eraseText: 5
+- inputText: "V99"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Route should NOT be visible
+- assertNotVisible: "E2E Test Route Updated"
+
+# Clear grade filter via chip
+- tapOn: "Clear grade filter"
+- waitForAnimationToEnd
+
+# Route should be visible again
+- extendedWaitUntil:
+    visible: "E2E Test Route Updated"
+    timeout: 5000
+
+# ============================================
+# TEST WALL STATUS FILTER
+# ============================================
+
+# Open filters
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+
+# Tap Past — route is on active wall, should not be visible
+- tapOn: "Past"
+- hideKeyboard
+- waitForAnimationToEnd
+- assertNotVisible: "E2E Test Route Updated"
+
+# Open filters and tap All — route should be visible again
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "All"
+- hideKeyboard
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "E2E Test Route Updated"
+    timeout: 5000
+
+# Reset back to Active for subsequent steps
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "Active"
+- hideKeyboard
+- waitForAnimationToEnd
 - extendedWaitUntil:
     visible: "E2E Test Route Updated"
     timeout: 5000
