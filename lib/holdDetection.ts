@@ -41,8 +41,10 @@ async function callApi(
   confidence: number,
   maxRetries = 3,
 ): Promise<RoboflowPrediction[]> {
+  let lastResponse: Response | undefined;
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const response = await fetch(
+    lastResponse = await fetch(
       `${API_URL}?api_key=${encodeURIComponent(apiKey)}&confidence=${Math.round(confidence * 100)}`,
       {
         method: 'POST',
@@ -51,21 +53,20 @@ async function callApi(
       },
     );
 
-    if (response.ok) {
-      const json = await response.json();
+    if (lastResponse.ok) {
+      const json = await lastResponse.json();
       return json.predictions ?? [];
     }
 
-    if (response.status >= 500 && attempt < maxRetries - 1) {
-      await new Promise((r) => setTimeout(r, 2 ** attempt * 1000));
-      continue;
-    }
+    if (lastResponse.status < 500) break;
 
-    const text = await response.text();
-    throw new Error(`Roboflow API error ${response.status}: ${text}`);
+    if (attempt < maxRetries - 1) {
+      await new Promise((r) => setTimeout(r, 2 ** attempt * 1000));
+    }
   }
 
-  return [];
+  const text = await lastResponse!.text();
+  throw new Error(`Roboflow API error ${lastResponse!.status}: ${text}`);
 }
 
 export function deduplicatePredictions(
