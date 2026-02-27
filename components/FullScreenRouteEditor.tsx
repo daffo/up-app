@@ -14,7 +14,7 @@ import { Hold, DetectedHold } from '../types/database.types';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
-import { getHoldLabel, canSetStart, isDualStartNote } from '../utils/holds';
+import { getHoldLabel, canSetStart, canSetTop, isDualSideNote } from '../utils/holds';
 import { useDragDelta } from '../hooks/useDragDelta';
 import { useThemeColors } from '../lib/theme-context';
 
@@ -294,6 +294,37 @@ export default function FullScreenRouteEditor({
     setMatchingHoldIndices([]);
   };
 
+  const handleSetSingleTop = () => {
+    if (selectedHoldIndex === null) return;
+    const lastIndex = holds.length - 1;
+    const secondLastIndex = holds.length - 2;
+    const updatedHolds = holds.map((hold, i) => {
+      if (i === lastIndex || i === secondLastIndex) return { ...hold, note: '' };
+      return hold;
+    });
+    setHolds(updatedHolds);
+    setEditModalVisible(false);
+    setSelectedHoldIndex(null);
+    setMatchingHoldIndices([]);
+  };
+
+  const handleSetDualTop = (side: 'DX' | 'SX') => {
+    if (selectedHoldIndex === null) return;
+    const otherSide = side === 'DX' ? 'SX' : 'DX';
+    const lastIndex = holds.length - 1;
+    const secondLastIndex = holds.length - 2;
+    const otherIndex = selectedHoldIndex === lastIndex ? secondLastIndex : lastIndex;
+    const updatedHolds = holds.map((hold, i) => {
+      if (i === selectedHoldIndex) return { ...hold, note: side };
+      if (i === otherIndex) return { ...hold, note: otherSide };
+      return hold;
+    });
+    setHolds(updatedHolds);
+    setEditModalVisible(false);
+    setSelectedHoldIndex(null);
+    setMatchingHoldIndices([]);
+  };
+
   // Get holds with moving delta applied for visual feedback
   const getDisplayedHolds = () => {
     if (movingLabelIndex === null) return holds;
@@ -375,7 +406,7 @@ export default function FullScreenRouteEditor({
 
             {selectedHoldIndex !== null && canSetStart(selectedHoldIndex, holds.length) && (() => {
               const currentNote = holds[selectedHoldIndex]?.note;
-              const isDual = isDualStartNote(currentNote);
+              const isDual = isDualSideNote(currentNote);
               return (
                 <>
                   {selectedHoldIndex === 0 && isDual && (
@@ -391,6 +422,30 @@ export default function FullScreenRouteEditor({
                   {!currentNote?.startsWith('SX') && (
                     <TouchableOpacity style={baseStyles.modalButton} onPress={() => handleSetDualStart('SX')}>
                       <Text style={baseStyles.modalButtonText}>{t('editor.setStartSX')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              );
+            })()}
+
+            {selectedHoldIndex !== null && canSetTop(selectedHoldIndex, holds.length) && (() => {
+              const currentNote = holds[selectedHoldIndex]?.note;
+              const isDual = isDualSideNote(currentNote);
+              return (
+                <>
+                  {selectedHoldIndex === holds.length - 1 && isDual && (
+                    <TouchableOpacity style={baseStyles.modalButton} onPress={handleSetSingleTop}>
+                      <Text style={baseStyles.modalButtonText}>{t('editor.setTop')}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {!currentNote?.startsWith('DX') && (
+                    <TouchableOpacity style={baseStyles.modalButton} onPress={() => handleSetDualTop('DX')}>
+                      <Text style={baseStyles.modalButtonText}>{t('editor.setTopDX')}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {!currentNote?.startsWith('SX') && (
+                    <TouchableOpacity style={baseStyles.modalButton} onPress={() => handleSetDualTop('SX')}>
+                      <Text style={baseStyles.modalButtonText}>{t('editor.setTopSX')}</Text>
                     </TouchableOpacity>
                   )}
                 </>
