@@ -110,7 +110,7 @@ describe('getHoldLabel', () => {
   });
 
   it('appends regular note on non-start hold', () => {
-    expect(getHoldLabel(2, 5, 'crimp')).toBe('3. crimp');
+    expect(getHoldLabel(2, 5, 'crimp')).toBe('3 crimp');
   });
 
   it('returns just order label when no note', () => {
@@ -118,7 +118,7 @@ describe('getHoldLabel', () => {
   });
 
   it('appends non-DX/SX note on start hold', () => {
-    expect(getHoldLabel(0, 5, 'crimp')).toBe('START. crimp');
+    expect(getHoldLabel(0, 5, 'crimp')).toBe('START crimp');
   });
 
   // Dual top label tests
@@ -131,11 +131,11 @@ describe('getHoldLabel', () => {
   });
 
   it('appends regular note on top hold', () => {
-    expect(getHoldLabel(3, 4, 'match')).toBe('TOP. match');
+    expect(getHoldLabel(3, 4, 'match')).toBe('TOP match');
   });
 
   it('does not consume DX note on top hold when totalHolds < 4', () => {
-    expect(getHoldLabel(2, 3, 'DX')).toBe('TOP. DX');
+    expect(getHoldLabel(2, 3, 'DX')).toBe('TOP DX');
   });
 });
 

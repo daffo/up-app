@@ -39,7 +39,7 @@ export function getHoldLabel(index: number, totalHolds: number, note?: string | 
   const noteConsumed = isStartDual || isTopDual;
 
   if (note && !noteConsumed) {
-    return `${orderLabel}. ${note}`;
+    return `${orderLabel} ${note}`;
   }
   return orderLabel;
 }
