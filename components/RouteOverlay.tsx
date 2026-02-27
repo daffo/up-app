@@ -297,7 +297,7 @@ export default function RouteOverlay({
           return pathData;
         })()}
         fill="rgba(0, 0, 0, 0.6)"
-        fillRule="evenodd"
+        fillRule="nonzero"
       />
 
       {/* Draw connecting lines between holds (sequence arrows) */}
