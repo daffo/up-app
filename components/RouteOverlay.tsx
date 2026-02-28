@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Line, Defs, Marker, Polygon, G, Path } from 'react-native-svg';
+import Svg, { Line, Defs, Marker, Polygon, G, Path, Rect, Mask } from 'react-native-svg';
 import { Hold, DetectedHold } from '../types/database.types';
 import { calculatePolygonArea } from '../utils/polygon';
 import { getHoldLabel } from '../utils/holds';
@@ -278,26 +278,30 @@ export default function RouteOverlay({
         </Marker>
       </Defs>
 
-      {/* Dark overlay with holes for holds */}
-      <Path
-        d={(() => {
-          // Start with outer rectangle
-          let pathData = `M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z `;
-
-          // Add each hold polygon as a smooth hole (reverse winding)
-          holds.forEach(hold => {
+      {/* Dark overlay with holes for holds using mask */}
+      {/* Mask: white = show overlay, black = transparent hole */}
+      <Defs>
+        <Mask id="holdsMask">
+          <Rect x="0" y="0" width={width} height={height} fill="white" />
+          {holds.map((hold, index) => {
             const smoothedPixels = smoothedPolygonsMap.get(hold.detected_hold_id);
-            if (!smoothedPixels || smoothedPixels.length === 0) return;
-
-            // Reverse the pre-calculated smoothed polygon for hole winding
-            const reversed = [...smoothedPixels].reverse();
-            pathData += polygonToPath(reversed) + ' ';
-          });
-
-          return pathData;
-        })()}
+            if (!smoothedPixels || smoothedPixels.length === 0) return null;
+            return (
+              <Path
+                key={`mask-${index}`}
+                d={polygonToPath(smoothedPixels)}
+                fill="black"
+              />
+            );
+          })}
+        </Mask>
+      </Defs>
+      <Rect
+        x="0" y="0"
+        width={width}
+        height={height}
         fill="rgba(0, 0, 0, 0.6)"
-        fillRule="nonzero"
+        mask="url(#holdsMask)"
       />
 
       {/* Draw connecting lines between holds (sequence arrows) */}
