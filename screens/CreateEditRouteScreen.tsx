@@ -7,9 +7,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Image,
   Dimensions,
 } from 'react-native';
+import CachedImage from '../components/CachedImage';
+import { getImageDimensions } from '../lib/cache/image-cache';
 import { useTranslation } from 'react-i18next';
 import TrimmedTextInput from '../components/TrimmedTextInput';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -109,25 +110,20 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
   useEffect(() => {
     if (selectedPhoto) {
-      // Get actual image dimensions
-      Image.getSize(
-        selectedPhoto.image_url,
-        (width, height) => {
-          setImageWidth(width);
-          setImageHeight(height);
+      getImageDimensions(selectedPhoto.image_url).then(({ width, height }) => {
+        setImageWidth(width);
+        setImageHeight(height);
 
-          // Calculate display dimensions
-          const screenWidth = Dimensions.get('window').width - 40; // minus padding
-          const aspectRatio = height / width;
-          const calculatedHeight = screenWidth * aspectRatio;
+        // Calculate display dimensions
+        const screenWidth = Dimensions.get('window').width - 40; // minus padding
+        const aspectRatio = height / width;
+        const calculatedHeight = screenWidth * aspectRatio;
 
-          setDisplayWidth(screenWidth);
-          setDisplayHeight(calculatedHeight);
-        },
-        (error) => {
-          console.error('Failed to get image size:', error);
-        }
-      );
+        setDisplayWidth(screenWidth);
+        setDisplayHeight(calculatedHeight);
+      }).catch((error) => {
+        console.error('Failed to get image size:', error);
+      });
     }
   }, [selectedPhoto]);
 
@@ -140,7 +136,11 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
       }
 
       try {
-        const data = await detectedHoldsApi.listByPhoto(selectedPhotoId);
+        const photo = photos.find(p => p.id === selectedPhotoId);
+        const data = await detectedHoldsApi.listByPhoto(
+          selectedPhotoId,
+          photo?.holds_version,
+        );
         setDetectedHolds(data);
       } catch (err) {
         console.error('Error fetching detected holds:', err);
@@ -149,7 +149,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
     };
 
     fetchDetectedHolds();
-  }, [selectedPhotoId]);
+  }, [selectedPhotoId, photos]);
 
   const handleUpdateHolds = (updatedHolds: Hold[]) => {
     setHolds(updatedHolds);
@@ -355,7 +355,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
                 ]}
                 onPress={() => setSelectedPhotoId(photo.id)}
               >
-                <Image source={{ uri: photo.image_url }} style={styles.photoThumbnail} />
+                <CachedImage source={{ uri: photo.image_url }} style={styles.photoThumbnail} />
                 <Text style={[styles.photoDate, { backgroundColor: colors.cardBackground, color: colors.textPrimary }]}>
                   {formatDate(photo.setup_date)}
                 </Text>
@@ -375,7 +375,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               activeOpacity={0.8}
               testID="open-hold-editor"
             >
-              <Image
+              <CachedImage
                 source={{ uri: selectedPhoto.image_url }}
                 style={{ width: displayWidth, height: displayHeight }}
               />

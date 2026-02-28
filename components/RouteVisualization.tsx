@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, Image as RNImage, StyleSheet, LayoutChangeEvent, TouchableOpacity } from 'react-native';
-import { Image } from 'expo-image';
+import { View, StyleSheet, LayoutChangeEvent, TouchableOpacity } from 'react-native';
 import { Hold, DetectedHold } from '../types/database.types';
+import CachedImage from './CachedImage';
+import { getImageDimensions } from '../lib/cache/image-cache';
 import FullScreenRouteViewer from './FullScreenRouteViewer';
 import FullScreenHoldEditor from './FullScreenHoldEditor';
 import RouteOverlay from './RouteOverlay';
@@ -37,9 +38,9 @@ export default function RouteVisualization({
   const [fullScreenVisible, setFullScreenVisible] = useState(false);
 
   const handleImageLoad = () => {
-    RNImage.getSize(photoUrl, (width, height) => {
+    getImageDimensions(photoUrl).then(({ width, height }) => {
       setImageNaturalSize({ width, height });
-    });
+    }).catch(() => {});
   };
 
   const handleLayout = (event: LayoutChangeEvent) => {
@@ -85,7 +86,7 @@ export default function RouteVisualization({
           activeOpacity={0.9}
           style={StyleSheet.absoluteFill}
         >
-          <Image
+          <CachedImage
             source={{ uri: photoUrl }}
             style={styles.image}
             contentFit="contain"

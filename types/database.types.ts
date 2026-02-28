@@ -99,6 +99,7 @@ export interface Database {
           setup_date: string | null
           teardown_date: string | null
           user_id: string
+          holds_version: number
         }
         Insert: {
           id?: string
@@ -107,6 +108,7 @@ export interface Database {
           setup_date?: string | null
           teardown_date?: string | null
           user_id: string
+          holds_version?: number
         }
         Update: {
           id?: string
@@ -115,6 +117,7 @@ export interface Database {
           setup_date?: string | null
           teardown_date?: string | null
           user_id?: string
+          holds_version?: number
         }
       }
       routes: {

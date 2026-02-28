@@ -117,10 +117,14 @@ export default function RouteDetailScreen({ route, navigation }: any) {
 
       setRouteData({ ...fetchedRoute, creatorDisplayName } as RouteWithPhoto);
 
-      // Fetch detected holds for the photo
+      // Fetch detected holds for the photo (with version-based caching)
       if (fetchedRoute?.photo_id) {
         try {
-          const detectedHoldsData = await detectedHoldsApi.listByPhoto(fetchedRoute.photo_id);
+          const holdsVersion = (fetchedRoute as any).photo?.holds_version;
+          const detectedHoldsData = await detectedHoldsApi.listByPhoto(
+            fetchedRoute.photo_id,
+            holdsVersion,
+          );
           setDetectedHolds(detectedHoldsData);
         } catch (holdsErr) {
           console.error('Error fetching detected holds:', holdsErr);

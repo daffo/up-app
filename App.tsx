@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './lib/auth-context';
 import { ThemeProvider, initTheme, useTheme } from './lib/theme-context';
 import { initI18n } from './lib/i18n';
+import { initImageDimensionsCache } from './lib/cache/image-cache';
 import AppNavigator from './navigation/AppNavigator';
 
 function AppContent() {
@@ -22,7 +23,7 @@ export default function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    Promise.all([initI18n(), initTheme()]).then(() => setReady(true));
+    Promise.all([initI18n(), initTheme(), initImageDimensionsCache()]).then(() => setReady(true));
   }, []);
 
   if (!ready) {

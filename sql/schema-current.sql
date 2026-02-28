@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-006-nullable-setup-date
+-- Last updated: After migration-007-holds-version
 
 -- ============================================================================
 -- TABLES
@@ -21,7 +21,8 @@ CREATE TABLE photos (
   image_url TEXT NOT NULL,
   setup_date DATE,
   teardown_date DATE,
-  user_id UUID REFERENCES auth.users NOT NULL
+  user_id UUID REFERENCES auth.users NOT NULL,
+  holds_version INTEGER NOT NULL DEFAULT 0
 );
 
 -- Detected holds table (physical holds on the wall, auto-detected or manual)
@@ -237,6 +238,22 @@ CREATE POLICY "Users can delete their own comments"
 -- ============================================================================
 -- FUNCTIONS & TRIGGERS
 -- ============================================================================
+
+-- Increment holds_version on detected_holds changes
+CREATE OR REPLACE FUNCTION increment_holds_version()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE photos
+  SET holds_version = holds_version + 1
+  WHERE id = COALESCE(NEW.photo_id, OLD.photo_id);
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER detected_holds_version_trigger
+  AFTER INSERT OR UPDATE OR DELETE ON detected_holds
+  FOR EACH ROW
+  EXECUTE FUNCTION increment_holds_version();
 
 -- Auto-update updated_at column
 CREATE OR REPLACE FUNCTION update_updated_at_column()

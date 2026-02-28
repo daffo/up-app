@@ -68,6 +68,7 @@ const { themePreference, isDark, colors, setThemePreference } = useTheme();
 /components     - Reusable UI components
 /screens        - Screen components
 /lib            - API, auth, supabase client
+/lib/cache      - Local caching (image dimensions, detected holds)
 /hooks          - Custom hooks (useDragDelta)
 /utils          - Helpers (polygon math)
 /types          - TypeScript types
@@ -83,6 +84,7 @@ migration-001-update-holds.sql - Replace coordinates with holds JSONB
 migration-002-detected-holds.sql - Add detected_holds table
 migration-003-user-profiles.sql  - Add user_profiles table
 migration-004-sends-comments.sql - Add sends and comments tables
+migration-007-holds-version.sql  - Add holds_version to photos + trigger
 schema-current.sql           - Complete schema (run on fresh DB)
 ```
 
@@ -91,7 +93,7 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 
 ### Tables
 - `admins` - Users with photo management permissions
-- `photos` - Wall photos with setup/teardown dates
+- `photos` - Wall photos with setup/teardown dates and `holds_version` counter
 - `detected_holds` - Hold polygons detected on photos
 - `routes` - Climbing routes with hold references
 - `user_profiles` - Display names and settings
@@ -126,6 +128,7 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 - Commits follow Conventional Commits format
 - **All user-facing text must be localized** - use `t('key')` from `useTranslation()`, including accessibility labels. Add keys to both `locales/en.json` and `locales/it.json`
 - **All colors must use theme tokens** - use `useThemeColors()` from `lib/theme-context.tsx`, never hardcode colors in themed screens/components. Exception: fullscreen image editors and overlays (see theme exceptions above)
+- **All images must use `CachedImage`** - use `<CachedImage>` from `components/CachedImage.tsx` instead of bare `expo-image` `<Image>` or react-native `<Image>`. It bakes in `cachePolicy="memory-disk"` for aggressive disk caching. For image dimensions, use `getImageDimensions()` from `lib/cache/image-cache.ts` instead of `RNImage.getSize()`.
 
 ## Testing Strategy
 

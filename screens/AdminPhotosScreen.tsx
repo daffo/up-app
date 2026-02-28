@@ -3,11 +3,11 @@ import {
   View,
   Text,
   FlatList,
-  Image,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import CachedImage from '../components/CachedImage';
 import { useTranslation } from 'react-i18next';
 import { Database } from '../types/database.types';
 import { photosApi, cacheEvents } from '../lib/api';
@@ -39,7 +39,7 @@ export default function AdminPhotosScreen({ navigation }: any) {
       style={[styles.photoCard, { backgroundColor: colors.cardBackground, shadowColor: colors.shadowColor }]}
       onPress={() => navigation.navigate('AdminPhotoDetail', { photoId: item.id })}
     >
-      <Image source={{ uri: item.image_url }} style={styles.thumbnail} />
+      <CachedImage source={{ uri: item.image_url }} style={styles.thumbnail} />
       <View style={styles.photoInfo}>
         {!item.setup_date ? (
           <Text style={styles.draftText}>{t('admin.draft')}</Text>

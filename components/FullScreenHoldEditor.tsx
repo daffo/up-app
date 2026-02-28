@@ -8,13 +8,13 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  Image as RNImage,
   useWindowDimensions,
   StatusBar,
   PanResponder,
   GestureResponderEvent,
 } from 'react-native';
-import { Image } from 'expo-image';
+import CachedImage from './CachedImage';
+import { getImageDimensions } from '../lib/cache/image-cache';
 import { useTranslation } from 'react-i18next';
 import Svg, { Circle } from 'react-native-svg';
 import { Hold, DetectedHold } from '../types/database.types';
@@ -641,9 +641,9 @@ export default function FullScreenHoldEditor({
   // Load natural image size for focused view
   React.useEffect(() => {
     if (visible && photoUrl) {
-      RNImage.getSize(photoUrl, (width, height) => {
+      getImageDimensions(photoUrl).then(({ width, height }) => {
         setImageNaturalSize({ width, height });
-      });
+      }).catch(() => {});
     }
   }, [visible, photoUrl]);
 
@@ -929,7 +929,7 @@ export default function FullScreenHoldEditor({
             })}
           >
             <View pointerEvents="none">
-              <Image
+              <CachedImage
                 source={{ uri: photoUrl }}
                 style={{
                   position: 'absolute',

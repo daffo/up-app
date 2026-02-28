@@ -13,6 +13,16 @@ jest.mock('../../lib/supabase', () => ({
   supabase: { from: jest.fn() },
 }));
 
+jest.mock('expo-image', () => ({
+  Image: { prefetch: jest.fn().mockResolvedValue(undefined) },
+}));
+
+jest.mock('../../lib/cache/detected-holds-cache', () => ({
+  getCachedHolds: jest.fn().mockResolvedValue(null),
+  setCachedHolds: jest.fn().mockResolvedValue(undefined),
+  invalidateHoldsCache: jest.fn().mockResolvedValue(undefined),
+}));
+
 const mockFrom = supabase.from as jest.Mock;
 
 /**
@@ -417,13 +427,35 @@ describe('photosApi', () => {
 // ---------------------------------------------------------------------------
 describe('detectedHoldsApi', () => {
   describe('listByPhoto', () => {
-    it('returns holds', async () => {
+    it('returns holds without version (no caching)', async () => {
       const builder = createBuilder({ data: [{ id: 'h1' }], error: null });
       mockFrom.mockReturnValue(builder);
 
       const result = await detectedHoldsApi.listByPhoto('p1');
       expect(result).toEqual([{ id: 'h1' }]);
       expect(builder.eq).toHaveBeenCalledWith('photo_id', 'p1');
+    });
+
+    it('returns cached holds when version matches', async () => {
+      const { getCachedHolds } = require('../../lib/cache/detected-holds-cache');
+      getCachedHolds.mockResolvedValueOnce([{ id: 'cached' }]);
+      mockFrom.mockClear();
+
+      const result = await detectedHoldsApi.listByPhoto('p1', 3);
+      expect(result).toEqual([{ id: 'cached' }]);
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('fetches and caches when version provided but cache misses', async () => {
+      const { getCachedHolds, setCachedHolds } = require('../../lib/cache/detected-holds-cache');
+      getCachedHolds.mockResolvedValueOnce(null);
+
+      const builder = createBuilder({ data: [{ id: 'h1' }], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      const result = await detectedHoldsApi.listByPhoto('p1', 5);
+      expect(result).toEqual([{ id: 'h1' }]);
+      expect(setCachedHolds).toHaveBeenCalledWith('p1', 5, [{ id: 'h1' }]);
     });
 
     it('throws on error', async () => {

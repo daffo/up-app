@@ -37,6 +37,7 @@ export const PhotoSchema = z.object({
   setup_date: z.string().nullable(),
   teardown_date: z.string().nullable(),
   user_id: z.string().uuid(),
+  holds_version: z.number().int(),
 });
 
 export const RouteSchema = z.object({

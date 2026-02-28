@@ -1,5 +1,7 @@
+import { Image } from 'expo-image';
 import { supabase } from './supabase';
 import { Database, Hold, DetectedHold, RouteFilters, Send, Comment } from '../types/database.types';
+import { getCachedHolds, setCachedHolds, invalidateHoldsCache } from './cache/detected-holds-cache';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -187,7 +189,15 @@ export const photosApi = {
       .order('setup_date', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    const photos = data || [];
+
+    // Fire-and-forget: prefetch images to disk cache
+    const urls = photos.map((p: Photo) => p.image_url).filter(Boolean);
+    if (urls.length > 0) {
+      Image.prefetch(urls, 'memory-disk').catch(() => {});
+    }
+
+    return photos;
   },
 
   async get(photoId: string) {
@@ -215,17 +225,30 @@ export const photosApi = {
 
 // Detected Holds API
 export const detectedHoldsApi = {
-  async listByPhoto(photoId: string) {
+  async listByPhoto(photoId: string, holdsVersion?: number) {
+    // If holdsVersion provided, try local cache first
+    if (holdsVersion !== undefined) {
+      const cached = await getCachedHolds(photoId, holdsVersion);
+      if (cached) return cached;
+    }
+
     const { data, error } = await supabase
       .from('detected_holds')
       .select('*')
       .eq('photo_id', photoId);
 
     if (error) throw error;
-    return (data || []) as DetectedHold[];
+    const holds = (data || []) as DetectedHold[];
+
+    // Cache if version provided
+    if (holdsVersion !== undefined) {
+      setCachedHolds(photoId, holdsVersion, holds).catch(() => {});
+    }
+
+    return holds;
   },
 
-  async update(holdId: string, updates: Partial<DetectedHold>) {
+  async update(holdId: string, updates: Partial<DetectedHold>, photoId?: string) {
     const { error } = await supabase
       .from('detected_holds')
       .update(updates)
@@ -233,6 +256,7 @@ export const detectedHoldsApi = {
 
     if (error) throw error;
 
+    if (photoId) invalidateHoldsCache(photoId).catch(() => {});
     cacheEvents.invalidate('detected_holds');
   },
 
@@ -245,6 +269,7 @@ export const detectedHoldsApi = {
 
     if (error) throw error;
 
+    invalidateHoldsCache(hold.photo_id).catch(() => {});
     cacheEvents.invalidate('detected_holds');
 
     return data as DetectedHold;
@@ -260,12 +285,15 @@ export const detectedHoldsApi = {
 
     if (error) throw error;
 
+    // Invalidate cache for all affected photos
+    const photoIds = new Set(holds.map(h => h.photo_id));
+    photoIds.forEach(pid => invalidateHoldsCache(pid).catch(() => {}));
     cacheEvents.invalidate('detected_holds');
 
     return (data || []) as DetectedHold[];
   },
 
-  async delete(holdId: string): Promise<void> {
+  async delete(holdId: string, photoId?: string): Promise<void> {
     const { error } = await supabase
       .from('detected_holds')
       .delete()
@@ -273,6 +301,7 @@ export const detectedHoldsApi = {
 
     if (error) throw error;
 
+    if (photoId) invalidateHoldsCache(photoId).catch(() => {});
     cacheEvents.invalidate('detected_holds');
   },
 
@@ -284,6 +313,7 @@ export const detectedHoldsApi = {
 
     if (error) throw error;
 
+    invalidateHoldsCache(photoId).catch(() => {});
     cacheEvents.invalidate('detected_holds');
   },
 };
