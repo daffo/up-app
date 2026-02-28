@@ -170,7 +170,12 @@ name: Auth User - Login Flow
 - waitForAnimationToEnd
 - assertVisible: "Sent"
 
-# Tap Rating row to see sends list
+# Scroll to Rating row and tap to see sends list
+- scrollUntilVisible:
+    element:
+      text: "Rating"
+    direction: DOWN
+    timeout: 5000
 - tapOn: "Rating"
 
 # Wait for sends screen and check Anonymous is shown
@@ -247,6 +252,13 @@ name: Auth User - Login Flow
 # ============================================
 # EDIT THE ROUTE
 # ============================================
+
+# Scroll to Edit Route
+- scrollUntilVisible:
+    element:
+      text: "Edit Route"
+    direction: DOWN
+    timeout: 5000
 
 # Tap Edit Route
 - tapOn: "Edit Route"
@@ -548,7 +560,12 @@ name: Auth User - Login Flow
     visible: "Route Details"
     timeout: 5000
 
-# Tap Edit Route
+# Scroll to and tap Edit Route
+- scrollUntilVisible:
+    element:
+      text: "Edit Route"
+    direction: DOWN
+    timeout: 5000
 - tapOn: "Edit Route"
 - extendedWaitUntil:
     visible: "Edit Route"

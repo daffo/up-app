@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeScreen from '../components/SafeScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -72,7 +72,7 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+    <SafeScreen hasHeader={false}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{t('home.title')}</Text>
@@ -172,7 +172,7 @@ export default function HomeScreen({ navigation }: any) {
           onLoginRequired={() => requireAuth(() => setFilterModalVisible(true), 'Home')}
         />
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 

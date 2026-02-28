@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStyles } from './authStyles';
+import SafeScreen from '../SafeScreen';
 
 interface AuthLayoutProps {
   subtitle: string;
@@ -18,15 +19,17 @@ export default function AuthLayout({ subtitle, children }: AuthLayoutProps) {
   const { styles } = useAuthStyles();
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        <Text style={styles.title}>{t('home.title')}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
-        <View style={styles.form}>{children}</View>
-      </View>
-    </KeyboardAvoidingView>
+    <SafeScreen hasHeader={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <View style={styles.content}>
+          <Text style={styles.title}>{t('home.title')}</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
+          <View style={styles.form}>{children}</View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeScreen>
   );
 }

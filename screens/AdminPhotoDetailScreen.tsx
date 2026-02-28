@@ -18,6 +18,7 @@ import RouteVisualization from '../components/RouteVisualization';
 import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 import { detectHolds } from '../lib/holdDetection';
+import SafeScreen from '../components/SafeScreen';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
@@ -307,6 +308,7 @@ export default function AdminPhotoDetailScreen({ route }: any) {
   };
 
   return (
+    <SafeScreen>
     <ScrollView style={[styles.container, { backgroundColor: colors.screenBackground }]}>
       {/* Info Section */}
       <View style={[styles.infoSection, { backgroundColor: colors.cardBackground }]}>
@@ -423,6 +425,7 @@ export default function AdminPhotoDetailScreen({ route }: any) {
         )}
       </View>
     </ScrollView>
+    </SafeScreen>
   );
 }
 

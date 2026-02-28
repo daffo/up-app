@@ -20,6 +20,7 @@ import UserNameLink from '../components/UserNameLink';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
+import SafeScreen from '../components/SafeScreen';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -157,6 +158,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
   }
 
   return (
+    <SafeScreen>
       <ScrollView
         ref={scrollViewRef}
         style={[styles.container, { backgroundColor: colors.screenBackground }]}
@@ -243,6 +245,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
         }}
       />
       </ScrollView>
+    </SafeScreen>
   );
 }
 

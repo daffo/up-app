@@ -128,6 +128,7 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 - Commits follow Conventional Commits format
 - **All user-facing text must be localized** - use `t('key')` from `useTranslation()`, including accessibility labels. Add keys to both `locales/en.json` and `locales/it.json`
 - **All colors must use theme tokens** - use `useThemeColors()` from `lib/theme-context.tsx`, never hardcode colors in themed screens/components. Exception: fullscreen image editors and overlays (see theme exceptions above)
+- **All screens must use `SafeScreen`** — use `<SafeScreen>` from `components/SafeScreen.tsx` as the root container of every screen. Use `hasHeader={false}` for headerless screens. Exception: full-screen image editors use `SafeAreaView` directly with hardcoded dark styling.
 - **All images must use `CachedImage`** - use `<CachedImage>` from `components/CachedImage.tsx` instead of bare `expo-image` `<Image>` or react-native `<Image>`. It bakes in `cachePolicy="memory-disk"` for aggressive disk caching. For image dimensions, use `getImageDimensions()` from `lib/cache/image-cache.ts` instead of `RNImage.getSize()`.
 
 ## Testing Strategy

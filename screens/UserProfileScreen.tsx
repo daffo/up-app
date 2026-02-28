@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { userProfilesApi } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import UserSendsList from '../components/UserSendsList';
+import SafeScreen from '../components/SafeScreen';
 
 export default function UserProfileScreen({ route, navigation }: any) {
   const { t } = useTranslation();
@@ -47,10 +48,10 @@ export default function UserProfileScreen({ route, navigation }: any) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+    <SafeScreen>
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('sends.title')}</Text>
       <UserSendsList userId={userId} emptyMessage={t('sends.noSendsYet')} />
-    </View>
+    </SafeScreen>
   );
 }
 

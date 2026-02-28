@@ -87,6 +87,13 @@ name: Guest User - Complete Happy Path
     direction: DOWN
     timeout: 5000
 
+# Scroll until input is visible (comments may push it off screen)
+- scrollUntilVisible:
+    element:
+      text: "Add a comment.*"
+    direction: DOWN
+    timeout: 5000
+
 # Type in comment input (same pattern as login fields)
 - tapOn: "Add a comment..."
 - inputText: "test comment from guest"

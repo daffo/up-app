@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
 import { useThemeColors } from '../lib/theme-context';
 import UserSendsList from '../components/UserSendsList';
+import SafeScreen from '../components/SafeScreen';
 
 export default function MySendsScreen() {
   const { t } = useTranslation();
@@ -11,13 +12,13 @@ export default function MySendsScreen() {
   const colors = useThemeColors();
 
   if (!user) {
-    return <View style={[styles.container, { backgroundColor: colors.screenBackground }]} />;
+    return <SafeScreen />;
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+    <SafeScreen>
       <UserSendsList userId={user.id} emptyMessage={t('sends.noSendsYetStart')} />
-    </View>
+    </SafeScreen>
   );
 }
 

@@ -15,6 +15,7 @@ import { useAuth } from '../lib/auth-context';
 import { userProfilesApi } from '../lib/api';
 import { SUPPORTED_LANGUAGES, changeLanguage, getCurrentLanguage, LanguageCode } from '../lib/i18n';
 import { useTheme, ThemePreference } from '../lib/theme-context';
+import SafeScreen from '../components/SafeScreen';
 
 const THEME_OPTIONS: { value: ThemePreference; labelKey: string; icon: string }[] = [
   { value: 'light', labelKey: 'account.themeLight', icon: '\u2600\uFE0F' },
@@ -117,6 +118,7 @@ export default function MyAccountScreen({ navigation }: any) {
   }
 
   return (
+    <SafeScreen>
     <ScrollView style={[styles.container, { backgroundColor: colors.screenBackground }]} contentContainerStyle={styles.contentContainer}>
       <View style={styles.section}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>{t('account.email')}</Text>
@@ -217,6 +219,7 @@ export default function MyAccountScreen({ navigation }: any) {
         </Text>
       </TouchableOpacity>
     </ScrollView>
+    </SafeScreen>
   );
 }
 

@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageZoom from 'react-native-image-pan-zoom';
 import CachedImage from './CachedImage';
 import { getImageDimensions } from '../lib/cache/image-cache';
@@ -149,7 +150,7 @@ export default function FullScreenImageBase({
       statusBarTranslucent
     >
       <StatusBar hidden />
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         {/* @ts-expect-error - ImageZoom types don't include children but it accepts them */}
         <ImageZoom
           cropWidth={windowDimensions.width}
@@ -220,7 +221,7 @@ export default function FullScreenImageBase({
 
         {/* Additional content (modals, controls, etc.) */}
         {children}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }

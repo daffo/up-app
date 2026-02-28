@@ -13,6 +13,7 @@ import { Database } from '../types/database.types';
 import { photosApi, cacheEvents } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
+import SafeScreen from '../components/SafeScreen';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
@@ -70,7 +71,7 @@ export default function AdminPhotosScreen({ navigation }: any) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+    <SafeScreen>
       <FlatList
         data={photos}
         keyExtractor={(item) => item.id}
@@ -80,7 +81,7 @@ export default function AdminPhotosScreen({ navigation }: any) {
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('admin.noPhotosFound')}</Text>
         }
       />
-    </View>
+    </SafeScreen>
   );
 }
 

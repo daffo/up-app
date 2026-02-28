@@ -14,6 +14,7 @@ import { commentsApi, cacheEvents } from '../lib/api';
 import { Comment } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import { formatRelativeDate } from '../utils/date';
+import SafeScreen from '../components/SafeScreen';
 
 type CommentWithRoute = Comment & { route: { id: string; title: string; grade: string } };
 
@@ -79,7 +80,7 @@ export default function MyCommentsScreen({ navigation }: any) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+    <SafeScreen>
       <FlatList
         data={comments}
         keyExtractor={(item) => item.id}
@@ -91,7 +92,7 @@ export default function MyCommentsScreen({ navigation }: any) {
         refreshing={refreshing}
         onRefresh={handleRefresh}
       />
-    </View>
+    </SafeScreen>
   );
 }
 

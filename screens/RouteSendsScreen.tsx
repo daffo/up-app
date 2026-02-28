@@ -13,6 +13,7 @@ import { Send } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import UserNameLink from '../components/UserNameLink';
 import { formatRelativeDate } from '../utils/date';
+import SafeScreen from '../components/SafeScreen';
 
 type SendWithProfile = Send & { displayName?: string };
 
@@ -111,7 +112,7 @@ export default function RouteSendsScreen({ route }: any) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+    <SafeScreen>
       <FlatList
         data={sends}
         keyExtractor={(item) => item.id}
@@ -123,7 +124,7 @@ export default function RouteSendsScreen({ route }: any) {
         refreshing={refreshing}
         onRefresh={handleRefresh}
       />
-    </View>
+    </SafeScreen>
   );
 }
 

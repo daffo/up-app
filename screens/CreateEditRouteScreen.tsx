@@ -23,6 +23,7 @@ import { getHoldLabel } from '../utils/holds';
 import { useThemeColors } from '../lib/theme-context';
 import RouteOverlay from '../components/RouteOverlay';
 import { formatDate } from '../utils/date';
+import SafeScreen from '../components/SafeScreen';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 type Route = Database['public']['Tables']['routes']['Row'];
@@ -295,7 +296,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+    <SafeScreen>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.form}>
         {/* Title */}
@@ -447,7 +448,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
           onUpdateHolds={handleUpdateHolds}
         />
       )}
-    </View>
+    </SafeScreen>
   );
 }
 
