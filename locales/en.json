@@ -19,7 +19,7 @@
     "editRoute": "Edit Route",
     "managePhotos": "Manage Photos",
     "photoDetails": "Photo Details",
-    "myAccount": "My Account",
+    "settings": "Settings",
     "mySends": "My Sends",
     "myComments": "My Comments",
     "sends": "Sends",
@@ -115,9 +115,17 @@
     "deleteAccountError": "Failed to delete account. Please try again.",
     "deleting": "Deleting..."
   },
+  "settings": {
+    "accountSection": "Account",
+    "preferencesSection": "Preferences",
+    "supportSection": "Support",
+    "buyMeABeer": "Buy me a beer \uD83C\uDF7A",
+    "buyMeABeerSubtitle": "See you at the gym!",
+    "dangerZoneSection": "Danger Zone"
+  },
   "menu": {
     "openMenu": "Open menu",
-    "myAccount": "My Account",
+    "settings": "Settings",
     "mySends": "My Sends",
     "myComments": "My Comments",
     "admin": "Admin",

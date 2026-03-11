@@ -12,7 +12,7 @@ name: Guest User - Complete Happy Path
 # --------------------------------------------
 # 1. HOME SCREEN - VERIFY LOGGED OUT STATE
 # --------------------------------------------
-- assertVisible: "Up App"
+- assertVisible: "Upp"
 - assertVisible: "Spray Wall Routes"
 - assertVisible: "Login"
 
@@ -33,7 +33,7 @@ name: Guest User - Complete Happy Path
 - pressKey: back
 
 # Should be back on home
-- assertVisible: "Up App"
+- assertVisible: "Upp"
 - assertVisible: "Login"
 
 # --------------------------------------------
@@ -47,7 +47,7 @@ name: Guest User - Complete Happy Path
 - pressKey: back
 
 # Should be back on home
-- assertVisible: "Up App"
+- assertVisible: "Upp"
 
 # --------------------------------------------
 # 4. TAP ROUTE → TAP SEND → SEE LOGIN PAGE → BACK
@@ -119,7 +119,7 @@ name: Guest User - Complete Happy Path
 - pressKey: back
 
 # Should be on home screen, still logged out
-- assertVisible: "Up App"
+- assertVisible: "Upp"
 - assertVisible: "Spray Wall Routes"
 - assertVisible: "Login"
 

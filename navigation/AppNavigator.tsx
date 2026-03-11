@@ -10,7 +10,7 @@ import RouteDetailScreen from '../screens/RouteDetailScreen';
 import CreateEditRouteScreen from '../screens/CreateEditRouteScreen';
 import AdminPhotosScreen from '../screens/AdminPhotosScreen';
 import AdminPhotoDetailScreen from '../screens/AdminPhotoDetailScreen';
-import MyAccountScreen from '../screens/MyAccountScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import MySendsScreen from '../screens/MySendsScreen';
 import MyCommentsScreen from '../screens/MyCommentsScreen';
 import RouteSendsScreen from '../screens/RouteSendsScreen';
@@ -29,7 +29,7 @@ const linking: LinkingOptions<any> = {
       CreateEditRoute: 'route/edit/:routeId?',
       AdminPhotos: 'admin/photos',
       AdminPhotoDetail: 'admin/photo/:photoId',
-      MyAccount: 'account',
+      Settings: 'settings',
       MySends: 'sends',
       MyComments: 'comments',
       RouteSends: 'route/:routeId/sends',
@@ -110,11 +110,11 @@ export default function AppNavigator() {
           }}
         />
         <Stack.Screen
-          name="MyAccount"
-          component={MyAccountScreen}
+          name="Settings"
+          component={SettingsScreen}
           options={{
             headerShown: true,
-            title: t('nav.myAccount'),
+            title: t('nav.settings'),
             headerBackTitle: t('common.back'),
           }}
         />

@@ -5,7 +5,7 @@ name: Auth - Login Flow
 - runFlow: shared/setup.yaml
 
 # Should be on Home screen with Login button (logged out)
-- assertVisible: "Up App"
+- assertVisible: "Upp"
 - assertVisible: "Login"
 
 # Go to login
@@ -23,6 +23,6 @@ name: Auth - Login Flow
 
 # Should be back on Home, logged in
 - extendedWaitUntil:
-    visible: "Up App"
+    visible: "Upp"
     timeout: 10000
 - assertNotVisible: "Login"

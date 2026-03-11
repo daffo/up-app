@@ -9,7 +9,7 @@ name: Auth User - Login Flow
 # Setup and Login
 - runFlow: auth-login.yaml
 
-- assertVisible: "Up App"
+- assertVisible: "Upp"
 - assertNotVisible: "Login"
 
 # Verify routes load
@@ -299,7 +299,7 @@ name: Auth User - Login Flow
 - pressKey: back
 
 # Verify we're on home screen
-- assertVisible: "Up App"
+- assertVisible: "Upp"
 - assertVisible: "Spray Wall Routes"
 
 # ============================================
@@ -309,11 +309,11 @@ name: Auth User - Login Flow
 # Open profile menu
 - tapOn: "Open menu"
 - extendedWaitUntil:
-    visible: "My Account"
+    visible: "Settings"
     timeout: 3000
 
-# Go to My Account
-- tapOn: "My Account"
+# Go to Settings
+- tapOn: "Settings"
 - extendedWaitUntil:
     visible: "Display Name"
     timeout: 5000
@@ -400,7 +400,7 @@ name: Auth User - Login Flow
 - pressKey: back
 - pressKey: back
 - pressKey: back
-- assertVisible: "Up App"
+- assertVisible: "Upp"
 
 # ============================================
 # CLEAR DISPLAY NAME
@@ -408,7 +408,7 @@ name: Auth User - Login Flow
 
 # Open profile menu
 - tapOn: "Open menu"
-- tapOn: "My Account"
+- tapOn: "Settings"
 - extendedWaitUntil:
     visible: "Display Name"
     timeout: 5000
@@ -427,7 +427,7 @@ name: Auth User - Login Flow
 
 # Go back to home
 - pressKey: back
-- assertVisible: "Up App"
+- assertVisible: "Upp"
 
 # ============================================
 # TEST FILTERS
@@ -594,7 +594,7 @@ name: Auth User - Login Flow
 
 # Should be redirected to home
 - extendedWaitUntil:
-    visible: "Up App"
+    visible: "Upp"
     timeout: 5000
 
 # My Routes filter should still be active, verify no routes

@@ -78,7 +78,7 @@ export default function HomeScreen({ navigation }: any) {
         <Text style={[styles.title, { color: colors.textPrimary }]}>{t('home.title')}</Text>
         {user ? (
           <ProfileDropdown
-            onMyAccount={() => navigation.navigate('MyAccount')}
+            onSettings={() => navigation.navigate('Settings')}
             onMySends={() => navigation.navigate('MySends')}
             onMyComments={() => navigation.navigate('MyComments')}
             onAdmin={() => navigation.navigate('AdminPhotos')}

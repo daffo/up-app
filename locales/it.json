@@ -19,7 +19,7 @@
     "editRoute": "Modifica Via",
     "managePhotos": "Gestisci Foto",
     "photoDetails": "Dettagli Foto",
-    "myAccount": "Il Mio Account",
+    "settings": "Impostazioni",
     "mySends": "Le Mie Chiusure",
     "myComments": "I Miei Commenti",
     "sends": "Chiusure",
@@ -115,9 +115,17 @@
     "deleteAccountError": "Eliminazione account fallita. Riprova.",
     "deleting": "Eliminazione..."
   },
+  "settings": {
+    "accountSection": "Account",
+    "preferencesSection": "Preferenze",
+    "supportSection": "Supporto",
+    "buyMeABeer": "Offrimi una birra \uD83C\uDF7A",
+    "buyMeABeerSubtitle": "Ci vediamo in palestra!",
+    "dangerZoneSection": "Zona pericolosa"
+  },
   "menu": {
     "openMenu": "Apri menu",
-    "myAccount": "Il Mio Account",
+    "settings": "Impostazioni",
     "mySends": "Le Mie Chiusure",
     "myComments": "I Miei Commenti",
     "admin": "Admin",

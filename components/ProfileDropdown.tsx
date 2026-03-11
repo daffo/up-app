@@ -12,7 +12,7 @@ import { useAuth } from '../lib/auth-context';
 import { useThemeColors } from '../lib/theme-context';
 
 interface ProfileDropdownProps {
-  onMyAccount: () => void;
+  onSettings: () => void;
   onMySends: () => void;
   onMyComments: () => void;
   onAdmin?: () => void;
@@ -20,7 +20,7 @@ interface ProfileDropdownProps {
 }
 
 export default function ProfileDropdown({
-  onMyAccount,
+  onSettings,
   onMySends,
   onMyComments,
   onAdmin,
@@ -48,9 +48,9 @@ export default function ProfileDropdown({
     setVisible(false);
   };
 
-  const handleMyAccount = () => {
+  const handleSettings = () => {
     handleClose();
-    onMyAccount();
+    onSettings();
   };
 
   const handleMySends = () => {
@@ -108,10 +108,6 @@ export default function ProfileDropdown({
               { top: dropdownPosition.top, right: dropdownPosition.right, backgroundColor: colors.cardBackground, shadowColor: colors.shadowColor },
             ]}
           >
-            <TouchableOpacity style={styles.menuItem} onPress={handleMyAccount}>
-              <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.myAccount')}</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity style={styles.menuItem} onPress={handleMySends}>
               <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.mySends')}</Text>
             </TouchableOpacity>
@@ -125,6 +121,10 @@ export default function ProfileDropdown({
                 <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.admin')}</Text>
               </TouchableOpacity>
             )}
+
+            <TouchableOpacity style={styles.menuItem} onPress={handleSettings}>
+              <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.settings')}</Text>
+            </TouchableOpacity>
 
             <View style={[styles.separator, { backgroundColor: colors.borderLight }]} />
 
