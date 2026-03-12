@@ -16,11 +16,21 @@ export interface DetectedHold {
 }
 
 export interface Hold {
-  order: number
   detected_hold_id: string
   labelX: number
   labelY: number
   note?: string
+}
+
+export interface HandHold extends Hold {
+  order: number
+}
+
+export interface FootHold extends Hold {}
+
+export interface RouteHolds {
+  hand_holds: HandHold[]
+  foot_holds: FootHold[]
 }
 
 export interface RouteFilters {
@@ -128,7 +138,7 @@ export interface Database {
           description: string | null
           grade: string
           photo_id: string
-          holds: Hold[]
+          holds: RouteHolds
           user_id: string
         }
         Insert: {
@@ -138,7 +148,7 @@ export interface Database {
           description?: string | null
           grade: string
           photo_id: string
-          holds: Hold[]
+          holds: RouteHolds
           user_id: string
         }
         Update: {
@@ -148,7 +158,7 @@ export interface Database {
           description?: string | null
           grade?: string
           photo_id?: string
-          holds?: Hold[]
+          holds?: RouteHolds
           user_id?: string
         }
       }

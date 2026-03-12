@@ -16,7 +16,7 @@ import TrimmedTextInput from '../components/TrimmedTextInput';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuth } from '../lib/auth-context';
-import { Database, Hold, DetectedHold } from '../types/database.types';
+import { Database, HandHold, FootHold, DetectedHold } from '../types/database.types';
 import { routesApi, photosApi, detectedHoldsApi } from '../lib/api';
 import FullScreenRouteEditor from '../components/FullScreenRouteEditor';
 import { getHoldLabel } from '../utils/holds';
@@ -48,7 +48,8 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
   const [description, setDescription] = useState('');
   const [grade, setGrade] = useState('');
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
-  const [holds, setHolds] = useState<Hold[]>([]);
+  const [handHolds, setHandHolds] = useState<HandHold[]>([]);
+  const [footHolds, setFootHolds] = useState<FootHold[]>([]);
 
   // Data
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -92,7 +93,8 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         setDescription(routeData.description || '');
         setGrade(routeData.grade);
         setSelectedPhotoId(routeData.photo_id);
-        setHolds(routeData.holds);
+        setHandHolds(routeData.holds.hand_holds);
+        setFootHolds(routeData.holds.foot_holds);
       } else {
         // Default to first photo for new routes
         if (photosData && photosData.length > 0) {
@@ -152,25 +154,33 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
     fetchDetectedHolds();
   }, [selectedPhotoId, photos]);
 
-  const handleUpdateHolds = (updatedHolds: Hold[]) => {
-    setHolds(updatedHolds);
+  const handleUpdateHandHolds = (updatedHandHolds: HandHold[]) => {
+    setHandHolds(updatedHandHolds);
   };
 
-  const handleReorderHolds = (reorderedHolds: Hold[]) => {
+  const handleUpdateFootHolds = (updatedFootHolds: FootHold[]) => {
+    setFootHolds(updatedFootHolds);
+  };
+
+  const handleReorderHandHolds = (reorderedHandHolds: HandHold[]) => {
     // Update order property based on new position
-    const holdsWithUpdatedOrder = reorderedHolds.map((hold, index) => ({
+    const handHoldsWithUpdatedOrder = reorderedHandHolds.map((hold, index) => ({
       ...hold,
       order: index + 1,
     }));
-    setHolds(holdsWithUpdatedOrder);
+    setHandHolds(handHoldsWithUpdatedOrder);
   };
 
-  const deleteHold = (holdToDelete: Hold) => {
-    const newHolds = holds.filter(h => h !== holdToDelete);
-    handleReorderHolds(newHolds);
+  const deleteHandHold = (holdToDelete: HandHold) => {
+    const remaining = handHolds.filter(h => h !== holdToDelete);
+    handleReorderHandHolds(remaining);
   };
 
-  const renderHoldItem = useCallback(({ item, drag, isActive }: RenderItemParams<Hold>) => (
+  const deleteFootHold = (holdToDelete: FootHold) => {
+    setFootHolds(footHolds.filter(h => h !== holdToDelete));
+  };
+
+  const renderHandHoldItem = useCallback(({ item, drag, isActive }: RenderItemParams<HandHold>) => (
     <ScaleDecorator>
       <TouchableOpacity
         onLongPress={drag}
@@ -182,12 +192,12 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         ]}
       >
         <Text style={[styles.holdItemText, { color: colors.textPrimary }]}>
-          {getHoldLabel(item.order - 1, holds.length, item.note) || t('routeForm.noNote')}
+          {getHoldLabel(item.order - 1, handHolds.length, item.note) || t('routeForm.noNote')}
         </Text>
         <View style={styles.holdItemButtons}>
           <Text style={[styles.dragHandle, { color: colors.textTertiary }]}>☰</Text>
           <TouchableOpacity
-            onPress={() => deleteHold(item)}
+            onPress={() => deleteHandHold(item)}
             style={[styles.holdActionButton, { backgroundColor: colors.danger }]}
           >
             <Text style={styles.holdActionButtonText}>✕</Text>
@@ -195,7 +205,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         </View>
       </TouchableOpacity>
     </ScaleDecorator>
-  ), [holds, t, colors]);
+  ), [handHolds, t, colors]);
 
   const handleSave = async () => {
     if (!user) {
@@ -218,13 +228,15 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
       return;
     }
 
-    if (holds.length === 0) {
+    if (handHolds.length === 0) {
       Alert.alert(t('common.error'), t('routeForm.errorHolds'));
       return;
     }
 
     try {
       setSaving(true);
+
+      const routeHolds = { hand_holds: handHolds, foot_holds: footHolds };
 
       if (isEditMode) {
         // Update existing route (automatically invalidates cache)
@@ -233,7 +245,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
           description: description.trim() || null,
           grade: grade.trim(),
           photo_id: selectedPhotoId,
-          holds,
+          holds: routeHolds,
         });
 
         Alert.alert(t('common.success'), t('routeForm.routeUpdated'));
@@ -245,7 +257,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
           description: description.trim() || null,
           grade: grade.trim(),
           photo_id: selectedPhotoId,
-          holds,
+          holds: routeHolds,
           user_id: user.id,
         });
 
@@ -368,7 +380,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         {/* Hold Placement */}
         {selectedPhoto && displayWidth > 0 && (
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.textPrimary }]}>{t('routeForm.routePreview', { count: holds.length })}</Text>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>{t('routeForm.routePreview', { count: handHolds.length })}</Text>
             <Text style={[styles.helperText, { color: colors.textSecondary }]}>{t('routeForm.tapToEdit')}</Text>
             <TouchableOpacity
               style={[styles.imageContainer, { backgroundColor: colors.cardBackground }]}
@@ -381,7 +393,8 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
                 style={{ width: displayWidth, height: displayHeight }}
               />
               <RouteOverlay
-                holds={holds}
+                handHolds={handHolds}
+                footHolds={footHolds}
                 detectedHolds={detectedHolds}
                 width={displayWidth}
                 height={displayHeight}
@@ -390,18 +403,44 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
               </TouchableOpacity>
 
             {/* Hold List - Drag to reorder */}
-            {holds.length > 0 && (
+            {handHolds.length > 0 && (
               <View style={[styles.holdsList, { backgroundColor: colors.screenBackground }]}>
                 <Text style={[styles.holdsListTitle, { color: colors.textSecondary }]}>{t('routeForm.holdsListTitle')}</Text>
                 <GestureHandlerRootView>
                   <DraggableFlatList
-                    data={holds}
-                    onDragEnd={({ data }) => handleReorderHolds(data)}
+                    data={handHolds}
+                    onDragEnd={({ data }) => handleReorderHandHolds(data)}
                     keyExtractor={(item) => `hold-${item.order}-${item.detected_hold_id}`}
-                    renderItem={renderHoldItem}
+                    renderItem={renderHandHoldItem}
                     scrollEnabled={false}
                   />
                 </GestureHandlerRootView>
+              </View>
+            )}
+
+            {/* Foot Holds List - No drag */}
+            {footHolds.length > 0 && (
+              <View style={[styles.holdsList, { backgroundColor: colors.screenBackground }]}>
+                <Text style={[styles.holdsListTitle, { color: colors.textSecondary }]}>{t('routeForm.feetListTitle')}</Text>
+                {footHolds.map((fh, index) => (
+                  <View
+                    key={`foot-${index}-${fh.detected_hold_id}`}
+                    style={[
+                      styles.holdItem,
+                      { backgroundColor: colors.cardBackground, borderColor: colors.border },
+                    ]}
+                  >
+                    <Text style={[styles.holdItemText, { color: colors.textPrimary }]}>
+                      {fh.note ? `${t('editor.foot')} — ${fh.note}` : t('editor.foot')}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => deleteFootHold(fh)}
+                      style={[styles.holdActionButton, { backgroundColor: colors.danger }]}
+                    >
+                      <Text style={styles.holdActionButtonText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
               </View>
             )}
           </View>
@@ -442,10 +481,12 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
         <FullScreenRouteEditor
           visible={editorVisible}
           photoUrl={selectedPhoto.image_url}
-          holds={holds}
+          handHolds={handHolds}
+          footHolds={footHolds}
           detectedHolds={detectedHolds}
           onClose={() => setEditorVisible(false)}
-          onUpdateHolds={handleUpdateHolds}
+          onUpdateHandHolds={handleUpdateHandHolds}
+          onUpdateFootHolds={handleUpdateFootHolds}
         />
       )}
     </SafeScreen>

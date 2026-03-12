@@ -1,16 +1,18 @@
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Line, Defs, Marker, Polygon, G, Path, Rect, Mask } from 'react-native-svg';
-import { Hold, DetectedHold } from '../types/database.types';
+import { Hold, HandHold, FootHold, DetectedHold } from '../types/database.types';
 import { calculatePolygonArea } from '../utils/polygon';
 import { getHoldLabel } from '../utils/holds';
 
 interface RouteOverlayProps {
-  holds: Hold[];
+  handHolds: HandHold[];
+  footHolds?: FootHold[];
   detectedHolds: DetectedHold[]; // All detected holds for this photo
   width: number;
   height: number;
   pointerEvents?: 'none' | 'box-none' | 'auto';
-  onHoldPress?: (index: number) => void;
+  onHandHoldPress?: (index: number) => void;
+  onFootHoldPress?: (index: number) => void;
   resizingHoldIndex?: number | null;
   showLabels?: boolean; // Whether to show labels and arrows (default: true)
   selectedHoldId?: string | null; // ID of currently selected hold for highlighting
@@ -222,13 +224,17 @@ const findPerimeterIntersection = (
   return { x: intersectionX, y: intersectionY };
 };
 
+const FOOT_HOLD_COLOR = '#E91E9C';
+
 export default function RouteOverlay({
-  holds,
+  handHolds,
+  footHolds = [],
   detectedHolds,
   width,
   height,
   pointerEvents = 'none',
-  onHoldPress,
+  onHandHoldPress,
+  onFootHoldPress,
   resizingHoldIndex = null,
   showLabels = true,
   selectedHoldId = null,
@@ -242,20 +248,51 @@ export default function RouteOverlay({
     detectedHolds.map(dh => [dh.id, dh])
   );
 
+  // Set of detected_hold_ids used by foot holds (for overlap rendering)
+  const footHoldDetectedIds = new Set(footHolds.map(fh => fh.detected_hold_id));
+
   // Pre-calculate expanded and smoothed polygons for all holds (used for overlay holes, borders, and arrows)
   const expandedPolygonsMap = new Map<string, Array<{ x: number; y: number }>>();
   const smoothedPolygonsMap = new Map<string, Array<{ x: number; y: number }>>();
-  holds.forEach(hold => {
-    const detectedHold = detectedHoldsMap.get(hold.detected_hold_id);
+
+  // Process both hand holds and foot holds for polygon calculations
+  const allDetectedHoldIds = new Set([
+    ...handHolds.map(h => h.detected_hold_id),
+    ...footHolds.map(fh => fh.detected_hold_id),
+  ]);
+  allDetectedHoldIds.forEach(detectedHoldId => {
+    const detectedHold = detectedHoldsMap.get(detectedHoldId);
     if (detectedHold) {
       const pixels = polygonToPixels(detectedHold.polygon, width, height);
       const expanded = expandPolygon(pixels, 3, 1.05);
-      expandedPolygonsMap.set(hold.detected_hold_id, expanded);
-      // Pre-calculate smoothed version for consistent use in borders and arrows
+      expandedPolygonsMap.set(detectedHoldId, expanded);
       const smoothed = smoothPolygon(expanded, simplifyTolerance, chaikinIterations);
-      smoothedPolygonsMap.set(hold.detected_hold_id, smoothed);
+      smoothedPolygonsMap.set(detectedHoldId, smoothed);
     }
   });
+
+  // Combined list for mask holes (deduplicated by detected_hold_id)
+  const allHolds: Array<{ hold: Hold; key: string }> = [];
+  const seenIds = new Set<string>();
+  handHolds.forEach((hold, i) => {
+    seenIds.add(hold.detected_hold_id);
+    allHolds.push({ hold, key: `hand-${i}` });
+  });
+  footHolds.forEach((hold, i) => {
+    if (!seenIds.has(hold.detected_hold_id)) {
+      allHolds.push({ hold, key: `foot-${i}` });
+    }
+  });
+
+  // Helper: sort holds by polygon area (largest first) for correct tap/render order
+  const sortByAreaDesc = <T extends Hold>(holds: Array<{ hold: T; index: number }>) =>
+    holds.sort((a, b) => {
+      const aPixels = expandedPolygonsMap.get(a.hold.detected_hold_id);
+      const bPixels = expandedPolygonsMap.get(b.hold.detected_hold_id);
+      const aArea = aPixels ? calculatePolygonArea(aPixels) : 0;
+      const bArea = bPixels ? calculatePolygonArea(bPixels) : 0;
+      return bArea - aArea;
+    });
 
   const svgElement = (
     <Svg
@@ -283,12 +320,12 @@ export default function RouteOverlay({
       <Defs>
         <Mask id="holdsMask">
           <Rect x="0" y="0" width={width} height={height} fill="white" />
-          {holds.map((hold, index) => {
+          {allHolds.map(({ hold, key }) => {
             const smoothedPixels = smoothedPolygonsMap.get(hold.detected_hold_id);
             if (!smoothedPixels || smoothedPixels.length === 0) return null;
             return (
               <Path
-                key={`mask-${index}`}
+                key={`mask-${key}`}
                 d={polygonToPath(smoothedPixels)}
                 fill="black"
               />
@@ -304,10 +341,10 @@ export default function RouteOverlay({
         mask="url(#holdsMask)"
       />
 
-      {/* Draw connecting lines between holds (sequence arrows) */}
-      {showLabels && holds.map((hold, index) => {
-        if (index === holds.length - 1) return null;
-        const nextHold = holds[index + 1];
+      {/* Draw connecting lines between hand holds (sequence arrows) */}
+      {showLabels && handHolds.map((hold, index) => {
+        if (index === handHolds.length - 1) return null;
+        const nextHold = handHolds[index + 1];
 
         const detectedHold = detectedHoldsMap.get(hold.detected_hold_id);
         const nextDetectedHold = detectedHoldsMap.get(nextHold.detected_hold_id);
@@ -345,28 +382,26 @@ export default function RouteOverlay({
         );
       })}
 
-      {/* Draw arrows from labels to holds */}
-      {showLabels && holds.map((hold, index) => {
+      {/* Draw lines from labels to holds (hand holds + foot holds with notes) */}
+      {showLabels && [...handHolds.map((hold, index) => ({ hold, key: `arrow-hand-${index}` })),
+        ...footHolds.filter(h => h.note).map((hold, index) => ({ hold, key: `arrow-foot-${index}` })),
+      ].map(({ hold, key }) => {
         const detectedHold = detectedHoldsMap.get(hold.detected_hold_id);
         if (!detectedHold) return null;
 
         const holdXCenter = (detectedHold.center.x / 100) * width;
         const holdYCenter = (detectedHold.center.y / 100) * height;
-
-        // Label position (center point)
         const labelX = (hold.labelX / 100) * width;
         const labelY = (hold.labelY / 100) * height;
 
-        // Get smoothed polygon for accurate perimeter intersection
         const holdPolygon = smoothedPolygonsMap.get(hold.detected_hold_id);
         if (!holdPolygon) return null;
 
         const endPoint = findPerimeterIntersection(labelX, labelY, holdXCenter, holdYCenter, holdPolygon);
 
-        // Arrow points from label center to hold perimeter
         return (
           <Line
-            key={`arrow-${index}`}
+            key={key}
             x1={labelX}
             y1={labelY}
             x2={endPoint.x}
@@ -377,48 +412,66 @@ export default function RouteOverlay({
         );
       })}
 
-      {/* Draw hold borders and tappable areas */}
-      {/* Sort by area (largest first) so smaller holds render on top and receive taps first */}
-      {holds
-        .map((hold, index) => ({ hold, index }))
-        .sort((a, b) => {
-          const aPixels = expandedPolygonsMap.get(a.hold.detected_hold_id);
-          const bPixels = expandedPolygonsMap.get(b.hold.detected_hold_id);
-          const aArea = aPixels ? calculatePolygonArea(aPixels) : 0;
-          const bArea = bPixels ? calculatePolygonArea(bPixels) : 0;
-          return bArea - aArea; // Largest first, smallest last (on top)
-        })
-        .map(({ hold, index }) => {
-          // Use pre-calculated smoothed polygon for consistency with arrows
-          const smoothedPixels = smoothedPolygonsMap.get(hold.detected_hold_id);
-          if (!smoothedPixels) return null;
+      {/* Draw hold borders and tappable areas — sorted by area (largest first) */}
+      {sortByAreaDesc(handHolds.map((hold, index) => ({ hold, index }))).map(({ hold, index }) => {
+        const smoothedPixels = smoothedPolygonsMap.get(hold.detected_hold_id);
+        if (!smoothedPixels) return null;
 
-          const smoothPath = polygonToPath(smoothedPixels);
+        const smoothPath = polygonToPath(smoothedPixels);
+        const isSelected = hold.detected_hold_id === selectedHoldId;
+        const isAlsoFoot = footHoldDetectedIds.has(hold.detected_hold_id);
+        const borderColor = isSelected ? "#00AAFF" : isAlsoFoot ? FOOT_HOLD_COLOR : "#FFFFFF";
 
-          const isSelected = hold.detected_hold_id === selectedHoldId;
-
-          return (
-            <G key={`polygon-${index}`}>
-              {/* Tappable area - use onPressIn for immediate response */}
-              {onHoldPress && (
-                <Path
-                  d={smoothPath}
-                  fill="rgba(255, 255, 255, 0.01)"
-                  stroke="transparent"
-                  onPressIn={() => onHoldPress(index)}
-                />
-              )}
-              {/* Visible border - highlighted when selected */}
+        return (
+          <G key={`hand-polygon-${index}`}>
+            {onHandHoldPress && (
               <Path
                 d={smoothPath}
-                fill={isSelected ? "rgba(0, 170, 255, 0.3)" : "none"}
-                stroke={isSelected ? "#00AAFF" : "#FFFFFF"}
-                strokeWidth={isSelected ? 3 : 0.5}
-                pointerEvents="none"
+                fill="rgba(255, 255, 255, 0.01)"
+                stroke="transparent"
+                onPressIn={() => onHandHoldPress(index)}
               />
-            </G>
-          );
-        })}
+            )}
+            <Path
+              d={smoothPath}
+              fill={isSelected ? "rgba(0, 170, 255, 0.3)" : isAlsoFoot ? "rgba(233, 30, 156, 0.12)" : "none"}
+              stroke={borderColor}
+              strokeWidth={isSelected ? 3 : 0.5}
+              pointerEvents="none"
+            />
+          </G>
+        );
+      })}
+
+      {/* Foot-only holds (not already rendered as hand holds) */}
+      {sortByAreaDesc(footHolds.map((hold, index) => ({ hold, index }))).map(({ hold, index }) => {
+        if (handHolds.some(h => h.detected_hold_id === hold.detected_hold_id)) return null;
+        const smoothedPixels = smoothedPolygonsMap.get(hold.detected_hold_id);
+        if (!smoothedPixels) return null;
+
+        const smoothPath = polygonToPath(smoothedPixels);
+        const isSelected = hold.detected_hold_id === selectedHoldId;
+
+        return (
+          <G key={`foot-polygon-${index}`}>
+            {onFootHoldPress && (
+              <Path
+                d={smoothPath}
+                fill="rgba(255, 255, 255, 0.01)"
+                stroke="transparent"
+                onPressIn={() => onFootHoldPress(index)}
+              />
+            )}
+            <Path
+              d={smoothPath}
+              fill={isSelected ? "rgba(233, 30, 156, 0.3)" : "rgba(233, 30, 156, 0.12)"}
+              stroke={FOOT_HOLD_COLOR}
+              strokeWidth={isSelected ? 3 : 0.5}
+              pointerEvents="none"
+            />
+          </G>
+        );
+      })}
 
     </Svg>
   );
@@ -426,10 +479,10 @@ export default function RouteOverlay({
   // Render labels as React Native components
   const labelsElement = showLabels ? (
     <>
-      {holds.map((hold, index) => {
+      {handHolds.map((hold, index) => {
         const labelX = (hold.labelX / 100) * width;
         const labelY = (hold.labelY / 100) * height;
-        const labelText = getHoldLabel(index, holds.length, hold.note);
+        const labelText = getHoldLabel(index, handHolds.length, hold.note);
 
         return (
           <View
@@ -445,6 +498,30 @@ export default function RouteOverlay({
           >
             <View style={styles.labelContainer}>
               <Text style={styles.labelText}>{labelText}</Text>
+            </View>
+          </View>
+        );
+      })}
+      {/* Foot hold labels — only shown when note is set */}
+      {footHolds.map((hold, index) => {
+        if (!hold.note) return null;
+        const labelX = (hold.labelX / 100) * width;
+        const labelY = (hold.labelY / 100) * height;
+
+        return (
+          <View
+            key={`foot-label-${index}`}
+            style={[
+              styles.labelWrapper,
+              {
+                left: labelX,
+                top: labelY,
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <View style={styles.labelContainer}>
+              <Text style={styles.labelText}>{hold.note}</Text>
             </View>
           </View>
         );

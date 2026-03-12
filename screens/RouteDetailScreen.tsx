@@ -169,7 +169,7 @@ export default function RouteDetailScreen({ route, navigation }: any) {
         <Text style={[styles.title, { color: colors.textPrimary }]}>{routeData.title}</Text>
         <View style={styles.headerMeta}>
           <Text style={[styles.grade, { color: colors.primary }]}>{routeData.grade}</Text>
-          <Text style={[styles.holdCount, { color: colors.textSecondary }]}>{t('route.holds', { count: routeData.holds.length })}</Text>
+          <Text style={[styles.holdCount, { color: colors.textSecondary }]}>{t('route.holds', { count: routeData.holds.hand_holds.length })}</Text>
         </View>
         {routeData.description && (
           <Text style={[styles.description, { color: colors.textSecondary }]}>{routeData.description}</Text>
@@ -180,7 +180,8 @@ export default function RouteDetailScreen({ route, navigation }: any) {
         <View style={[styles.imageSection, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
           <RouteVisualization
             photoUrl={routeData.photo.image_url}
-            holds={routeData.holds}
+            handHolds={routeData.holds.hand_holds}
+            footHolds={routeData.holds.foot_holds}
             detectedHolds={detectedHolds}
           />
         </View>

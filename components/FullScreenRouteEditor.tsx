@@ -10,7 +10,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Hold, DetectedHold } from '../types/database.types';
+import { Hold, HandHold, FootHold, DetectedHold } from '../types/database.types';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
@@ -21,25 +21,33 @@ import { useThemeColors } from '../lib/theme-context';
 interface FullScreenRouteEditorProps {
   visible: boolean;
   photoUrl: string;
-  holds: Hold[];
+  handHolds: HandHold[];
+  footHolds: FootHold[];
   detectedHolds: DetectedHold[];
   onClose: () => void;
-  onUpdateHolds: (holds: Hold[]) => void;
+  onUpdateHandHolds: (handHolds: HandHold[]) => void;
+  onUpdateFootHolds: (footHolds: FootHold[]) => void;
 }
 
 export default function FullScreenRouteEditor({
   visible,
   photoUrl,
-  holds: initialHolds,
+  handHolds: initialHandHolds,
+  footHolds: initialFootHolds,
   detectedHolds,
   onClose,
-  onUpdateHolds,
+  onUpdateHandHolds,
+  onUpdateFootHolds,
 }: FullScreenRouteEditorProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
-  const [holds, setHolds] = useState<Hold[]>(initialHolds);
-  const [selectedHoldIndex, setSelectedHoldIndex] = useState<number | null>(null);
-  const [matchingHoldIndices, setMatchingHoldIndices] = useState<number[]>([]);
+  const [handHolds, setHandHolds] = useState<HandHold[]>(initialHandHolds);
+  const [footHolds, setFootHolds] = useState<FootHold[]>(initialFootHolds);
+  const [editMode, setEditMode] = useState<'hands' | 'feet'>('hands');
+  // Selection: which hold is selected and what type
+  type HoldRef = { type: 'hand'; index: number } | { type: 'foot'; index: number };
+  const [selectedHoldRef, setSelectedHoldRef] = useState<HoldRef | null>(null);
+  const [matchingHoldRefs, setMatchingHoldRefs] = useState<HoldRef[]>([]);
   const [holdPickerVisible, setHoldPickerVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
@@ -57,12 +65,21 @@ export default function FullScreenRouteEditor({
   const labelDrag = useDragDelta({ getDimensions });
 
   React.useEffect(() => {
-    setHolds(initialHolds);
-  }, [initialHolds]);
+    setHandHolds(initialHandHolds);
+  }, [initialHandHolds]);
 
-  // Start moving label
+  React.useEffect(() => {
+    setFootHolds(initialFootHolds);
+  }, [initialFootHolds]);
+
+  // Derived selection helpers
+  const selectedHandHoldIndex = selectedHoldRef?.type === 'hand' ? selectedHoldRef.index : null;
+  const selectedFootHoldIndex = selectedHoldRef?.type === 'foot' ? selectedHoldRef.index : null;
+
+  // Start moving label (works for both hand and foot holds)
   const startMoveLabel = () => {
-    setMovingLabelIndex(selectedHoldIndex);
+    if (!selectedHoldRef) return;
+    setMovingLabelIndex(selectedHoldRef.index);
     labelDrag.start();
     setEditModalVisible(false);
   };
@@ -73,26 +90,23 @@ export default function FullScreenRouteEditor({
     labelDrag.cancel();
   };
 
+  // Apply label position delta to a hold list
+  const applyLabelDelta = <T extends Hold>(holds: T[], index: number, delta: { x: number; y: number }): T[] =>
+    holds.map((hold, i) => i === index ? { ...hold, labelX: hold.labelX + delta.x, labelY: hold.labelY + delta.y } : hold);
+
   // Save move
   const saveMoveLabel = () => {
-    if (movingLabelIndex === null) return;
-
+    if (movingLabelIndex === null || !selectedHoldRef) return;
     const delta = labelDrag.complete();
-    const updatedHolds = holds.map((hold, i) => {
-      if (i === movingLabelIndex) {
-        return {
-          ...hold,
-          labelX: hold.labelX + delta.x,
-          labelY: hold.labelY + delta.y,
-        };
-      }
-      return hold;
-    });
 
-    setHolds(updatedHolds);
+    if (selectedHoldRef.type === 'foot') {
+      setFootHolds(applyLabelDelta(footHolds, movingLabelIndex, delta));
+    } else {
+      setHandHolds(applyLabelDelta(handHolds, movingLabelIndex, delta));
+    }
+
     setMovingLabelIndex(null);
-    setSelectedHoldIndex(null);
-    setMatchingHoldIndices([]);
+    clearSelection();
   };
 
   const handleDimensionsReady = (dimensions: ImageDimensions, offset: { x: number; y: number }) => {
@@ -101,7 +115,18 @@ export default function FullScreenRouteEditor({
   };
 
   // Get the selected hold's detected_hold_id for highlighting
-  const selectedHoldId = selectedHoldIndex !== null ? holds[selectedHoldIndex]?.detected_hold_id : null;
+  const getSelectedHold = (): Hold | null => {
+    if (!selectedHoldRef) return null;
+    return selectedHoldRef.type === 'hand'
+      ? handHolds[selectedHoldRef.index]
+      : footHolds[selectedHoldRef.index];
+  };
+  const selectedHoldId = getSelectedHold()?.detected_hold_id ?? null;
+
+  const clearSelection = () => {
+    setSelectedHoldRef(null);
+    setMatchingHoldRefs([]);
+  };
 
   const handleImageTap = (event: any) => {
     // Ignore taps when in moving mode (handled by PanResponder)
@@ -118,8 +143,7 @@ export default function FullScreenRouteEditor({
     // Check if tap is outside the image bounds
     if (imageX < 0 || imageX > imageDimensions.width ||
         imageY < 0 || imageY > imageDimensions.height) {
-      setSelectedHoldIndex(null);
-      setMatchingHoldIndices([]);
+      clearSelection();
       return;
     }
 
@@ -127,62 +151,93 @@ export default function FullScreenRouteEditor({
     const xPercent = (imageX / imageDimensions.width) * 100;
     const yPercent = (imageY / imageDimensions.height) * 100;
 
-    // Build list of route holds with their polygons for lookup
-    const routeHoldsWithPolygons = holds
-      .map((hold, index) => {
-        const detectedHold = detectedHolds.find(dh => dh.id === hold.detected_hold_id);
-        return detectedHold ? { index, polygon: detectedHold.polygon } : null;
-      })
-      .filter((h): h is { index: number; polygon: Array<{ x: number; y: number }> } => h !== null);
+    // Build polygon lookup for a hold list
+    const buildPolygonLookup = (holds: Hold[]) =>
+      holds
+        .map((hold, index) => {
+          const dh = detectedHolds.find(d => d.id === hold.detected_hold_id);
+          return dh ? { index, polygon: dh.polygon } : null;
+        })
+        .filter((h): h is { index: number; polygon: Array<{ x: number; y: number }> } => h !== null);
 
-    // Check if tapped on an existing hold in the route (prioritize smallest)
-    const smallestRouteHold = findSmallestPolygonAtPoint(xPercent, yPercent, routeHoldsWithPolygons);
-    if (smallestRouteHold) {
-      const tappedHold = holds[smallestRouteHold.index];
-      // Find all route holds that use the same detected_hold_id
-      const allMatching = holds
-        .map((h, i) => ({ index: i, hold: h }))
-        .filter(({ hold }) => hold.detected_hold_id === tappedHold.detected_hold_id)
-        .map(({ index }) => index);
+    const handHoldsWithPolygons = buildPolygonLookup(handHolds);
+    const footHoldsWithPolygons = buildPolygonLookup(footHolds);
 
-      // Toggle selection
-      if (selectedHoldIndex !== null && allMatching.includes(selectedHoldIndex)) {
-        setSelectedHoldIndex(null);
-        setMatchingHoldIndices([]);
+    // Find the smallest polygon at tap point across both hand and foot holds
+    const smallestHandHold = findSmallestPolygonAtPoint(xPercent, yPercent, handHoldsWithPolygons);
+    const smallestFootHold = findSmallestPolygonAtPoint(xPercent, yPercent, footHoldsWithPolygons);
+
+    if (smallestHandHold || smallestFootHold) {
+      // Determine the tapped detected_hold_id (prefer smallest polygon overall)
+      const tappedDetectedId = smallestHandHold
+        ? handHolds[smallestHandHold.index].detected_hold_id
+        : footHolds[smallestFootHold!.index].detected_hold_id;
+
+      // Find ALL holds (hand + foot) using the same detected_hold_id
+      const allMatching: HoldRef[] = [
+        ...handHolds
+          .map((h, i) => ({ type: 'hand' as const, index: i }))
+          .filter((_, i) => handHolds[i].detected_hold_id === tappedDetectedId),
+        ...footHolds
+          .map((h, i) => ({ type: 'foot' as const, index: i }))
+          .filter((_, i) => footHolds[i].detected_hold_id === tappedDetectedId),
+      ];
+
+      // Toggle selection if already selected
+      if (selectedHoldRef && allMatching.some(r => r.type === selectedHoldRef.type && r.index === selectedHoldRef.index)) {
+        clearSelection();
+      } else if (allMatching.length === 1) {
+        clearSelection();
+        setSelectedHoldRef(allMatching[0]);
       } else {
-        setSelectedHoldIndex(smallestRouteHold.index);
-        setMatchingHoldIndices(allMatching);
+        // Multiple holds on the same detected hold — select first and store all for picker
+        clearSelection();
+        setSelectedHoldRef(allMatching[0]);
+        setMatchingHoldRefs(allMatching);
       }
       return;
     }
 
     // Deselect if we have a selection and tapped elsewhere
-    if (selectedHoldIndex !== null) {
-      setSelectedHoldIndex(null);
-      setMatchingHoldIndices([]);
+    if (selectedHoldRef) {
+      clearSelection();
       return;
     }
 
     // Check if tapped on any detected hold to add to route (prioritize smallest)
     const smallestDetectedHold = findSmallestPolygonAtPoint(xPercent, yPercent, detectedHolds);
     if (smallestDetectedHold) {
-      // Check if this hold is already in the route
-      const alreadyUsed = holds.some(h => h.detected_hold_id === smallestDetectedHold.id);
-      if (alreadyUsed) {
-        Alert.alert(t('editor.holdAlreadyUsed'), t('editor.holdAlreadyUsedMessage'));
-        return;
+      if (editMode === 'feet') {
+        // Add as foot hold — same detected hold CAN be both hand and foot
+        const alreadyFootHold = footHolds.some(h => h.detected_hold_id === smallestDetectedHold.id);
+        if (alreadyFootHold) {
+          Alert.alert(t('editor.holdAlreadyUsed'), t('editor.holdAlreadyUsedMessage'));
+          return;
+        }
+
+        const newFootHold: FootHold = {
+          detected_hold_id: smallestDetectedHold.id,
+          labelX: xPercent + 3,
+          labelY: yPercent - 3,
+        };
+        setFootHolds([...footHolds, newFootHold]);
+      } else {
+        // Add as hand hold
+        const alreadyUsed = handHolds.some(h => h.detected_hold_id === smallestDetectedHold.id);
+        if (alreadyUsed) {
+          Alert.alert(t('editor.holdAlreadyUsed'), t('editor.holdAlreadyUsedMessage'));
+          return;
+        }
+
+        const newHandHold: HandHold = {
+          order: handHolds.length + 1,
+          detected_hold_id: smallestDetectedHold.id,
+          labelX: xPercent + 3,
+          labelY: yPercent - 3,
+          note: '',
+        };
+        setHandHolds([...handHolds, newHandHold]);
       }
-
-      // Add new hold to route
-      const newHold: Hold = {
-        order: holds.length + 1,
-        detected_hold_id: smallestDetectedHold.id,
-        labelX: xPercent + 3,
-        labelY: yPercent - 3,
-        note: '',
-      };
-
-      setHolds([...holds, newHold]);
       return;
     }
 
@@ -191,159 +246,162 @@ export default function FullScreenRouteEditor({
   };
 
   const handleEditSelected = () => {
-    if (selectedHoldIndex === null) return;
+    if (!selectedHoldRef) return;
 
-    // If multiple holds use the same detected_hold_id, show picker
-    if (matchingHoldIndices.length > 1) {
+    // If multiple holds share the same detected hold, show picker
+    if (matchingHoldRefs.length > 1) {
       setHoldPickerVisible(true);
     } else {
       setEditModalVisible(true);
     }
   };
 
-  const handlePickHoldToEdit = (index: number) => {
-    setSelectedHoldIndex(index);
+  const handleDeleteSelected = () => {
+    if (!selectedHoldRef) return;
+    if (selectedHoldRef.type === 'foot') {
+      setFootHolds(footHolds.filter((_, i) => i !== selectedHoldRef.index));
+    } else {
+      const filtered = handHolds.filter((_, i) => i !== selectedHoldRef.index);
+      setHandHolds(filtered.map((hold, i) => ({ ...hold, order: i + 1 })));
+    }
+    setEditModalVisible(false);
+    clearSelection();
+  };
+
+  // Open note modal for the currently selected hold (hand or foot)
+  const handleOpenNoteModal = () => {
+    const hold = getSelectedHold();
+    if (!hold) return;
+    setNoteText(hold.note || '');
+    setNoteModalVisible(true);
+    setEditModalVisible(false);
+  };
+
+  const handlePickHoldToEdit = (ref: HoldRef) => {
+    setSelectedHoldRef(ref);
     setHoldPickerVisible(false);
     setEditModalVisible(true);
   };
 
-  const handleDeleteHold = () => {
-    if (selectedHoldIndex === null) return;
+  // Add Again — respects editMode, works for any selected hold type
+  const handleAddAgain = () => {
+    const selectedHold = selectedHandHoldIndex !== null
+      ? handHolds[selectedHandHoldIndex]
+      : selectedFootHoldIndex !== null
+        ? footHolds[selectedFootHoldIndex]
+        : null;
+    if (!selectedHold) return;
 
-    const updatedHolds = holds.filter((_, i) => i !== selectedHoldIndex);
-    const renumberedHolds = updatedHolds.map((hold, i) => ({
-      ...hold,
-      order: i + 1,
-    }));
-
-    setHolds(renumberedHolds);
-    setEditModalVisible(false);
-    setSelectedHoldIndex(null);
-    setMatchingHoldIndices([]);
-  };
-
-  const handleDuplicateHold = () => {
-    if (selectedHoldIndex === null) return;
-
-    const selectedHold = holds[selectedHoldIndex];
     const detectedHold = detectedHolds.find(dh => dh.id === selectedHold.detected_hold_id);
     if (!detectedHold) return;
 
-    // Calculate center of the hold for label positioning
     const centerX = detectedHold.polygon.reduce((sum, p) => sum + p.x, 0) / detectedHold.polygon.length;
     const centerY = detectedHold.polygon.reduce((sum, p) => sum + p.y, 0) / detectedHold.polygon.length;
 
-    const newHold: Hold = {
-      order: holds.length + 1,
-      detected_hold_id: selectedHold.detected_hold_id,
-      labelX: centerX + 3,
-      labelY: centerY - 3,
-      note: '',
-    };
-
-    setHolds([...holds, newHold]);
-    setSelectedHoldIndex(null);
-    setMatchingHoldIndices([]);
-  };
-
-  const handleOpenNoteModal = () => {
-    if (selectedHoldIndex !== null) {
-      setNoteText(holds[selectedHoldIndex].note || '');
-      setNoteModalVisible(true);
-      setEditModalVisible(false);
+    if (editMode === 'feet') {
+      if (footHolds.some(h => h.detected_hold_id === selectedHold.detected_hold_id)) {
+        Alert.alert(t('editor.holdAlreadyUsed'), t('editor.holdAlreadyUsedMessage'));
+        return;
+      }
+      setFootHolds([...footHolds, {
+        detected_hold_id: selectedHold.detected_hold_id,
+        labelX: centerX + 3,
+        labelY: centerY - 3,
+      }]);
+    } else {
+      setHandHolds([...handHolds, {
+        order: handHolds.length + 1,
+        detected_hold_id: selectedHold.detected_hold_id,
+        labelX: centerX + 3,
+        labelY: centerY - 3,
+        note: '',
+      }]);
     }
+    clearSelection();
   };
 
   const handleSaveNote = () => {
-    if (selectedHoldIndex !== null) {
-      const updatedHolds = holds.map((hold, i) =>
-        i === selectedHoldIndex ? { ...hold, note: noteText } : hold
-      );
-      setHolds(updatedHolds);
+    if (!selectedHoldRef) return;
+    if (selectedHoldRef.type === 'foot') {
+      setFootHolds(footHolds.map((hold, i) =>
+        i === selectedHoldRef.index ? { ...hold, note: noteText } : hold
+      ));
+    } else {
+      setHandHolds(handHolds.map((hold, i) =>
+        i === selectedHoldRef.index ? { ...hold, note: noteText } : hold
+      ));
     }
     setNoteModalVisible(false);
-    setSelectedHoldIndex(null);
-    setMatchingHoldIndices([]);
+    clearSelection();
   };
 
   const handleSetSingleStart = () => {
-    if (selectedHoldIndex === null) return;
-    const otherIndex = selectedHoldIndex === 0 ? 1 : 0;
-    const updatedHolds = holds.map((hold, i) => {
-      if (i === selectedHoldIndex || i === otherIndex) return { ...hold, note: '' };
+    if (selectedHandHoldIndex === null) return;
+    const otherIndex = selectedHandHoldIndex === 0 ? 1 : 0;
+    const updated = handHolds.map((hold, i) => {
+      if (i === selectedHandHoldIndex || i === otherIndex) return { ...hold, note: '' };
       return hold;
     });
-    setHolds(updatedHolds);
+    setHandHolds(updated);
     setEditModalVisible(false);
-    setSelectedHoldIndex(null);
-    setMatchingHoldIndices([]);
+    clearSelection();
   };
 
   const handleSetDualStart = (side: 'DX' | 'SX') => {
-    if (selectedHoldIndex === null) return;
+    if (selectedHandHoldIndex === null) return;
     const otherSide = side === 'DX' ? 'SX' : 'DX';
-    const otherIndex = selectedHoldIndex === 0 ? 1 : 0;
-    const updatedHolds = holds.map((hold, i) => {
-      if (i === selectedHoldIndex) return { ...hold, note: side };
+    const otherIndex = selectedHandHoldIndex === 0 ? 1 : 0;
+    const updated = handHolds.map((hold, i) => {
+      if (i === selectedHandHoldIndex) return { ...hold, note: side };
       if (i === otherIndex) return { ...hold, note: otherSide };
       return hold;
     });
-    setHolds(updatedHolds);
+    setHandHolds(updated);
     setEditModalVisible(false);
-    setSelectedHoldIndex(null);
-    setMatchingHoldIndices([]);
+    clearSelection();
   };
 
   const handleSetSingleTop = () => {
-    if (selectedHoldIndex === null) return;
-    const lastIndex = holds.length - 1;
-    const secondLastIndex = holds.length - 2;
-    const updatedHolds = holds.map((hold, i) => {
+    if (selectedHandHoldIndex === null) return;
+    const lastIndex = handHolds.length - 1;
+    const secondLastIndex = handHolds.length - 2;
+    const updated = handHolds.map((hold, i) => {
       if (i === lastIndex || i === secondLastIndex) return { ...hold, note: '' };
       return hold;
     });
-    setHolds(updatedHolds);
+    setHandHolds(updated);
     setEditModalVisible(false);
-    setSelectedHoldIndex(null);
-    setMatchingHoldIndices([]);
+    clearSelection();
   };
 
   const handleSetDualTop = (side: 'DX' | 'SX') => {
-    if (selectedHoldIndex === null) return;
+    if (selectedHandHoldIndex === null) return;
     const otherSide = side === 'DX' ? 'SX' : 'DX';
-    const lastIndex = holds.length - 1;
-    const secondLastIndex = holds.length - 2;
-    const otherIndex = selectedHoldIndex === lastIndex ? secondLastIndex : lastIndex;
-    const updatedHolds = holds.map((hold, i) => {
-      if (i === selectedHoldIndex) return { ...hold, note: side };
+    const lastIndex = handHolds.length - 1;
+    const secondLastIndex = handHolds.length - 2;
+    const otherIndex = selectedHandHoldIndex === lastIndex ? secondLastIndex : lastIndex;
+    const updated = handHolds.map((hold, i) => {
+      if (i === selectedHandHoldIndex) return { ...hold, note: side };
       if (i === otherIndex) return { ...hold, note: otherSide };
       return hold;
     });
-    setHolds(updatedHolds);
+    setHandHolds(updated);
     setEditModalVisible(false);
-    setSelectedHoldIndex(null);
-    setMatchingHoldIndices([]);
+    clearSelection();
   };
 
-  // Get holds with moving delta applied for visual feedback
-  const getDisplayedHolds = () => {
-    if (movingLabelIndex === null) return holds;
-    return holds.map((hold, i) => {
-      if (i === movingLabelIndex) {
-        return {
-          ...hold,
-          labelX: hold.labelX + labelDrag.delta.x,
-          labelY: hold.labelY + labelDrag.delta.y,
-        };
-      }
-      return hold;
-    });
+  // Get hand holds with moving delta applied for visual feedback
+  // Apply live drag delta to the hold being moved (for visual feedback)
+  const withLiveDelta = <T extends Hold>(holds: T[], isActive: boolean): T[] => {
+    if (movingLabelIndex === null || !isActive) return holds;
+    return applyLabelDelta(holds, movingLabelIndex, labelDrag.delta);
   };
 
   const isMovingLabel = movingLabelIndex !== null;
 
   const handleDone = () => {
-    onUpdateHolds(holds);
+    onUpdateHandHolds(handHolds);
+    onUpdateFootHolds(footHolds);
     onClose();
   };
 
@@ -351,7 +409,8 @@ export default function FullScreenRouteEditor({
     <FullScreenImageBase
       visible={visible}
       photoUrl={photoUrl}
-      holds={getDisplayedHolds()}
+      handHolds={withLiveDelta(handHolds, selectedHoldRef?.type !== 'foot')}
+      footHolds={withLiveDelta(footHolds, selectedHoldRef?.type === 'foot')}
       detectedHolds={detectedHolds}
       onClose={isMovingLabel ? cancelMoveLabel : handleDone}
       showLabels={true}
@@ -370,13 +429,28 @@ export default function FullScreenRouteEditor({
       panHandlers={isMovingLabel ? labelDrag.panHandlers : undefined}
       lockZoom={isMovingLabel}
     >
-      {/* Action buttons - show when a hold is selected and not moving */}
-      {selectedHoldIndex !== null && !isMovingLabel && (
+      {/* Mode toggle button — top-right, left of Done */}
+      {!isMovingLabel && (
+        <TouchableOpacity
+          style={styles.modeToggleButton}
+          onPress={() => {
+            setEditMode(editMode === 'hands' ? 'feet' : 'hands');
+            clearSelection();
+          }}
+        >
+          <Text style={styles.modeToggleText}>
+            {editMode === 'hands' ? t('editor.handsMode') : t('editor.feetMode')}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Action buttons - show when any hold is selected and not moving */}
+      {selectedHoldRef && !isMovingLabel && (
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={handleEditSelected}>
             <Text style={styles.actionButtonText}>{t('editor.edit')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.actionButtonSecondary]} onPress={handleDuplicateHold}>
+          <TouchableOpacity style={[styles.actionButton, styles.actionButtonSecondary]} onPress={handleAddAgain}>
             <Text style={styles.actionButtonText}>{t('editor.addAgain')}</Text>
           </TouchableOpacity>
         </View>
@@ -387,7 +461,7 @@ export default function FullScreenRouteEditor({
         <DragModeButtons onCancel={cancelMoveLabel} onSave={saveMoveLabel} />
       )}
 
-      {/* Edit Hold Modal */}
+      {/* Unified Edit Hold Modal */}
       <Modal
         visible={editModalVisible}
         transparent
@@ -401,15 +475,20 @@ export default function FullScreenRouteEditor({
         >
           <View style={[baseStyles.modalContent, { backgroundColor: colors.cardBackground }]}>
             <Text style={[baseStyles.modalTitle, { color: colors.textPrimary }]}>
-              {t('editor.editHold')} {selectedHoldIndex !== null ? getHoldLabel(selectedHoldIndex, holds.length, holds[selectedHoldIndex]?.note) : ''}
+              {t('editor.editHold')} {selectedHoldRef?.type === 'hand' && selectedHandHoldIndex !== null
+                ? getHoldLabel(selectedHandHoldIndex, handHolds.length, handHolds[selectedHandHoldIndex]?.note)
+                : selectedHoldRef?.type === 'foot' && selectedFootHoldIndex !== null
+                  ? (footHolds[selectedFootHoldIndex]?.note ? `${t('editor.foot')} — ${footHolds[selectedFootHoldIndex].note}` : t('editor.foot'))
+                  : ''}
             </Text>
 
-            {selectedHoldIndex !== null && canSetStart(selectedHoldIndex, holds.length) && (() => {
-              const currentNote = holds[selectedHoldIndex]?.note;
+            {/* Hand-hold-only options: Start/Top */}
+            {selectedHandHoldIndex !== null && canSetStart(selectedHandHoldIndex, handHolds.length) && (() => {
+              const currentNote = handHolds[selectedHandHoldIndex]?.note;
               const isDual = isDualSideNote(currentNote);
               return (
                 <>
-                  {selectedHoldIndex === 0 && isDual && (
+                  {selectedHandHoldIndex === 0 && isDual && (
                     <TouchableOpacity style={baseStyles.modalButton} onPress={handleSetSingleStart}>
                       <Text style={baseStyles.modalButtonText}>{t('editor.setStart')}</Text>
                     </TouchableOpacity>
@@ -428,12 +507,12 @@ export default function FullScreenRouteEditor({
               );
             })()}
 
-            {selectedHoldIndex !== null && canSetTop(selectedHoldIndex, holds.length) && (() => {
-              const currentNote = holds[selectedHoldIndex]?.note;
+            {selectedHandHoldIndex !== null && canSetTop(selectedHandHoldIndex, handHolds.length) && (() => {
+              const currentNote = handHolds[selectedHandHoldIndex]?.note;
               const isDual = isDualSideNote(currentNote);
               return (
                 <>
-                  {selectedHoldIndex === holds.length - 1 && isDual && (
+                  {selectedHandHoldIndex === handHolds.length - 1 && isDual && (
                     <TouchableOpacity style={baseStyles.modalButton} onPress={handleSetSingleTop}>
                       <Text style={baseStyles.modalButtonText}>{t('editor.setTop')}</Text>
                     </TouchableOpacity>
@@ -452,6 +531,7 @@ export default function FullScreenRouteEditor({
               );
             })()}
 
+            {/* Common options: Edit Note, Move Label, Delete */}
             <TouchableOpacity style={baseStyles.modalButton} onPress={handleOpenNoteModal}>
               <Text style={baseStyles.modalButtonText}>{t('editor.editNote')}</Text>
             </TouchableOpacity>
@@ -462,11 +542,9 @@ export default function FullScreenRouteEditor({
 
             <TouchableOpacity
               style={[baseStyles.modalButton, baseStyles.modalButtonDanger]}
-              onPress={handleDeleteHold}
+              onPress={handleDeleteSelected}
             >
-              <Text style={baseStyles.modalButtonText}>
-                {t('editor.deleteHold')}
-              </Text>
+              <Text style={baseStyles.modalButtonText}>{t('editor.deleteHold')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -515,7 +593,7 @@ export default function FullScreenRouteEditor({
         </TouchableOpacity>
       </Modal>
 
-      {/* Hold Picker Modal - when multiple holds use the same detected hold */}
+      {/* Hold Picker Modal - when multiple holds share the same detected hold */}
       <Modal
         visible={holdPickerVisible}
         transparent
@@ -529,14 +607,16 @@ export default function FullScreenRouteEditor({
         >
           <View style={[baseStyles.modalContent, { backgroundColor: colors.cardBackground }]}>
             <Text style={[baseStyles.modalTitle, { color: colors.textPrimary }]}>{t('editor.whichHoldToEdit')}</Text>
-            {matchingHoldIndices.map((index) => (
+            {matchingHoldRefs.map((ref, i) => (
               <TouchableOpacity
-                key={index}
+                key={`${ref.type}-${ref.index}`}
                 style={baseStyles.modalButton}
-                onPress={() => handlePickHoldToEdit(index)}
+                onPress={() => handlePickHoldToEdit(ref)}
               >
                 <Text style={baseStyles.modalButtonText}>
-                  {t('editor.hold')} {getHoldLabel(index, holds.length, holds[index]?.note)}
+                  {ref.type === 'hand'
+                    ? `${t('editor.hold')} ${getHoldLabel(ref.index, handHolds.length, handHolds[ref.index]?.note)}`
+                    : (footHolds[ref.index]?.note ? `${t('editor.foot')} — ${footHolds[ref.index].note}` : t('editor.foot'))}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -554,6 +634,23 @@ export default function FullScreenRouteEditor({
 }
 
 const styles = StyleSheet.create({
+  modeToggleButton: {
+    position: 'absolute',
+    top: 50,
+    right: 90,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modeToggleText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   actionButtonsContainer: {
     position: 'absolute',
     bottom: 50,

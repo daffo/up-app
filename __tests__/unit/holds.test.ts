@@ -2,6 +2,7 @@ import {
   isDualSideNote,
   getHoldOrderLabel,
   getHoldLabel,
+  getFootHoldLabel,
   canSetStart,
   canSetTop,
 } from '../../utils/holds';
@@ -185,5 +186,27 @@ describe('canSetTop', () => {
   it('returns true for both top holds in a 5-hold route', () => {
     expect(canSetTop(3, 5)).toBe(true);
     expect(canSetTop(4, 5)).toBe(true);
+  });
+});
+
+describe('getFootHoldLabel', () => {
+  it('returns "Foot" when no note', () => {
+    expect(getFootHoldLabel()).toBe('Foot');
+  });
+
+  it('returns "Foot" when note is null', () => {
+    expect(getFootHoldLabel(null)).toBe('Foot');
+  });
+
+  it('returns "Foot" when note is empty string', () => {
+    expect(getFootHoldLabel('')).toBe('Foot');
+  });
+
+  it('returns "Foot — crimp" when note is "crimp"', () => {
+    expect(getFootHoldLabel('crimp')).toBe('Foot — crimp');
+  });
+
+  it('returns "Foot — small edge" when note is "small edge"', () => {
+    expect(getFootHoldLabel('small edge')).toBe('Foot — small edge');
   });
 });

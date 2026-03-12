@@ -1,10 +1,11 @@
-import { Hold, DetectedHold } from '../types/database.types';
+import { HandHold, FootHold, DetectedHold } from '../types/database.types';
 import FullScreenImageBase from './FullScreenImageBase';
 
 interface FullScreenRouteViewerProps {
   visible: boolean;
   photoUrl: string;
-  holds: Hold[];
+  handHolds: HandHold[];
+  footHolds?: FootHold[];
   detectedHolds: DetectedHold[];
   onClose: () => void;
   showLabels?: boolean;
@@ -13,7 +14,8 @@ interface FullScreenRouteViewerProps {
 export default function FullScreenRouteViewer({
   visible,
   photoUrl,
-  holds,
+  handHolds,
+  footHolds = [],
   detectedHolds,
   onClose,
   showLabels = true,
@@ -22,7 +24,8 @@ export default function FullScreenRouteViewer({
     <FullScreenImageBase
       visible={visible}
       photoUrl={photoUrl}
-      holds={holds}
+      handHolds={handHolds}
+      footHolds={footHolds}
       detectedHolds={detectedHolds}
       onClose={onClose}
       showLabels={showLabels}

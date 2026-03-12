@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { supabase } from './supabase';
-import { Database, Hold, DetectedHold, RouteFilters, Send, Comment } from '../types/database.types';
+import { Database, RouteHolds, DetectedHold, RouteFilters, Send, Comment } from '../types/database.types';
 import { getCachedHolds, setCachedHolds, invalidateHoldsCache } from './cache/detected-holds-cache';
 
 type Route = Database['public']['Tables']['routes']['Row'];
@@ -120,7 +120,7 @@ export const routesApi = {
     description: string | null;
     grade: string;
     photo_id: string;
-    holds: Hold[];
+    holds: RouteHolds;
     user_id: string;
   }) {
     const { data, error } = await supabase
@@ -142,7 +142,7 @@ export const routesApi = {
     description?: string | null;
     grade?: string;
     photo_id?: string;
-    holds?: Hold[];
+    holds?: RouteHolds;
   }) {
     const { error } = await supabase
       .from('routes')

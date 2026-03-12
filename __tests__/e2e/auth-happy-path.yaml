@@ -69,12 +69,52 @@ name: Auth User - Login Flow
       - tapOn:
           point: "60%,49%"
 
+# Switch to Feet mode and add a foot hold
+- tapOn:
+    text: "Hands.*"
+- assertVisible:
+    text: "Feet.*"
+
+# Tap on a hold to add as foot hold (try different points)
+- tapOn:
+    point: "45%,55%"
+
+- runFlow:
+    when:
+      visible: "No Hold"
+    commands:
+      - tapOn: "OK"
+      - tapOn:
+          point: "55%,45%"
+
+- runFlow:
+    when:
+      visible: "No Hold"
+    commands:
+      - tapOn: "OK"
+      - tapOn:
+          point: "40%,52%"
+
+# Switch back to Hands mode to verify toggle works
+- tapOn:
+    text: "Feet.*"
+- assertVisible:
+    text: "Hands.*"
+
 # Tap Done to close editor
 - tapOn: "Done"
 
 # Verify we're back on create screen with at least 1 hold
 - assertVisible:
     text: "Route Preview.*holds.*"
+
+# Verify Feet section is visible in the form
+- scrollUntilVisible:
+    element:
+      text: "Feet:"
+    direction: DOWN
+    timeout: 5000
+- assertVisible: "Feet:"
 
 # Wait for UI to settle after modal close
 - waitForAnimationToEnd

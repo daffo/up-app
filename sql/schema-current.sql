@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-007-holds-version
+-- Last updated: After migration-008-foot-holds
 
 -- ============================================================================
 -- TABLES
@@ -43,7 +43,7 @@ CREATE TABLE routes (
   description TEXT CHECK (description IS NULL OR char_length(description) <= 500),
   grade TEXT NOT NULL,
   photo_id UUID REFERENCES photos(id) ON DELETE CASCADE NOT NULL,
-  holds JSONB NOT NULL DEFAULT '[]'::jsonb,  -- Array of {order, detected_hold_id, labelX, labelY, note?}
+  holds JSONB NOT NULL DEFAULT '{"hand_holds":[],"foot_holds":[]}'::jsonb,  -- {hand_holds: [...], foot_holds: [...]}
   user_id UUID REFERENCES auth.users NOT NULL
 );
 

@@ -51,6 +51,7 @@
     "tapToEdit": "Tocca per modificare le prese",
     "holdsListTitle": "Prese (tieni premuto per riordinare):",
     "noNote": "(nessuna nota)",
+    "feetListTitle": "Piedi:",
     "saveChanges": "Salva Modifiche",
     "createRoute": "Crea Via",
     "deleteRoute": "Elimina Via",
@@ -249,6 +250,9 @@
     "errorDrawMore": "Disegna di più per definire la forma della presa",
     "errorMoveHold": "Spostamento presa fallito",
     "errorRedrawHold": "Salvataggio forma fallito",
-    "errorAddHold": "Aggiunta presa fallita"
+    "errorAddHold": "Aggiunta presa fallita",
+    "foot": "Piede",
+    "handsMode": "Mani 🤚",
+    "feetMode": "Piedi 🦶"
   }
 }

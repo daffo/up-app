@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
-import { Database, DetectedHold, Hold } from '../types/database.types';
+import { Database, DetectedHold, HandHold } from '../types/database.types';
 import { detectedHoldsApi, photosApi } from '../lib/api';
 import RouteVisualization from '../components/RouteVisualization';
 import { useThemeColors } from '../lib/theme-context';
@@ -245,7 +245,7 @@ export default function AdminPhotoDetailScreen({ route }: any) {
   };
 
   // Create holds array that highlights ALL detected holds
-  const allHoldsHighlighted: Hold[] = detectedHolds.map((dh, index) => ({
+  const allHoldsHighlighted: HandHold[] = detectedHolds.map((dh, index) => ({
     order: index + 1,
     detected_hold_id: dh.id,
     labelX: dh.center.x,
@@ -413,7 +413,7 @@ export default function AdminPhotoDetailScreen({ route }: any) {
         ) : (
           <RouteVisualization
             photoUrl={photo.image_url}
-            holds={allHoldsHighlighted}
+            handHolds={allHoldsHighlighted}
             detectedHolds={detectedHolds}
             showLabels={false}
             adminMode={true}

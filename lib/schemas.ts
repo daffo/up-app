@@ -6,13 +6,23 @@ const PointSchema = z.object({
   y: z.number(),
 });
 
-// Hold schema (embedded in routes)
-export const HoldSchema = z.object({
-  order: z.number(),
+// Hold schemas (embedded in routes)
+const HoldSchema = z.object({
   detected_hold_id: z.string(),
   labelX: z.number(),
   labelY: z.number(),
   note: z.string().optional(),
+});
+
+export const HandHoldSchema = HoldSchema.extend({
+  order: z.number(),
+});
+
+export const FootHoldSchema = HoldSchema;
+
+export const RouteHoldsSchema = z.object({
+  hand_holds: z.array(HandHoldSchema),
+  foot_holds: z.array(FootHoldSchema),
 });
 
 // Table schemas - matching Database['public']['Tables'][table]['Row']
@@ -47,7 +57,7 @@ export const RouteSchema = z.object({
   description: z.string().nullable(),
   grade: z.string(),
   photo_id: z.string().uuid(),
-  holds: z.array(HoldSchema),
+  holds: RouteHoldsSchema,
   user_id: z.string().uuid(),
 });
 

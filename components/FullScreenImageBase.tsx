@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageZoom from 'react-native-image-pan-zoom';
 import CachedImage from './CachedImage';
 import { getImageDimensions } from '../lib/cache/image-cache';
-import { Hold, DetectedHold } from '../types/database.types';
+import { HandHold, FootHold, DetectedHold } from '../types/database.types';
 import RouteOverlay from './RouteOverlay';
 
 export interface ImageDimensions {
@@ -29,14 +29,15 @@ export interface ZoomState {
 export interface FullScreenImageBaseProps {
   visible: boolean;
   photoUrl: string;
-  holds: Hold[];
+  handHolds: HandHold[];
+  footHolds?: FootHold[];
   detectedHolds: DetectedHold[];
   onClose: () => void;
   showLabels?: boolean;
   closeButtonText?: string;
   // Optional callbacks for customization
   onImageTap?: (event: any) => void;
-  onHoldPress?: (index: number) => void;
+  onHandHoldPress?: (index: number) => void;
   // For rendering additional controls/modals
   children?: ReactNode;
   // For PanResponder integration
@@ -62,13 +63,14 @@ export interface FullScreenImageBaseProps {
 export default function FullScreenImageBase({
   visible,
   photoUrl,
-  holds,
+  handHolds,
+  footHolds = [],
   detectedHolds,
   onClose,
   showLabels = true,
   closeButtonText = '✕',
   onImageTap,
-  onHoldPress,
+  onHandHoldPress,
   children,
   panHandlers,
   resizingHoldIndex = null,
@@ -182,14 +184,15 @@ export default function FullScreenImageBase({
                 pointerEvents={overlayPointerEvents}
               >
                 <RouteOverlay
-                  holds={holds}
+                  handHolds={handHolds}
+                  footHolds={footHolds}
                   detectedHolds={detectedHolds}
                   width={displayedDimensions.width}
                   height={displayedDimensions.height}
                   pointerEvents={overlayPointerEvents}
                   resizingHoldIndex={resizingHoldIndex}
                   showLabels={showLabels}
-                  onHoldPress={onHoldPress}
+                  onHandHoldPress={onHandHoldPress}
                   selectedHoldId={selectedHoldId}
                 />
               </View>

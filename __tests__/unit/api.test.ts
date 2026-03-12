@@ -258,7 +258,7 @@ describe('routesApi', () => {
 
       const input = {
         title: 'T', description: null, grade: 'V3',
-        photo_id: 'p1', holds: [], user_id: 'u1',
+        photo_id: 'p1', holds: { hand_holds: [], foot_holds: [] }, user_id: 'u1',
       };
       const result = await routesApi.create(input);
 
@@ -273,7 +273,7 @@ describe('routesApi', () => {
 
       await expect(routesApi.create({
         title: 'T', description: null, grade: 'V3',
-        photo_id: 'p1', holds: [], user_id: 'u1',
+        photo_id: 'p1', holds: { hand_holds: [], foot_holds: [] }, user_id: 'u1',
       })).rejects.toEqual({ message: 'fail' });
     });
   });

@@ -47,7 +47,7 @@ describe('Database Contract Tests', () => {
       await testTableContract('routes');
     });
 
-    it('returns holds as array with correct structure', async () => {
+    it('returns holds as object with hand_holds and foot_holds', async () => {
       const { data, error } = await supabase
         .from('routes')
         .select('holds')
@@ -55,12 +55,19 @@ describe('Database Contract Tests', () => {
 
       expect(error).toBeNull();
 
-      if (data && data.length > 0 && data[0].holds.length > 0) {
-        const hold = data[0].holds[0];
-        expect(hold).toHaveProperty('order');
-        expect(hold).toHaveProperty('detected_hold_id');
-        expect(hold).toHaveProperty('labelX');
-        expect(hold).toHaveProperty('labelY');
+      if (data && data.length > 0) {
+        expect(data[0].holds).toHaveProperty('hand_holds');
+        expect(data[0].holds).toHaveProperty('foot_holds');
+        expect(Array.isArray(data[0].holds.hand_holds)).toBe(true);
+        expect(Array.isArray(data[0].holds.foot_holds)).toBe(true);
+
+        if (data[0].holds.hand_holds.length > 0) {
+          const hold = data[0].holds.hand_holds[0];
+          expect(hold).toHaveProperty('order');
+          expect(hold).toHaveProperty('detected_hold_id');
+          expect(hold).toHaveProperty('labelX');
+          expect(hold).toHaveProperty('labelY');
+        }
       }
     });
   });

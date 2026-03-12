@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, StyleSheet, LayoutChangeEvent, TouchableOpacity } from 'react-native';
-import { Hold, DetectedHold } from '../types/database.types';
+import { HandHold, FootHold, DetectedHold } from '../types/database.types';
 import CachedImage from './CachedImage';
 import { getImageDimensions } from '../lib/cache/image-cache';
 import FullScreenRouteViewer from './FullScreenRouteViewer';
@@ -10,7 +10,8 @@ import { useThemeColors } from '../lib/theme-context';
 
 interface RouteVisualizationProps {
   photoUrl: string;
-  holds: Hold[];
+  handHolds: HandHold[];
+  footHolds?: FootHold[];
   detectedHolds: DetectedHold[];
   showLabels?: boolean;
   // Admin mode props - when true, fullscreen allows hold deletion
@@ -23,7 +24,8 @@ interface RouteVisualizationProps {
 
 export default function RouteVisualization({
   photoUrl,
-  holds,
+  handHolds,
+  footHolds = [],
   detectedHolds,
   showLabels = true,
   adminMode = false,
@@ -106,7 +108,8 @@ export default function RouteVisualization({
               pointerEvents="none"
             >
               <RouteOverlay
-                holds={holds}
+                handHolds={handHolds}
+                footHolds={footHolds}
                 detectedHolds={detectedHolds}
                 width={displayedDimensions.width}
                 height={displayedDimensions.height}
@@ -122,7 +125,7 @@ export default function RouteVisualization({
         <FullScreenHoldEditor
           visible={fullScreenVisible}
           photoUrl={photoUrl}
-          holds={holds}
+          holds={handHolds}
           detectedHolds={detectedHolds}
           onClose={() => setFullScreenVisible(false)}
           photoId={photoId}
@@ -134,7 +137,8 @@ export default function RouteVisualization({
         <FullScreenRouteViewer
           visible={fullScreenVisible}
           photoUrl={photoUrl}
-          holds={holds}
+          handHolds={handHolds}
+          footHolds={footHolds}
           detectedHolds={detectedHolds}
           onClose={() => setFullScreenVisible(false)}
           showLabels={showLabels}

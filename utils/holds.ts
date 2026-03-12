@@ -52,6 +52,17 @@ export function canSetStart(index: number, totalHolds: number): boolean {
 }
 
 /**
+ * Returns the display label for a foot hold.
+ * Shows "Foot" (no note) or "Foot — {note}" (when note is set).
+ */
+export function getFootHoldLabel(note?: string | null): string {
+  if (note) {
+    return `Foot — ${note}`;
+  }
+  return 'Foot';
+}
+
+/**
  * Whether the top-related quick actions should be shown for a hold.
  * Requires 4+ holds (start + at least 1 middle + 2 top holds).
  */

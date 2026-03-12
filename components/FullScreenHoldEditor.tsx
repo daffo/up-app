@@ -17,7 +17,7 @@ import CachedImage from './CachedImage';
 import { getImageDimensions } from '../lib/cache/image-cache';
 import { useTranslation } from 'react-i18next';
 import Svg, { Circle } from 'react-native-svg';
-import { Hold, DetectedHold } from '../types/database.types';
+import { HandHold, DetectedHold } from '../types/database.types';
 import { detectedHoldsApi, routesApi } from '../lib/api';
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import RouteOverlay from './RouteOverlay';
@@ -34,7 +34,7 @@ const ZOOM_DEFAULT = 15;
 interface FullScreenHoldEditorProps {
   visible: boolean;
   photoUrl: string;
-  holds: Hold[];
+  holds: HandHold[];
   detectedHolds: DetectedHold[];
   onClose: () => void;
   photoId: string;
@@ -593,8 +593,10 @@ export default function FullScreenHoldEditor({
 
       const usingRoutes: string[] = [];
       for (const r of routes) {
-        const routeHolds = r.holds as Hold[];
-        if (routeHolds.some(h => h.detected_hold_id === selectedHold.id)) {
+        const routeHolds = r.holds;
+        const usedInHands = routeHolds.hand_holds.some(h => h.detected_hold_id === selectedHold.id);
+        const usedInFeet = routeHolds.foot_holds.some(h => h.detected_hold_id === selectedHold.id);
+        if (usedInHands || usedInFeet) {
           usingRoutes.push(r.title);
         }
       }
@@ -889,7 +891,7 @@ export default function FullScreenHoldEditor({
     }));
 
     // Create fake "holds" from detected holds so RouteOverlay renders them
-    const fakeHolds: Hold[] = mappedDetectedHolds.map((dh, index) => ({
+    const fakeHolds: HandHold[] = mappedDetectedHolds.map((dh, index) => ({
       order: index + 1,
       detected_hold_id: dh.id,
       labelX: 0, // Not used since showLabels=false
@@ -944,7 +946,7 @@ export default function FullScreenHoldEditor({
             {/* Overlay for holds in this region - hide during brush painting */}
             {!isBrushing && (
               <RouteOverlay
-                holds={fakeHolds}
+                handHolds={fakeHolds}
                 detectedHolds={mappedDetectedHolds}
                 width={props.displayWidth}
                 height={props.displayHeight}
@@ -1177,7 +1179,7 @@ export default function FullScreenHoldEditor({
     <FullScreenImageBase
       visible={visible}
       photoUrl={photoUrl}
-      holds={holds}
+      handHolds={holds}
       detectedHolds={detectedHolds}
       onClose={focusMode === 'selecting' ? cancelSelection : onClose}
       showLabels={false}

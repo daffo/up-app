@@ -51,6 +51,7 @@
     "tapToEdit": "Tap to edit holds in fullscreen",
     "holdsListTitle": "Holds (long press to drag):",
     "noNote": "(no note)",
+    "feetListTitle": "Feet:",
     "saveChanges": "Save Changes",
     "createRoute": "Create Route",
     "deleteRoute": "Delete Route",
@@ -249,6 +250,9 @@
     "errorDrawMore": "Please draw more to define the hold shape",
     "errorMoveHold": "Failed to move hold",
     "errorRedrawHold": "Failed to save redrawn hold",
-    "errorAddHold": "Failed to add hold"
+    "errorAddHold": "Failed to add hold",
+    "foot": "Foot",
+    "handsMode": "Hands 🤚",
+    "feetMode": "Feet 🦶"
   }
 }
