@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getCachedHolds,
+  getCachedHoldsAnyVersion,
+  getCachedVersion,
   setCachedHolds,
   invalidateHoldsCache,
   _clearCache,
@@ -89,5 +91,51 @@ describe('invalidateHoldsCache', () => {
     mockGetItem.mockResolvedValue(null);
     const result = await getCachedHolds('p1', 1);
     expect(result).toBeNull();
+  });
+});
+
+describe('getCachedHoldsAnyVersion', () => {
+  it('returns null when no cache exists', async () => {
+    mockGetItem.mockResolvedValue(null);
+    const result = await getCachedHoldsAnyVersion('p1');
+    expect(result).toBeNull();
+  });
+
+  it('returns holds from memory regardless of version', async () => {
+    await setCachedHolds('p1', 3, sampleHolds);
+    mockGetItem.mockClear();
+
+    const result = await getCachedHoldsAnyVersion('p1');
+    expect(result).toEqual(sampleHolds);
+    expect(mockGetItem).not.toHaveBeenCalled();
+  });
+
+  it('returns holds from AsyncStorage regardless of version', async () => {
+    mockGetItem.mockResolvedValue(JSON.stringify({ version: 7, holds: sampleHolds }));
+    const result = await getCachedHoldsAnyVersion('p1');
+    expect(result).toEqual(sampleHolds);
+  });
+});
+
+describe('getCachedVersion', () => {
+  it('returns null when no cache exists', async () => {
+    mockGetItem.mockResolvedValue(null);
+    const result = await getCachedVersion('p1');
+    expect(result).toBeNull();
+  });
+
+  it('returns version from memory cache', async () => {
+    await setCachedHolds('p1', 5, sampleHolds);
+    mockGetItem.mockClear();
+
+    const result = await getCachedVersion('p1');
+    expect(result).toBe(5);
+    expect(mockGetItem).not.toHaveBeenCalled();
+  });
+
+  it('returns version from AsyncStorage', async () => {
+    mockGetItem.mockResolvedValue(JSON.stringify({ version: 9, holds: sampleHolds }));
+    const result = await getCachedVersion('p1');
+    expect(result).toBe(9);
   });
 });

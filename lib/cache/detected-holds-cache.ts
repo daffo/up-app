@@ -12,6 +12,28 @@ interface CacheEntry {
 const memoryCache = new Map<string, CacheEntry>();
 
 /**
+ * Load a cache entry from AsyncStorage into memory (if not already there).
+ * Returns the entry or null.
+ */
+async function loadEntry(photoId: string): Promise<CacheEntry | null> {
+  const mem = memoryCache.get(photoId);
+  if (mem) return mem;
+
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_PREFIX + photoId);
+    if (raw) {
+      const entry: CacheEntry = JSON.parse(raw);
+      memoryCache.set(photoId, entry);
+      return entry;
+    }
+  } catch {
+    // Non-critical
+  }
+
+  return null;
+}
+
+/**
  * Get cached detected holds for a photo if the version matches.
  * Returns null if no cache or version mismatch.
  */
@@ -19,28 +41,33 @@ export async function getCachedHolds(
   photoId: string,
   holdsVersion: number,
 ): Promise<DetectedHold[] | null> {
-  // 1. Check memory cache
-  const mem = memoryCache.get(photoId);
-  if (mem && mem.version === holdsVersion) {
-    return mem.holds;
+  const entry = await loadEntry(photoId);
+  if (entry && entry.version === holdsVersion) {
+    return entry.holds;
   }
-
-  // 2. Check AsyncStorage
-  try {
-    const raw = await AsyncStorage.getItem(STORAGE_PREFIX + photoId);
-    if (raw) {
-      const entry: CacheEntry = JSON.parse(raw);
-      if (entry.version === holdsVersion) {
-        // Warm memory cache
-        memoryCache.set(photoId, entry);
-        return entry.holds;
-      }
-    }
-  } catch {
-    // Non-critical
-  }
-
   return null;
+}
+
+/**
+ * Get cached detected holds regardless of version.
+ * Returns whatever is cached, or null if nothing cached.
+ */
+export async function getCachedHoldsAnyVersion(
+  photoId: string,
+): Promise<DetectedHold[] | null> {
+  const entry = await loadEntry(photoId);
+  return entry ? entry.holds : null;
+}
+
+/**
+ * Get the cached version number for a photo's holds.
+ * Useful for prefetch to check staleness without loading full holds.
+ */
+export async function getCachedVersion(
+  photoId: string,
+): Promise<number | null> {
+  const entry = await loadEntry(photoId);
+  return entry ? entry.version : null;
 }
 
 /**

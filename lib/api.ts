@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { supabase } from './supabase';
 import { Database, RouteHolds, DetectedHold, RouteFilters, Send, Comment } from '../types/database.types';
-import { getCachedHolds, setCachedHolds, invalidateHoldsCache } from './cache/detected-holds-cache';
+import { getCachedHolds, getCachedHoldsAnyVersion, getCachedVersion, setCachedHolds, invalidateHoldsCache } from './cache/detected-holds-cache';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -197,6 +197,9 @@ export const photosApi = {
       Image.prefetch(urls, 'memory-disk').catch(() => {});
     }
 
+    // Fire-and-forget: prefetch detected holds into local cache
+    detectedHoldsApi.prefetchForPhotos(photos).catch(() => {});
+
     return photos;
   },
 
@@ -225,11 +228,17 @@ export const photosApi = {
 
 // Detected Holds API
 export const detectedHoldsApi = {
-  async listByPhoto(photoId: string, holdsVersion?: number) {
-    // If holdsVersion provided, try local cache first
-    if (holdsVersion !== undefined) {
-      const cached = await getCachedHolds(photoId, holdsVersion);
-      if (cached) return cached;
+  async listByPhoto(photoId: string, holdsVersion?: number, forceRefresh = false) {
+    if (!forceRefresh) {
+      if (holdsVersion !== undefined) {
+        // Exact version check — cache hit only if version matches
+        const cached = await getCachedHolds(photoId, holdsVersion);
+        if (cached) return cached;
+      } else {
+        // No version available — serve any cached data
+        const cached = await getCachedHoldsAnyVersion(photoId);
+        if (cached) return cached;
+      }
     }
 
     const { data, error } = await supabase
@@ -240,12 +249,26 @@ export const detectedHoldsApi = {
     if (error) throw error;
     const holds = (data || []) as DetectedHold[];
 
-    // Cache if version provided
+    // Cache with version if known
     if (holdsVersion !== undefined) {
       setCachedHolds(photoId, holdsVersion, holds).catch(() => {});
     }
 
     return holds;
+  },
+
+  async prefetchForPhotos(photos: { id: string; holds_version: number }[]): Promise<void> {
+    for (const photo of photos) {
+      if (!photo.holds_version) continue;
+      const cachedVersion = await getCachedVersion(photo.id);
+      if (cachedVersion === photo.holds_version) continue;
+      // Cache miss or version mismatch — fetch and cache
+      try {
+        await detectedHoldsApi.listByPhoto(photo.id, photo.holds_version);
+      } catch {
+        // Non-critical: prefetch failure should not block anything
+      }
+    }
   },
 
   async update(holdId: string, updates: Partial<DetectedHold>, photoId?: string) {

@@ -19,6 +19,8 @@ jest.mock('expo-image', () => ({
 
 jest.mock('../../lib/cache/detected-holds-cache', () => ({
   getCachedHolds: jest.fn().mockResolvedValue(null),
+  getCachedHoldsAnyVersion: jest.fn().mockResolvedValue(null),
+  getCachedVersion: jest.fn().mockResolvedValue(null),
   setCachedHolds: jest.fn().mockResolvedValue(undefined),
   invalidateHoldsCache: jest.fn().mockResolvedValue(undefined),
 }));
@@ -427,13 +429,23 @@ describe('photosApi', () => {
 // ---------------------------------------------------------------------------
 describe('detectedHoldsApi', () => {
   describe('listByPhoto', () => {
-    it('returns holds without version (no caching)', async () => {
+    it('fetches from DB when no version and no cache', async () => {
       const builder = createBuilder({ data: [{ id: 'h1' }], error: null });
       mockFrom.mockReturnValue(builder);
 
       const result = await detectedHoldsApi.listByPhoto('p1');
       expect(result).toEqual([{ id: 'h1' }]);
       expect(builder.eq).toHaveBeenCalledWith('photo_id', 'p1');
+    });
+
+    it('returns any-version cached holds when no version provided', async () => {
+      const { getCachedHoldsAnyVersion } = require('../../lib/cache/detected-holds-cache');
+      getCachedHoldsAnyVersion.mockResolvedValueOnce([{ id: 'cached-any' }]);
+      mockFrom.mockClear();
+
+      const result = await detectedHoldsApi.listByPhoto('p1');
+      expect(result).toEqual([{ id: 'cached-any' }]);
+      expect(mockFrom).not.toHaveBeenCalled();
     });
 
     it('returns cached holds when version matches', async () => {
@@ -458,11 +470,25 @@ describe('detectedHoldsApi', () => {
       expect(setCachedHolds).toHaveBeenCalledWith('p1', 5, [{ id: 'h1' }]);
     });
 
+    it('bypasses cache when forceRefresh is true', async () => {
+      const { getCachedHolds, getCachedHoldsAnyVersion } = require('../../lib/cache/detected-holds-cache');
+      getCachedHolds.mockClear();
+      getCachedHoldsAnyVersion.mockClear();
+
+      const builder = createBuilder({ data: [{ id: 'h1' }], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      const result = await detectedHoldsApi.listByPhoto('p1', 3, true);
+      expect(result).toEqual([{ id: 'h1' }]);
+      expect(getCachedHolds).not.toHaveBeenCalled();
+      expect(getCachedHoldsAnyVersion).not.toHaveBeenCalled();
+    });
+
     it('throws on error', async () => {
       const builder = createBuilder({ data: null, error: { message: 'fail' } });
       mockFrom.mockReturnValue(builder);
 
-      await expect(detectedHoldsApi.listByPhoto('p1')).rejects.toEqual({ message: 'fail' });
+      await expect(detectedHoldsApi.listByPhoto('p1', undefined, true)).rejects.toEqual({ message: 'fail' });
     });
   });
 
@@ -587,6 +613,68 @@ describe('detectedHoldsApi', () => {
       mockFrom.mockReturnValue(builder);
 
       await expect(detectedHoldsApi.deleteByPhoto('p1')).rejects.toEqual({ message: 'fail' });
+    });
+  });
+
+  describe('prefetchForPhotos', () => {
+    it('skips photos already cached at current version', async () => {
+      const { getCachedVersion } = require('../../lib/cache/detected-holds-cache');
+      getCachedVersion.mockResolvedValueOnce(5);
+      mockFrom.mockClear();
+
+      await detectedHoldsApi.prefetchForPhotos([{ id: 'p1', holds_version: 5 }]);
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('fetches photos with stale cache version', async () => {
+      const { getCachedVersion, getCachedHolds } = require('../../lib/cache/detected-holds-cache');
+      getCachedVersion.mockResolvedValueOnce(4); // stale
+      getCachedHolds.mockResolvedValueOnce(null); // version mismatch
+
+      const builder = createBuilder({ data: [{ id: 'h1' }], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await detectedHoldsApi.prefetchForPhotos([{ id: 'p1', holds_version: 5 }]);
+      expect(mockFrom).toHaveBeenCalled();
+    });
+
+    it('fetches photos with no cache', async () => {
+      const { getCachedVersion, getCachedHolds } = require('../../lib/cache/detected-holds-cache');
+      getCachedVersion.mockResolvedValueOnce(null); // not cached
+      getCachedHolds.mockResolvedValueOnce(null);
+
+      const builder = createBuilder({ data: [{ id: 'h1' }], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await detectedHoldsApi.prefetchForPhotos([{ id: 'p1', holds_version: 3 }]);
+      expect(mockFrom).toHaveBeenCalled();
+    });
+
+    it('skips photos with holds_version 0', async () => {
+      const { getCachedVersion } = require('../../lib/cache/detected-holds-cache');
+      getCachedVersion.mockClear();
+      mockFrom.mockClear();
+
+      await detectedHoldsApi.prefetchForPhotos([{ id: 'p1', holds_version: 0 }]);
+      expect(getCachedVersion).not.toHaveBeenCalled();
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('continues on fetch error for individual photos', async () => {
+      const { getCachedVersion, getCachedHolds } = require('../../lib/cache/detected-holds-cache');
+      getCachedVersion.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+      getCachedHolds.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+
+      const errorBuilder = createBuilder({ data: null, error: { message: 'fail' } });
+      const okBuilder = createBuilder({ data: [{ id: 'h2' }], error: null });
+      mockFrom.mockReturnValueOnce(errorBuilder).mockReturnValueOnce(okBuilder);
+
+      // Should not throw — swallows error for p1 and continues to p2
+      await detectedHoldsApi.prefetchForPhotos([
+        { id: 'p1', holds_version: 1 },
+        { id: 'p2', holds_version: 2 },
+      ]);
+      expect(mockFrom).toHaveBeenCalledTimes(2);
     });
   });
 });

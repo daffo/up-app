@@ -102,7 +102,7 @@ export default function AdminPhotoDetailScreen({ route }: any) {
   const fetchPhotoData = async () => {
     const [photoData, holdsData] = await Promise.all([
       photosApi.get(photoId),
-      detectedHoldsApi.listByPhoto(photoId),
+      detectedHoldsApi.listByPhoto(photoId, undefined, true),
     ]);
 
     if (photoData) {
