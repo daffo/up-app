@@ -1,3 +1,7 @@
+jest.mock('../../lib/cache/image-cache', () => ({
+  getImageDimensions: jest.fn(),
+}));
+
 import {
   deduplicatePredictions,
   RoboflowPrediction,

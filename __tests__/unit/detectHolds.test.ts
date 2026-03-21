@@ -1,9 +1,9 @@
-import { Image } from 'react-native';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { getImageDimensions } from '../../lib/cache/image-cache';
 import { detectHolds } from '../../lib/holdDetection';
 
-jest.mock('react-native', () => ({
-  Image: { getSize: jest.fn() },
+jest.mock('../../lib/cache/image-cache', () => ({
+  getImageDimensions: jest.fn(),
 }));
 
 jest.mock('expo-image-manipulator', () => ({
@@ -11,24 +11,20 @@ jest.mock('expo-image-manipulator', () => ({
   SaveFormat: { JPEG: 'jpeg' },
 }));
 
-const mockGetSize = Image.getSize as jest.Mock;
+const mockGetDimensions = getImageDimensions as jest.Mock;
 const mockManipulate = manipulateAsync as jest.Mock;
 const mockFetch = jest.fn();
 
 beforeEach(() => {
   global.fetch = mockFetch as any;
   mockFetch.mockReset();
-  mockGetSize.mockReset();
+  mockGetDimensions.mockReset();
   mockManipulate.mockReset();
 });
 
-/** Set up Image.getSize to resolve with given dimensions */
+/** Set up getImageDimensions to resolve with given dimensions */
 function mockImageSize(width: number, height: number) {
-  mockGetSize.mockImplementation(
-    (_uri: string, onSuccess: (w: number, h: number) => void) => {
-      onSuccess(width, height);
-    },
-  );
+  mockGetDimensions.mockResolvedValue({ width, height });
 }
 
 /** Set up manipulateAsync to return base64 for every tile */
@@ -184,12 +180,8 @@ describe('detectHolds', () => {
   });
 
   describe('error handling', () => {
-    it('rejects when Image.getSize fails', async () => {
-      mockGetSize.mockImplementation(
-        (_uri: string, _onSuccess: any, onError: (e: Error) => void) => {
-          onError(new Error('cannot load'));
-        },
-      );
+    it('rejects when getImageDimensions fails', async () => {
+      mockGetDimensions.mockRejectedValue(new Error('cannot load'));
 
       await expect(
         detectHolds('file://bad.jpg', 'key'),

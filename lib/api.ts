@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { supabase } from './supabase';
 import { Database, RouteHolds, DetectedHold, RouteFilters, Send, Comment } from '../types/database.types';
 import { getCachedHolds, getCachedHoldsAnyVersion, getCachedVersion, setCachedHolds, invalidateHoldsCache } from './cache/detected-holds-cache';
@@ -190,12 +189,6 @@ export const photosApi = {
 
     if (error) throw error;
     const photos = data || [];
-
-    // Fire-and-forget: prefetch images to disk cache
-    const urls = photos.map((p: Photo) => p.image_url).filter(Boolean);
-    if (urls.length > 0) {
-      Image.prefetch(urls, 'memory-disk').catch(() => {});
-    }
 
     // Fire-and-forget: prefetch detected holds into local cache
     detectedHoldsApi.prefetchForPhotos(photos).catch(() => {});

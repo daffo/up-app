@@ -1,5 +1,5 @@
-import { Image } from 'react-native';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { getImageDimensions } from './cache/image-cache';
 
 const MODEL_ENDPOINT = 'hold-detector-rnvkl/2';
 const API_URL = `https://serverless.roboflow.com/${MODEL_ENDPOINT}`;
@@ -25,15 +25,6 @@ export interface DetectedHoldResult {
   confidence: number;
 }
 
-function getImageSize(uri: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    Image.getSize(
-      uri,
-      (width, height) => resolve({ width, height }),
-      (error) => reject(error),
-    );
-  });
-}
 
 async function callApi(
   base64Data: string,
@@ -125,7 +116,7 @@ export async function detectHolds(
   onProgress?: (tile: number, total: number) => void,
 ): Promise<DetectedHoldResult[]> {
   // Get image dimensions
-  const { width, height } = await getImageSize(imageUrl);
+  const { width, height } = await getImageDimensions(imageUrl);
 
   // 3x3 tile grid with 30% overlap
   const tileCols = 3;

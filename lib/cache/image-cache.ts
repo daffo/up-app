@@ -53,14 +53,17 @@ export async function getImageDimensions(url: string): Promise<Dimensions> {
   const cached = memoryCache.get(url);
   if (cached) return cached;
 
-  // 2. Fall back to loading via expo-image (which also warms the image cache)
+  // 2. Try expo-image prefetch only if not already in disk cache
   try {
-    const result = await Image.prefetch(url, 'memory-disk');
-    if (result && typeof result === 'object' && 'width' in result && 'height' in result) {
-      const dims = { width: (result as any).width, height: (result as any).height };
-      memoryCache.set(url, dims);
-      schedulePersist();
-      return dims;
+    const cachedPath = await Image.getCachePathAsync(url);
+    if (!cachedPath) {
+      const result = await Image.prefetch(url, 'memory-disk');
+      if (result && typeof result === 'object' && 'width' in result && 'height' in result) {
+        const dims = { width: (result as any).width, height: (result as any).height };
+        memoryCache.set(url, dims);
+        schedulePersist();
+        return dims;
+      }
     }
   } catch {
     // prefetch doesn't return dimensions on all platforms
