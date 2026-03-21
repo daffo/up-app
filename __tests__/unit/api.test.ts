@@ -683,6 +683,10 @@ describe('detectedHoldsApi', () => {
 // userProfilesApi
 // ---------------------------------------------------------------------------
 describe('userProfilesApi', () => {
+  beforeEach(() => {
+    userProfilesApi._clearCache();
+  });
+
   describe('get', () => {
     it('returns profile', async () => {
       const builder = createBuilder({ data: { user_id: 'u1', display_name: 'Alice' }, error: null });
@@ -705,6 +709,18 @@ describe('userProfilesApi', () => {
       mockFrom.mockReturnValue(builder);
 
       await expect(userProfilesApi.get('u1')).rejects.toEqual({ code: 'OTHER', message: 'fail' });
+    });
+
+    it('returns cached profile on second call', async () => {
+      const builder = createBuilder({ data: { user_id: 'u1', display_name: 'Alice' }, error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await userProfilesApi.get('u1');
+      mockFrom.mockClear();
+
+      const result = await userProfilesApi.get('u1');
+      expect(result).toEqual({ user_id: 'u1', display_name: 'Alice' });
+      expect(mockFrom).not.toHaveBeenCalled();
     });
   });
 

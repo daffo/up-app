@@ -376,8 +376,15 @@ export const accountApi = {
 };
 
 // User Profiles API
+// In-memory profile cache with TTL (invalidated on upsert)
+const PROFILE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const profileCache = new Map<string, { profile: UserProfile | null; fetchedAt: number }>();
+
 export const userProfilesApi = {
   async get(userId: string): Promise<UserProfile | null> {
+    const cached = profileCache.get(userId);
+    if (cached && Date.now() - cached.fetchedAt < PROFILE_TTL_MS) return cached.profile;
+
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
@@ -385,6 +392,7 @@ export const userProfilesApi = {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
+    profileCache.set(userId, { profile: data, fetchedAt: Date.now() });
     return data;
   },
 
@@ -399,7 +407,13 @@ export const userProfilesApi = {
       .single();
 
     if (error) throw error;
-    return data as UserProfile;
+    const profile = data as UserProfile;
+    profileCache.set(userId, { profile, fetchedAt: Date.now() });
+    return profile;
+  },
+
+  _clearCache() {
+    profileCache.clear();
   },
 };
 
