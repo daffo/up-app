@@ -722,6 +722,33 @@ describe('userProfilesApi', () => {
       expect(result).toEqual({ user_id: 'u1', display_name: 'Alice' });
       expect(mockFrom).not.toHaveBeenCalled();
     });
+
+    it('serves cache within TTL then re-fetches after expiry', async () => {
+      jest.useFakeTimers();
+
+      const builder1 = createBuilder({ data: { user_id: 'u1', display_name: 'Alice' }, error: null });
+      mockFrom.mockReturnValue(builder1);
+      await userProfilesApi.get('u1');
+
+      // Set up a new mock with updated data — cache should ignore it
+      const builder2 = createBuilder({ data: { user_id: 'u1', display_name: 'Alice Updated' }, error: null });
+      mockFrom.mockReturnValue(builder2);
+      mockFrom.mockClear();
+
+      // Within TTL — should return cached value, no DB call
+      jest.advanceTimersByTime(4 * 60 * 1000);
+      const cached = await userProfilesApi.get('u1');
+      expect(cached).toEqual({ user_id: 'u1', display_name: 'Alice' });
+      expect(mockFrom).not.toHaveBeenCalled();
+
+      // Past TTL — should re-fetch from DB
+      jest.advanceTimersByTime(2 * 60 * 1000);
+      const refreshed = await userProfilesApi.get('u1');
+      expect(refreshed).toEqual({ user_id: 'u1', display_name: 'Alice Updated' });
+      expect(mockFrom).toHaveBeenCalled();
+
+      jest.useRealTimers();
+    });
   });
 
   describe('upsert', () => {
