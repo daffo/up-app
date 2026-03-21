@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('admins')
         .select('user_id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       setIsAdmin(!!data);
     };
     checkAdminStatus();
