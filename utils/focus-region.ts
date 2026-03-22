@@ -42,13 +42,12 @@ export function clampFocusRegion(centerX: number, centerY: number, size: number)
 /** Filter detected holds whose center falls within the focus region */
 export function filterHoldsInRegion<T extends { polygon: Point[] }>(holds: T[], region: FocusRegion): T[] {
   return holds.filter(hold => {
-    const centerX = hold.polygon.reduce((sum, p) => sum + p.x, 0) / hold.polygon.length;
-    const centerY = hold.polygon.reduce((sum, p) => sum + p.y, 0) / hold.polygon.length;
+    const center = calculateCentroid(hold.polygon);
     return (
-      centerX >= region.x &&
-      centerX <= region.x + region.width &&
-      centerY >= region.y &&
-      centerY <= region.y + region.height
+      center.x >= region.x &&
+      center.x <= region.x + region.width &&
+      center.y >= region.y &&
+      center.y <= region.y + region.height
     );
   });
 }

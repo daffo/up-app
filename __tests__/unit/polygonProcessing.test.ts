@@ -47,11 +47,12 @@ describe('computeConvexHull', () => {
     expect(hull.length).toBe(3);
   });
 
-  it('handles many random interior points', () => {
+  it('handles many interior points', () => {
     const corners = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }, { x: 0, y: 100 }];
-    const interior = Array.from({ length: 10 }, () => ({
-      x: 10 + Math.random() * 80, y: 10 + Math.random() * 80,
-    }));
+    const interior = [
+      { x: 20, y: 30 }, { x: 50, y: 50 }, { x: 70, y: 20 }, { x: 30, y: 80 }, { x: 60, y: 60 },
+      { x: 15, y: 45 }, { x: 85, y: 75 }, { x: 40, y: 10 }, { x: 55, y: 90 }, { x: 25, y: 65 },
+    ];
     const hull = computeConvexHull([...corners, ...interior]);
     expect(hull.length).toBe(4);
   });

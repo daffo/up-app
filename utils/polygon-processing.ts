@@ -1,9 +1,9 @@
 // Polygon processing functions for hold shape extraction
 // Extracted from FullScreenHoldEditor for testability
 
-type Point = { x: number; y: number };
+import { Point } from './polygon';
 
-/** Calculate perpendicular distance from point to line */
+/** Calculate perpendicular distance from point to the infinite line through lineStart and lineEnd */
 export function perpendicularDistance(
   point: Point,
   lineStart: Point,
