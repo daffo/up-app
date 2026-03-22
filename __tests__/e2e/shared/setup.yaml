@@ -11,10 +11,17 @@ name: Test Setup
     timeout: 10000
 - tapOn: "http://10.0.2.2:8081"
 
-# Wait for welcome modal, then dismiss it (press back)
+# Wait for welcome modal, then dismiss it
 - extendedWaitUntil:
     visible: "Continue"
     timeout: 30000
+- tapOn: "Continue"
+
+# Dev tools sheet opens automatically — disable floating button and dismiss
+- extendedWaitUntil:
+    visible: "Tools button"
+    timeout: 10000
+- tapOn: "Tools button"
 - pressKey: back
 
 # Wait for app Home screen

@@ -4,7 +4,7 @@
 A React Native (Expo) climbing route management app for spray walls. Users can create, view, and edit climbing routes by placing holds on wall photos.
 
 ## Tech Stack
-- **Framework**: React Native with Expo SDK 54
+- **Framework**: React Native with Expo SDK 55
 - **Backend**: Supabase (PostgreSQL, Auth, Storage)
 - **Navigation**: React Navigation
 - **State**: React hooks + custom cache invalidation pattern
@@ -123,7 +123,7 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 
 ## Important Notes
 - GestureHandlerRootView must wrap the app (in App.tsx)
-- react-native-worklets pinned to 0.5.1 for Expo SDK 54 compatibility
+- react-native-worklets updated to 0.7.2 for Expo SDK 55
 - DraggableFlatList inside ScrollView has gesture conflicts (known limitation)
 - Commits follow Conventional Commits format
 - **All user-facing text must be localized** - use `t('key')` from `useTranslation()`, including accessibility labels. Add keys to both `locales/en.json` and `locales/it.json`
