@@ -24,6 +24,7 @@ import { useThemeColors } from '../lib/theme-context';
 import RouteOverlay from '../components/RouteOverlay';
 import { formatDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 type Route = Database['public']['Tables']['routes']['Row'];
@@ -40,7 +41,6 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
   const { routeId } = route.params || {};
   const isEditMode = !!routeId;
 
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // Form fields
@@ -65,49 +65,40 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
   // Fullscreen editor state
   const [editorVisible, setEditorVisible] = useState(false);
 
-  useEffect(() => {
-    initialize();
-  }, [routeId]);
-
-  const initialize = async () => {
-    try {
-      setLoading(true);
-
-      // Fetch available photos (only active ones)
+  const { data: initData, loading } = useApiQuery(
+    async () => {
       const photosData = await photosApi.listActive();
-      setPhotos(photosData);
+      const existingRouteData = isEditMode ? await routesApi.get(routeId) : null;
+      return { photos: photosData, existingRoute: existingRouteData };
+    },
+    [routeId],
+  );
 
-      // If editing, fetch existing route
-      if (isEditMode) {
-        const routeData = await routesApi.get(routeId);
+  // Sync fetched data to local form state
+  useEffect(() => {
+    if (!initData) return;
+    setPhotos(initData.photos);
 
-        // Check if user owns this route
-        if (routeData.user_id !== user?.id) {
-          Alert.alert(t('common.error'), t('routeForm.errorOwnership'));
-          navigation.goBack();
-          return;
-        }
+    if (isEditMode && initData.existingRoute) {
+      const routeData = initData.existingRoute;
 
-        setExistingRoute(routeData);
-        setTitle(routeData.title);
-        setDescription(routeData.description || '');
-        setGrade(routeData.grade);
-        setSelectedPhotoId(routeData.photo_id);
-        setHandHolds(routeData.holds.hand_holds);
-        setFootHolds(routeData.holds.foot_holds);
-      } else {
-        // Default to first photo for new routes
-        if (photosData && photosData.length > 0) {
-          setSelectedPhotoId(photosData[0].id);
-        }
+      if (routeData.user_id !== user?.id) {
+        Alert.alert(t('common.error'), t('routeForm.errorOwnership'));
+        navigation.goBack();
+        return;
       }
-    } catch (err) {
-      console.error('Error initializing:', err);
-      Alert.alert(t('common.error'), t('routeForm.errorLoad'));
-    } finally {
-      setLoading(false);
+
+      setExistingRoute(routeData);
+      setTitle(routeData.title);
+      setDescription(routeData.description || '');
+      setGrade(routeData.grade);
+      setSelectedPhotoId(routeData.photo_id);
+      setHandHolds(routeData.holds.hand_holds);
+      setFootHolds(routeData.holds.foot_holds);
+    } else if (initData.photos.length > 0) {
+      setSelectedPhotoId(initData.photos[0].id);
     }
-  };
+  }, [initData]);
 
   const selectedPhoto = photos.find(p => p.id === selectedPhotoId);
 

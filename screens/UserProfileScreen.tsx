@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,34 +10,26 @@ import { userProfilesApi } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import UserSendsList from '../components/UserSendsList';
 import SafeScreen from '../components/SafeScreen';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 export default function UserProfileScreen({ route, navigation }: any) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { userId } = route.params;
-  const [displayName, setDisplayName] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadProfile();
-  }, [userId]);
+  const { data: displayName, loading } = useApiQuery(
+    async () => {
+      const profile = await userProfilesApi.get(userId);
+      return profile?.display_name || null;
+    },
+    [userId],
+  );
 
   useEffect(() => {
     if (!loading) {
       navigation.setOptions({ title: displayName || t('common.anonymous') });
     }
   }, [displayName, loading, navigation, t]);
-
-  const loadProfile = async () => {
-    try {
-      const profile = await userProfilesApi.get(userId);
-      setDisplayName(profile?.display_name || null);
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (

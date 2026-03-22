@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
 import { View, FlatList, Text, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { RouteFilters } from '../types/database.types';
-import { routesApi, cacheEvents, RouteWithStats } from '../lib/api';
+import { routesApi, RouteWithStats } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import RouteCard from './RouteCard';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 interface RouteListProps {
   onRoutePress: (routeId: string) => void;
@@ -14,43 +14,11 @@ interface RouteListProps {
 export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
-  const [routes, setRoutes] = useState<RouteWithStats[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchRoutes = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-      const data = await routesApi.list(filters);
-      setRoutes(data);
-    } catch (err) {
-      console.error('Error fetching routes:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch routes');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [filters]);
-
-  const onRefresh = () => fetchRoutes(true);
-
-  useEffect(() => {
-    fetchRoutes();
-
-    // Subscribe to routes and sends cache invalidation (sends affect avg rating)
-    const unsubscribeRoutes = cacheEvents.subscribe('routes', () => fetchRoutes());
-    const unsubscribeSends = cacheEvents.subscribe('sends', () => fetchRoutes());
-    return () => {
-      unsubscribeRoutes();
-      unsubscribeSends();
-    };
-  }, [fetchRoutes]);
+  const { data: routes, loading, error, refreshing, refresh } = useApiQuery(
+    () => routesApi.list(filters),
+    [filters],
+    { cacheKey: ['routes', 'sends'], initialData: [] as RouteWithStats[] },
+  );
 
   if (loading) {
     return (
@@ -90,7 +58,7 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
-          onRefresh={onRefresh}
+          onRefresh={refresh}
           tintColor={colors.primary}
           colors={[colors.primary]}
         />

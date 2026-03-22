@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
-import { commentsApi, cacheEvents } from '../lib/api';
+import { commentsApi } from '../lib/api';
 import { Comment } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import { formatRelativeDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 type CommentWithRoute = Comment & { route: { id: string; title: string; grade: string } };
 
@@ -22,35 +23,11 @@ export default function MyCommentsScreen({ navigation }: any) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const colors = useThemeColors();
-  const [comments, setComments] = useState<CommentWithRoute[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      loadComments();
-      const unsubscribe = cacheEvents.subscribe('comments', loadComments);
-      return unsubscribe;
-    }
-  }, [user]);
-
-  const loadComments = async () => {
-    if (!user) return;
-    try {
-      const data = await commentsApi.listByUser(user.id);
-      setComments(data);
-    } catch (error) {
-      console.error('Error loading comments:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    loadComments();
-  };
+  const { data: comments, loading, refreshing, refresh } = useApiQuery(
+    () => commentsApi.listByUser(user!.id),
+    [user?.id],
+    { cacheKey: 'comments', enabled: !!user, initialData: [] as CommentWithRoute[] },
+  );
 
   const renderComment = ({ item: comment }: { item: CommentWithRoute }) => (
     <TouchableOpacity
@@ -90,7 +67,7 @@ export default function MyCommentsScreen({ navigation }: any) {
           <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{t('comments.noCommentsYet')}</Text>
         }
         refreshing={refreshing}
-        onRefresh={handleRefresh}
+        onRefresh={refresh}
       />
     </SafeScreen>
   );

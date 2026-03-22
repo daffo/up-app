@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Comment } from '../types/database.types';
-import { commentsApi, userProfilesApi, cacheEvents } from '../lib/api';
+import { commentsApi, userProfilesApi } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import TrimmedTextInput from './TrimmedTextInput';
 import UserNameLink from './UserNameLink';
 import { formatRelativeDate } from '../utils/date';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 interface CommentWithProfile extends Comment {
   displayName?: string;
@@ -29,47 +30,26 @@ interface CommentsSectionProps {
 export default function CommentsSection({ routeId, userId, onLoginRequired, onInputFocus }: CommentsSectionProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
-  const [comments, setComments] = useState<CommentWithProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newComment, setNewComment] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    fetchComments();
-    const unsubscribe = cacheEvents.subscribe('comments', fetchComments);
-    return unsubscribe;
-  }, [routeId]);
-
-  const fetchComments = async () => {
-    try {
+  const { data: comments, loading } = useApiQuery(
+    async () => {
       const data = await commentsApi.listByRoute(routeId);
-
-      // Fetch display names for all unique user IDs
       const userIds = [...new Set(data.map(c => c.user_id))];
       const profiles = await Promise.all(
         userIds.map(async (id) => {
           try {
             const profile = await userProfilesApi.get(id);
             return { id, displayName: profile?.display_name };
-          } catch {
-            return { id, displayName: undefined };
-          }
+          } catch { return { id, displayName: undefined }; }
         })
       );
       const profileMap = new Map(profiles.map(p => [p.id, p.displayName]));
-
-      setComments(
-        data.map(c => ({
-          ...c,
-          displayName: profileMap.get(c.user_id) || undefined,
-        }))
-      );
-    } catch (err) {
-      console.error('Error fetching comments:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return data.map(c => ({ ...c, displayName: profileMap.get(c.user_id) || undefined }));
+    },
+    [routeId],
+    { cacheKey: 'comments', initialData: [] as CommentWithProfile[] },
+  );
+  const [newComment, setNewComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!userId) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { sendsApi, userProfilesApi, cacheEvents } from '../lib/api';
+import { sendsApi, userProfilesApi } from '../lib/api';
 import { Send } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import UserNameLink from '../components/UserNameLink';
 import { formatRelativeDate } from '../utils/date';
 import { getDifficultyLabel } from '../utils/sends';
 import SafeScreen from '../components/SafeScreen';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 type SendWithProfile = Send & { displayName?: string };
 
@@ -22,52 +23,25 @@ export default function RouteSendsScreen({ route }: any) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { routeId } = route.params;
-  const [sends, setSends] = useState<SendWithProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadSends();
-    const unsubscribe = cacheEvents.subscribe('sends', loadSends);
-    return unsubscribe;
-  }, [routeId]);
-
-  const loadSends = async () => {
-    try {
+  const { data: sends, loading, refreshing, refresh } = useApiQuery(
+    async () => {
       const data = await sendsApi.listByRoute(routeId);
-
-      // Fetch display names for all unique user IDs
       const userIds = [...new Set(data.map(s => s.user_id))];
       const profiles = await Promise.all(
         userIds.map(async (id) => {
           try {
             const profile = await userProfilesApi.get(id);
             return { id, displayName: profile?.display_name };
-          } catch {
-            return { id, displayName: undefined };
-          }
+          } catch { return { id, displayName: undefined }; }
         })
       );
       const profileMap = new Map(profiles.map(p => [p.id, p.displayName]));
-
-      setSends(
-        data.map(s => ({
-          ...s,
-          displayName: profileMap.get(s.user_id) || undefined,
-        }))
-      );
-    } catch (error) {
-      console.error('Error loading sends:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    loadSends();
-  };
+      return data.map(send => ({ ...send, displayName: profileMap.get(send.user_id) || undefined }));
+    },
+    [routeId],
+    { cacheKey: 'sends', initialData: [] as SendWithProfile[] },
+  );
 
   const renderSend = ({ item: send }: { item: SendWithProfile }) => (
     <View style={[styles.sendItem, { backgroundColor: colors.cardBackground, borderBottomColor: colors.separator }]}>
@@ -116,7 +90,7 @@ export default function RouteSendsScreen({ route }: any) {
           <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{t('sends.noSendsYet')}</Text>
         }
         refreshing={refreshing}
-        onRefresh={handleRefresh}
+        onRefresh={refresh}
       />
     </SafeScreen>
   );

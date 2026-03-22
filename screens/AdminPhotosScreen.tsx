@@ -1,4 +1,3 @@
-import { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,30 +9,22 @@ import {
 import CachedImage from '../components/CachedImage';
 import { useTranslation } from 'react-i18next';
 import { Database } from '../types/database.types';
-import { photosApi, cacheEvents } from '../lib/api';
+import { photosApi } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
 export default function AdminPhotosScreen({ navigation }: any) {
   const { t } = useTranslation();
   const colors = useThemeColors();
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchPhotos = useCallback(async () => {
-    const data = await photosApi.listAll();
-    setPhotos(data as Photo[]);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchPhotos();
-    const unsubscribe = cacheEvents.subscribe('photos', fetchPhotos);
-    return unsubscribe;
-  }, [fetchPhotos]);
+  const { data: photos, loading } = useApiQuery(
+    () => photosApi.listAll() as Promise<Photo[]>,
+    [],
+    { cacheKey: 'photos', initialData: [] as Photo[] },
+  );
 
   const renderPhoto = ({ item }: { item: Photo }) => (
     <TouchableOpacity

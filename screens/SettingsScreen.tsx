@@ -18,6 +18,7 @@ import { userProfilesApi } from '../lib/api';
 import { SUPPORTED_LANGUAGES, changeLanguage, getCurrentLanguage, LanguageCode } from '../lib/i18n';
 import { useTheme, ThemePreference } from '../lib/theme-context';
 import SafeScreen from '../components/SafeScreen';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 const THEME_OPTIONS: { value: ThemePreference; labelKey: string; icon: string }[] = [
   { value: 'light', labelKey: 'account.themeLight', icon: '\u2600\uFE0F' },
@@ -29,32 +30,22 @@ export default function SettingsScreen({ navigation }: any) {
   const { t } = useTranslation();
   const { user, deleteAccount } = useAuth();
   const { themePreference, setThemePreference, colors } = useTheme();
+  const { data: profile, loading: isLoading } = useApiQuery(
+    () => userProfilesApi.get(user!.id),
+    [user?.id],
+    { enabled: !!user },
+  );
   const [displayName, setDisplayName] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentLang, setCurrentLang] = useState<LanguageCode>(getCurrentLanguage());
 
+  // Sync profile to form state
   useEffect(() => {
-    if (user) {
-      loadProfile();
+    if (profile?.display_name) {
+      setDisplayName(profile.display_name);
     }
-  }, [user]);
-
-  const loadProfile = async () => {
-    if (!user) return;
-
-    try {
-      const profile = await userProfilesApi.get(user.id);
-      if (profile?.display_name) {
-        setDisplayName(profile.display_name);
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [profile]);
 
   const handleSave = async () => {
     if (!user) return;

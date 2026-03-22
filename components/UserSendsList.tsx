@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { sendsApi, cacheEvents } from '../lib/api';
+import { sendsApi } from '../lib/api';
 import { Send } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import { formatRelativeDate } from '../utils/date';
 import { getDifficultyLabel } from '../utils/sends';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 type SendWithRoute = Send & { route: { id: string; title: string; grade: string } };
 
@@ -27,32 +28,11 @@ export default function UserSendsList({ userId, emptyMessage }: UserSendsListPro
   const { t } = useTranslation();
   const colors = useThemeColors();
   const navigation = useNavigation<any>();
-  const [sends, setSends] = useState<SendWithRoute[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  useEffect(() => {
-    loadSends();
-    const unsubscribe = cacheEvents.subscribe('sends', loadSends);
-    return unsubscribe;
-  }, [userId]);
-
-  const loadSends = async () => {
-    try {
-      const data = await sendsApi.listByUser(userId);
-      setSends(data);
-    } catch (error) {
-      console.error('Error loading sends:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    loadSends();
-  };
+  const { data: sends, loading, refreshing, refresh } = useApiQuery(
+    () => sendsApi.listByUser(userId),
+    [userId],
+    { cacheKey: 'sends', initialData: [] as SendWithRoute[] },
+  );
 
   const renderSend = ({ item: send }: { item: SendWithRoute }) => (
     <TouchableOpacity
@@ -99,7 +79,7 @@ export default function UserSendsList({ userId, emptyMessage }: UserSendsListPro
         <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{emptyMessage || t('sends.noSendsYet')}</Text>
       }
       refreshing={refreshing}
-      onRefresh={handleRefresh}
+      onRefresh={refresh}
     />
   );
 }

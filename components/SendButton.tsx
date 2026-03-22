@@ -9,8 +9,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Send } from '../types/database.types';
-import { sendsApi, cacheEvents } from '../lib/api';
+import { sendsApi } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 interface SendButtonProps {
   routeId: string;
@@ -22,8 +23,11 @@ interface SendButtonProps {
 export default function SendButton({ routeId, userId, onLoginRequired, compact }: SendButtonProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
-  const [send, setSend] = useState<Send | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: send, loading } = useApiQuery(
+    () => sendsApi.getByUserAndRoute(userId!, routeId),
+    [userId, routeId],
+    { cacheKey: 'sends', enabled: !!userId },
+  );
   const [modalVisible, setModalVisible] = useState(false);
   const [qualityRating, setQualityRating] = useState<number | null>(null);
   const [difficultyRating, setDifficultyRating] = useState<number | null>(null);
@@ -35,31 +39,13 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
     { value: 1, label: t('sends.hard') },
   ];
 
+  // Sync form state when send data changes
   useEffect(() => {
-    if (userId) {
-      fetchSend();
-      const unsubscribe = cacheEvents.subscribe('sends', fetchSend);
-      return unsubscribe;
-    } else {
-      setLoading(false);
+    if (send) {
+      setQualityRating(send.quality_rating);
+      setDifficultyRating(send.difficulty_rating);
     }
-  }, [userId, routeId]);
-
-  const fetchSend = async () => {
-    if (!userId) return;
-    try {
-      const data = await sendsApi.getByUserAndRoute(userId, routeId);
-      setSend(data);
-      if (data) {
-        setQualityRating(data.quality_rating);
-        setDifficultyRating(data.difficulty_rating);
-      }
-    } catch (err) {
-      console.error('Error fetching send:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [send]);
 
   const handlePress = () => {
     if (!userId) {
@@ -99,7 +85,6 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
     setSaving(true);
     try {
       await sendsApi.delete(send.id);
-      setSend(null);
       setQualityRating(null);
       setDifficultyRating(null);
       setModalVisible(false);

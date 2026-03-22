@@ -19,6 +19,7 @@ import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 import { detectHolds } from '../lib/holdDetection';
 import SafeScreen from '../components/SafeScreen';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
@@ -70,9 +71,21 @@ export default function AdminPhotoDetailScreen({ route }: any) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { photoId } = route.params;
+
+  const { data: initData, loading } = useApiQuery(
+    async () => {
+      const [photo, detectedHolds] = await Promise.all([
+        photosApi.get(photoId),
+        detectedHoldsApi.listByPhoto(photoId, undefined, true),
+      ]);
+      return { photo: photo as Photo | null, detectedHolds };
+    },
+    [photoId],
+  );
+
+  // Local state for mutations (photo dates, hold edits/detection)
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [detectedHolds, setDetectedHolds] = useState<DetectedHold[]>([]);
-  const [loading, setLoading] = useState(true);
   const [visualizationReady, setVisualizationReady] = useState(false);
   const [detecting, setDetecting] = useState(false);
   const [detectTile, setDetectTile] = useState(0);
@@ -81,9 +94,13 @@ export default function AdminPhotoDetailScreen({ route }: any) {
   const [editingField, setEditingField] = useState<'setup_date' | 'teardown_date' | null>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
 
+  // Sync fetched data to local state
   useEffect(() => {
-    fetchPhotoData();
-  }, [photoId]);
+    if (initData) {
+      if (initData.photo) setPhoto(initData.photo);
+      setDetectedHolds(initData.detectedHolds);
+    }
+  }, [initData]);
 
   // Delay visualization rendering to allow spinner to show (only for large hold counts)
   useEffect(() => {
@@ -98,19 +115,6 @@ export default function AdminPhotoDetailScreen({ route }: any) {
       }
     }
   }, [loading, detectedHolds.length]);
-
-  const fetchPhotoData = async () => {
-    const [photoData, holdsData] = await Promise.all([
-      photosApi.get(photoId),
-      detectedHoldsApi.listByPhoto(photoId, undefined, true),
-    ]);
-
-    if (photoData) {
-      setPhoto(photoData as Photo);
-    }
-    setDetectedHolds(holdsData);
-    setLoading(false);
-  };
 
   const handleDeleteDetectedHold = (holdId: string) => {
     setDetectedHolds(prev => prev.filter(h => h.id !== holdId));

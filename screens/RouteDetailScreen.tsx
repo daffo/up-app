@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Database, DetectedHold, Send } from '../types/database.types';
-import { routesApi, detectedHoldsApi, userProfilesApi, sendsApi, cacheEvents } from '../lib/api';
+import { routesApi, detectedHoldsApi, userProfilesApi, sendsApi } from '../lib/api';
 import RouteVisualization from '../components/RouteVisualization';
 import SendButton from '../components/SendButton';
 import CommentsSection from '../components/CommentsSection';
@@ -21,6 +21,7 @@ import { useRequireAuth } from '../hooks/useRequireAuth';
 import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -36,12 +37,45 @@ export default function RouteDetailScreen({ route, navigation }: any) {
   const { routeId } = route.params;
   const { user, requireAuth } = useRequireAuth();
   const scrollViewRef = useRef<ScrollView>(null);
-  const [routeData, setRouteData] = useState<RouteWithPhoto | null>(null);
-  const [detectedHolds, setDetectedHolds] = useState<DetectedHold[]>([]);
-  const [sends, setSends] = useState<Send[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const { data: routeDetail, loading, error } = useApiQuery(
+    async () => {
+      const fetchedRoute = await routesApi.get(routeId);
+      const [creatorDisplayName, detectedHoldsData] = await Promise.all([
+        (async () => {
+          if (!fetchedRoute?.user_id) return undefined;
+          try {
+            const profile = await userProfilesApi.get(fetchedRoute.user_id);
+            return profile?.display_name || undefined;
+          } catch { return undefined; }
+        })(),
+        (async () => {
+          if (!fetchedRoute?.photo_id) return { detectedHolds: [] as DetectedHold[] };
+          try {
+            const holdsVersion = (fetchedRoute as any).photo?.holds_version;
+            const holds = await detectedHoldsApi.listByPhoto(fetchedRoute.photo_id, holdsVersion);
+            return { detectedHolds: holds };
+          } catch { return { detectedHolds: [] as DetectedHold[] }; }
+        })(),
+      ]);
+      return {
+        route: { ...fetchedRoute, creatorDisplayName } as RouteWithPhoto,
+        detectedHolds: detectedHoldsData.detectedHolds,
+      };
+    },
+    [routeId],
+    { cacheKey: 'route' },
+  );
+
+  const { data: sends } = useApiQuery(
+    () => sendsApi.listByRoute(routeId),
+    [routeId],
+    { cacheKey: 'sends', initialData: [] as Send[] },
+  );
+
+  const routeData = routeDetail?.route ?? null;
+  const detectedHolds = routeDetail?.detectedHolds ?? [];
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -61,28 +95,6 @@ export default function RouteDetailScreen({ route, navigation }: any) {
   }, []);
 
   useEffect(() => {
-    fetchRouteDetail();
-    fetchSends();
-
-    const unsubscribeRoute = cacheEvents.subscribe('route', fetchRouteDetail);
-    const unsubscribeSends = cacheEvents.subscribe('sends', fetchSends);
-    return () => {
-      unsubscribeRoute();
-      unsubscribeSends();
-    };
-  }, [routeId]);
-
-  const fetchSends = async () => {
-    try {
-      const data = await sendsApi.listByRoute(routeId);
-      setSends(data);
-    } catch (err) {
-      console.error('Error fetching sends:', err);
-    }
-  };
-
-  useEffect(() => {
-    // Set send button in navigation header
     navigation.setOptions({
       headerRight: () => (
         <View style={{ marginRight: 10 }}>
@@ -96,53 +108,6 @@ export default function RouteDetailScreen({ route, navigation }: any) {
       ),
     });
   }, [user, navigation, routeId, requireAuth]);
-
-  const fetchRouteDetail = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Fetch route with photo (must come first)
-      const fetchedRoute = await routesApi.get(routeId);
-
-      // Fetch profile and detected holds in parallel (independent of each other)
-      const [creatorDisplayName, detectedHoldsData] = await Promise.all([
-        (async () => {
-          if (!fetchedRoute?.user_id) return undefined;
-          try {
-            const profile = await userProfilesApi.get(fetchedRoute.user_id);
-            return profile?.display_name || undefined;
-          } catch (profileErr) {
-            console.error('Error fetching creator profile:', profileErr);
-            return undefined;
-          }
-        })(),
-        (async () => {
-          if (!fetchedRoute?.photo_id) return null;
-          try {
-            const holdsVersion = (fetchedRoute as any).photo?.holds_version;
-            return await detectedHoldsApi.listByPhoto(
-              fetchedRoute.photo_id,
-              holdsVersion,
-            );
-          } catch (holdsErr) {
-            console.error('Error fetching detected holds:', holdsErr);
-            return null;
-          }
-        })(),
-      ]);
-
-      setRouteData({ ...fetchedRoute, creatorDisplayName } as RouteWithPhoto);
-      if (detectedHoldsData) {
-        setDetectedHolds(detectedHoldsData);
-      }
-    } catch (err) {
-      console.error('Error fetching route:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch route');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
