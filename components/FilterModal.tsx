@@ -2,7 +2,6 @@ import React from 'react';
 import {
   View,
   Text,
-  Modal,
   TouchableOpacity,
   StyleSheet,
   Switch,
@@ -11,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { RouteFilters } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import TrimmedTextInput from './TrimmedTextInput';
+import BottomSheet from './BottomSheet';
 
 interface FilterModalProps {
   visible: boolean;
@@ -62,133 +62,89 @@ export default function FilterModal({
   const hasActiveFilters = !!filters.creatorId || !!filters.grade || !!filters.search || (wallStatus !== 'active');
 
   return (
-    <Modal
+    <BottomSheet
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
+      onClose={onClose}
+      title={t('filters.title')}
+      closeLabel={t('common.done')}
+      sheetStyle={filterSheetStyle}
+      footer={
+        hasActiveFilters ? (
+          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+            <Text style={[styles.resetButtonText, { color: colors.danger }]}>{t('filters.resetFilters')}</Text>
+          </TouchableOpacity>
+        ) : undefined
+      }
     >
-      <View style={styles.overlay}>
-        <TouchableOpacity style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.sheet, { backgroundColor: colors.cardBackground }]}>
-          <View style={[styles.header, { borderBottomColor: colors.borderLight }]}>
-            <Text style={[styles.title, { color: colors.textPrimary }]}>{t('filters.title')}</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={[styles.closeButton, { color: colors.primary }]}>{t('common.done')}</Text>
+      <View style={styles.searchRow}>
+        <TrimmedTextInput
+          style={[styles.searchInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
+          value={filters.search || ''}
+          onChangeText={handleSearchChange}
+          placeholder={t('filters.searchPlaceholder')}
+          placeholderTextColor={colors.placeholderText}
+          autoCorrect={false}
+          accessibilityLabel={t('filters.searchPlaceholder')}
+        />
+      </View>
+
+      <View style={styles.filterRow}>
+        <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.grade')}</Text>
+        <TrimmedTextInput
+          style={[styles.gradeInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
+          value={filters.grade || ''}
+          onChangeText={handleGradeChange}
+          placeholder={t('filters.gradePlaceholder')}
+          placeholderTextColor={colors.placeholderText}
+          autoCapitalize="none"
+          autoCorrect={false}
+          accessibilityLabel={t('filters.grade')}
+        />
+      </View>
+
+      <View style={styles.filterRow}>
+        <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.myRoutes')}</Text>
+        <Switch
+          value={isMyRoutesEnabled}
+          onValueChange={handleMyRoutesToggle}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          accessibilityLabel={t('filters.toggleMyRoutes')}
+        />
+      </View>
+
+      <View style={styles.filterRow}>
+        <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.wall')}</Text>
+        <View style={[styles.segmentedControl, { borderColor: colors.border }]}>
+          {(['active', 'past', 'all'] as const).map((status) => (
+            <TouchableOpacity
+              key={status}
+              style={[
+                styles.segmentButton,
+                wallStatus === status && { backgroundColor: colors.primary },
+              ]}
+              onPress={() => handleWallStatusChange(status)}
+              accessibilityLabel={t(`filters.wall${status.charAt(0).toUpperCase() + status.slice(1)}`)}
+            >
+              <Text
+                style={[
+                  styles.segmentText,
+                  { color: colors.textPrimary },
+                  wallStatus === status && { color: '#fff' },
+                ]}
+              >
+                {t(`filters.wall${status.charAt(0).toUpperCase() + status.slice(1)}`)}
+              </Text>
             </TouchableOpacity>
-          </View>
-
-          <View style={styles.content}>
-            <View style={styles.searchRow}>
-              <TrimmedTextInput
-                style={[styles.searchInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
-                value={filters.search || ''}
-                onChangeText={handleSearchChange}
-                placeholder={t('filters.searchPlaceholder')}
-                placeholderTextColor={colors.placeholderText}
-                autoCorrect={false}
-                accessibilityLabel={t('filters.searchPlaceholder')}
-              />
-            </View>
-
-            <View style={styles.filterRow}>
-              <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.grade')}</Text>
-              <TrimmedTextInput
-                style={[styles.gradeInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
-                value={filters.grade || ''}
-                onChangeText={handleGradeChange}
-                placeholder={t('filters.gradePlaceholder')}
-                placeholderTextColor={colors.placeholderText}
-                autoCapitalize="none"
-                autoCorrect={false}
-                accessibilityLabel={t('filters.grade')}
-              />
-            </View>
-
-            <View style={styles.filterRow}>
-              <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.myRoutes')}</Text>
-              <Switch
-                value={isMyRoutesEnabled}
-                onValueChange={handleMyRoutesToggle}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                accessibilityLabel={t('filters.toggleMyRoutes')}
-              />
-            </View>
-
-            <View style={styles.filterRow}>
-              <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.wall')}</Text>
-              <View style={[styles.segmentedControl, { borderColor: colors.border }]}>
-                {(['active', 'past', 'all'] as const).map((status) => (
-                  <TouchableOpacity
-                    key={status}
-                    style={[
-                      styles.segmentButton,
-                      wallStatus === status && { backgroundColor: colors.primary },
-                    ]}
-                    onPress={() => handleWallStatusChange(status)}
-                    accessibilityLabel={t(`filters.wall${status.charAt(0).toUpperCase() + status.slice(1)}`)}
-                  >
-                    <Text
-                      style={[
-                        styles.segmentText,
-                        { color: colors.textPrimary },
-                        wallStatus === status && { color: '#fff' },
-                      ]}
-                    >
-                      {t(`filters.wall${status.charAt(0).toUpperCase() + status.slice(1)}`)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.footer}>
-            {hasActiveFilters && (
-              <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-                <Text style={[styles.resetButtonText, { color: colors.danger }]}>{t('filters.resetFilters')}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          ))}
         </View>
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
+const filterSheetStyle = { minHeight: 200 } as const;
+
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  sheet: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    minHeight: 200,
-    paddingBottom: 34,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  closeButton: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  content: {
-    padding: 16,
-  },
   searchRow: {
     paddingVertical: 12,
   },
@@ -230,10 +186,6 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 14,
     fontWeight: '500',
-  },
-  footer: {
-    padding: 16,
-    paddingTop: 0,
   },
   resetButton: {
     padding: 12,

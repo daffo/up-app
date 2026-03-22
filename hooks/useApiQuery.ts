@@ -21,11 +21,23 @@ type UseApiQueryResult<T> = {
   refetch: () => void;
 };
 
+// When initialData is provided, data is never null
+export function useApiQuery<T>(
+  fetcher: () => Promise<T>,
+  deps: React.DependencyList,
+  options: UseApiQueryOptions<T> & { initialData: T },
+): UseApiQueryResult<T>;
+// When initialData is omitted, data can be null
 export function useApiQuery<T>(
   fetcher: () => Promise<T>,
   deps: React.DependencyList,
   options?: UseApiQueryOptions<T>,
-): UseApiQueryResult<T extends null ? T : T | null> {
+): UseApiQueryResult<T | null>;
+export function useApiQuery<T>(
+  fetcher: () => Promise<T>,
+  deps: React.DependencyList,
+  options?: UseApiQueryOptions<T>,
+): UseApiQueryResult<T | null> {
   const { cacheKey, enabled = true, initialData } = options ?? {};
 
   const [data, setData] = useState<T | null>((initialData ?? null) as T | null);

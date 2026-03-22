@@ -3,15 +3,14 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Send } from '../types/database.types';
 import { sendsApi } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import { useApiQuery } from '../hooks/useApiQuery';
+import BottomSheet from './BottomSheet';
 
 interface SendButtonProps {
   routeId: string;
@@ -126,100 +125,88 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
         </TouchableOpacity>
       )}
 
-      <Modal
+      <BottomSheet
         visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.overlay}>
-          <TouchableOpacity
-            style={styles.backdrop}
-            onPress={() => setModalVisible(false)}
-          />
-          <View style={[styles.sheet, { backgroundColor: colors.cardBackground }]}>
-            <View style={[styles.header, { borderBottomColor: colors.borderLight }]}>
-              <Text style={[styles.title, { color: colors.textPrimary }]}>{send ? t('sends.editSend') : t('sends.logSend')}</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={[styles.closeButton, { color: colors.textSecondary }]}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-            </View>
+        onClose={() => setModalVisible(false)}
+        title={send ? t('sends.editSend') : t('sends.logSend')}
+        closeLabel={t('common.cancel')}
+        closeLabelColor={colors.textSecondary}
+        footer={
+          <View style={styles.footerButtons}>
+            <TouchableOpacity
+              style={[styles.saveButton, { backgroundColor: colors.primary }, saving && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={saving}
+            >
+              <Text style={styles.saveButtonText}>
+                {send ? t('common.update') : t('sends.logSend')}
+              </Text>
+            </TouchableOpacity>
 
-            <View style={styles.content}>
-              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t('sends.qualityRating')}</Text>
-              <View style={styles.starsRow}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <TouchableOpacity
-                    key={star}
-                    onPress={() => setQualityRating(qualityRating === star ? null : star)}
-                    accessibilityLabel={t('sends.rateStar', { count: star })}
-                  >
-                    <Ionicons
-                      name={qualityRating && qualityRating >= star ? 'star' : 'star-outline'}
-                      size={32}
-                      color={colors.star}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t('sends.difficultyForGrade')}</Text>
-              <View style={styles.difficultyRow}>
-                {DIFFICULTY_OPTIONS.map((option) => (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[
-                      styles.difficultyOption,
-                      { borderColor: colors.border },
-                      difficultyRating === option.value && { borderColor: colors.primary, backgroundColor: colors.primaryLight },
-                    ]}
-                    onPress={() =>
-                      setDifficultyRating(difficultyRating === option.value ? null : option.value)
-                    }
-                  >
-                    <Text
-                      style={[
-                        styles.difficultyText,
-                        { color: colors.textSecondary },
-                        difficultyRating === option.value && { color: colors.primary, fontWeight: '600' },
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.footer}>
+            {send && (
               <TouchableOpacity
-                style={[styles.saveButton, { backgroundColor: colors.primary }, saving && styles.saveButtonDisabled]}
-                onPress={handleSave}
+                style={styles.removeButton}
+                onPress={handleRemove}
                 disabled={saving}
               >
-                <Text style={styles.saveButtonText}>
-                  {send ? t('common.update') : t('sends.logSend')}
-                </Text>
+                <Text style={[styles.removeButtonText, { color: colors.danger }]}>{t('sends.removeSend')}</Text>
               </TouchableOpacity>
-
-              {send && (
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={handleRemove}
-                  disabled={saving}
-                >
-                  <Text style={[styles.removeButtonText, { color: colors.danger }]}>{t('sends.removeSend')}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            )}
           </View>
+        }
+      >
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t('sends.qualityRating')}</Text>
+        <View style={styles.starsRow}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <TouchableOpacity
+              key={star}
+              onPress={() => setQualityRating(qualityRating === star ? null : star)}
+              accessibilityLabel={t('sends.rateStar', { count: star })}
+            >
+              <Ionicons
+                name={qualityRating && qualityRating >= star ? 'star' : 'star-outline'}
+                size={32}
+                color={colors.star}
+              />
+            </TouchableOpacity>
+          ))}
         </View>
-      </Modal>
+
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t('sends.difficultyForGrade')}</Text>
+        <View style={styles.difficultyRow}>
+          {DIFFICULTY_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.difficultyOption,
+                { borderColor: colors.border },
+                difficultyRating === option.value && { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+              ]}
+              onPress={() =>
+                setDifficultyRating(difficultyRating === option.value ? null : option.value)
+              }
+            >
+              <Text
+                style={[
+                  styles.difficultyText,
+                  { color: colors.textSecondary },
+                  difficultyRating === option.value && { color: colors.primary, fontWeight: '600' },
+                ]}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </BottomSheet>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  footerButtons: {
+    gap: 12,
+  },
   compactButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -246,36 +233,6 @@ const styles = StyleSheet.create({
   buttonTextSent: {
     color: '#fff',
   },
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  sheet: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: 34,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  closeButton: {
-    fontSize: 16,
-  },
-  content: {
-    padding: 16,
-  },
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
@@ -300,10 +257,6 @@ const styles = StyleSheet.create({
   },
   difficultyText: {
     fontSize: 14,
-  },
-  footer: {
-    padding: 16,
-    gap: 12,
   },
   saveButton: {
     paddingVertical: 14,
