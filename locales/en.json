@@ -161,7 +161,7 @@
     "clearWall": "Clear wall filter"
   },
   "auth": {
-    "subtitle": "Climbing Gym Route Tracker",
+    "subtitle": "Spray Wall Route Manager",
     "email": "Email",
     "password": "Password",
     "passwordMin": "Password (min 6 characters)",

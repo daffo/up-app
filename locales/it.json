@@ -161,7 +161,7 @@
     "clearWall": "Rimuovi filtro parete"
   },
   "auth": {
-    "subtitle": "Traccia le Vie della Palestra",
+    "subtitle": "Gestore Vie Spray Wall",
     "email": "Email",
     "password": "Password",
     "passwordMin": "Password (min 6 caratteri)",
