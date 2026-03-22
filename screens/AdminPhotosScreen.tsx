@@ -43,7 +43,7 @@ export default function AdminPhotosScreen({ navigation }: any) {
       <CachedImage source={{ uri: item.image_url }} style={styles.thumbnail} />
       <View style={styles.photoInfo}>
         {!item.setup_date ? (
-          <Text style={styles.draftText}>{t('admin.draft')}</Text>
+          <Text style={[styles.draftText, { color: colors.warning }]}>{t('admin.draft')}</Text>
         ) : (
           <>
             <Text style={[styles.dateText, { color: colors.textPrimary }]}>
@@ -54,7 +54,7 @@ export default function AdminPhotosScreen({ navigation }: any) {
                 {t('admin.teardown')}: {formatDate(item.teardown_date)}
               </Text>
             ) : (
-              <Text style={styles.activeText}>{t('admin.active')}</Text>
+              <Text style={[styles.activeText, { color: colors.success }]}>{t('admin.active')}</Text>
             )}
           </>
         )}
@@ -119,12 +119,10 @@ const styles = StyleSheet.create({
   },
   draftText: {
     fontSize: 14,
-    color: '#e67e22',
     fontWeight: '600',
   },
   activeText: {
     fontSize: 14,
-    color: '#28a745',
     fontWeight: '600',
   },
   emptyText: {

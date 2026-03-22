@@ -21,6 +21,8 @@ export type ThemeColors = {
   primaryLight: string;
   primaryLightAlt: string;
   danger: string;
+  success: string;
+  warning: string;
   star: string;
   cancelButton: string;
   disabledButton: string;
@@ -44,6 +46,8 @@ const lightColors: ThemeColors = {
   primaryLight: '#e3f2fd',
   primaryLightAlt: '#f0f7ff',
   danger: '#dc3545',
+  success: '#28a745',
+  warning: '#e67e22',
   star: '#f5a623',
   cancelButton: '#6c757d',
   disabledButton: '#cccccc',
@@ -67,6 +71,8 @@ const darkColors: ThemeColors = {
   primaryLight: '#1a3a5c',
   primaryLightAlt: '#162d47',
   danger: '#ff6b7a',
+  success: '#4caf50',
+  warning: '#ffa726',
   star: '#f5a623',
   cancelButton: '#8a8a8a',
   disabledButton: '#444444',

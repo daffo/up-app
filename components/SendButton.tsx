@@ -119,9 +119,9 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
           <Ionicons
             name={send ? 'checkmark-circle' : 'checkmark-circle-outline'}
             size={18}
-            color={send ? '#28a745' : colors.primary}
+            color={send ? colors.success : colors.primary}
           />
-          <Text style={[styles.compactText, { color: colors.primary }, send && styles.compactTextSent]}>
+          <Text style={[styles.compactText, { color: send ? colors.success : colors.primary }]}>
             {send ? t('sends.sent') : t('sends.send')}
           </Text>
         </TouchableOpacity>
@@ -243,9 +243,6 @@ const styles = StyleSheet.create({
   compactText: {
     fontSize: 16,
     fontWeight: '600',
-  },
-  compactTextSent: {
-    color: '#28a745',
   },
   button: {
     flexDirection: 'row',

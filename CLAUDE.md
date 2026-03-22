@@ -54,7 +54,7 @@ const { themePreference, isDark, colors, setThemePreference } = useTheme();
 <TextInput placeholderTextColor={colors.placeholderText} />
 ```
 
-**Semantic color tokens**: `screenBackground`, `cardBackground`, `inputBackground`, `textPrimary`, `textSecondary`, `textTertiary`, `textOnPrimary`, `border`, `borderLight`, `separator`, `primary`, `primaryLight`, `primaryLightAlt`, `danger`, `star`, `cancelButton`, `disabledButton`, `placeholderText`, `chevron`, `shadowColor`
+**Semantic color tokens**: `screenBackground`, `cardBackground`, `inputBackground`, `textPrimary`, `textSecondary`, `textTertiary`, `textOnPrimary`, `border`, `borderLight`, `separator`, `primary`, `primaryLight`, `primaryLightAlt`, `danger`, `success`, `warning`, `star`, `cancelButton`, `disabledButton`, `placeholderText`, `chevron`, `shadowColor`
 
 **Theme exceptions** (keep hardcoded dark colors, do NOT use theme):
 - `FullScreenImageBase`, `FullScreenRouteEditor`, `FullScreenHoldEditor`, `FullScreenRouteViewer` - image viewers with black backgrounds
