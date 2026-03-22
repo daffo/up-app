@@ -650,5 +650,58 @@ name: Auth User - Login Flow
 - assertVisible: "No routes yet"
 
 # ============================================
+# TEST LOGOUT PRESERVES PREFERENCES
+# ============================================
+
+# Clear My Routes filter first (it's user-specific and will be cleared on logout anyway)
+- tapOn: "Clear my routes filter"
+- waitForAnimationToEnd
+
+# Set wall status to "All" (non-default — default is "Active")
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "All"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Verify "All" chip is showing
+- assertVisible: "All"
+
+# Logout via profile menu
+- tapOn: "Open menu"
+- extendedWaitUntil:
+    visible: "Logout"
+    timeout: 3000
+- tapOn: "Logout"
+
+# Verify we're in guest state (Login button appears)
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 5000
+
+# Verify wall filter survived logout — "All" chip should still be visible
+- assertVisible: "All"
+
+# Verify "My Routes" was cleared (user-specific filter)
+- assertNotVisible: "My Routes"
+
+# Log back in
+- runFlow: auth-login.yaml
+
+# Verify wall filter still persisted after re-login
+- assertVisible: "All"
+
+# Reset wall filter back to Active (clean state for future test runs)
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "Active"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# ============================================
 # TEST COMPLETE
 # ============================================

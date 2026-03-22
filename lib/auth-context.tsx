@@ -243,10 +243,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore errors - just clear local state
     }
 
-    // Always clear local storage and state regardless of API result
+    // Clear auth token only — preserve user preferences (theme, language, filters, caches)
     try {
       await AsyncStorage.removeItem('supabase.auth.token');
-      await AsyncStorage.clear();
     } catch {
       // Ignore storage errors
     }
