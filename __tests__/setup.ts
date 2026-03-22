@@ -13,6 +13,9 @@ jest.mock('../lib/i18n', () => ({
         'sends.soft': 'Soft',
         'sends.accurate': 'Accurate',
         'sends.hard': 'Hard',
+        'common.errorTitle': 'Something went wrong',
+        'common.errorMessage': 'An unexpected error occurred. Please try again.',
+        'common.retry': 'Try Again',
       };
       return translations[key] || key;
     },

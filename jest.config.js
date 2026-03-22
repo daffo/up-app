@@ -1,6 +1,6 @@
 module.exports = {
   preset: 'jest-expo',
-  testMatch: ['**/__tests__/unit/**/*.test.ts'],
+  testMatch: ['**/__tests__/unit/**/*.test.ts', '**/__tests__/unit/**/*.test.tsx'],
   testPathIgnorePatterns: ['/node_modules/', '/__tests__/contracts/'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   transformIgnorePatterns: [

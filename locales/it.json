@@ -11,7 +11,10 @@
     "back": "Indietro",
     "error": "Errore",
     "success": "Successo",
-    "done": "Fatto"
+    "done": "Fatto",
+    "errorTitle": "Qualcosa è andato storto",
+    "errorMessage": "Si è verificato un errore imprevisto. Riprova.",
+    "retry": "Riprova"
   },
   "nav": {
     "routeDetails": "Dettagli Via",

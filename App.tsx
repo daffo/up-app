@@ -7,6 +7,7 @@ import { AuthProvider } from './lib/auth-context';
 import { ThemeProvider, initTheme, useTheme } from './lib/theme-context';
 import { initI18n } from './lib/i18n';
 import { initImageDimensionsCache } from './lib/cache/image-cache';
+import ErrorBoundary from './components/ErrorBoundary';
 import AppNavigator from './navigation/AppNavigator';
 
 function AppContent() {
@@ -37,11 +38,13 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <AppContent />
-          </AuthProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider>
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

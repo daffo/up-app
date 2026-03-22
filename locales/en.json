@@ -11,7 +11,10 @@
     "back": "Back",
     "error": "Error",
     "success": "Success",
-    "done": "Done"
+    "done": "Done",
+    "errorTitle": "Something went wrong",
+    "errorMessage": "An unexpected error occurred. Please try again.",
+    "retry": "Try Again"
   },
   "nav": {
     "routeDetails": "Route Details",
