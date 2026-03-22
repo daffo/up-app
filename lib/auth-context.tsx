@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Session, User } from '@supabase/supabase-js';
@@ -243,14 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore errors - just clear local state
     }
 
-    // Clear auth token only — preserve user preferences (theme, language, filters, caches)
-    try {
-      await AsyncStorage.removeItem('supabase.auth.token');
-    } catch {
-      // Ignore storage errors
-    }
-
-    // Force update local state
+    // Force update local state — signOut() already clears its own storage
     setSession(null);
     setUser(null);
     setIsAdmin(false);
