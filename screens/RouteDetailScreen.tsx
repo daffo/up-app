@@ -102,34 +102,39 @@ export default function RouteDetailScreen({ route, navigation }: any) {
       setLoading(true);
       setError(null);
 
-      // Fetch route with photo
+      // Fetch route with photo (must come first)
       const fetchedRoute = await routesApi.get(routeId);
 
-      // Fetch creator's display name
-      let creatorDisplayName: string | undefined;
-      if (fetchedRoute?.user_id) {
-        try {
-          const profile = await userProfilesApi.get(fetchedRoute.user_id);
-          creatorDisplayName = profile?.display_name || undefined;
-        } catch (profileErr) {
-          console.error('Error fetching creator profile:', profileErr);
-        }
-      }
+      // Fetch profile and detected holds in parallel (independent of each other)
+      const [creatorDisplayName, detectedHoldsData] = await Promise.all([
+        (async () => {
+          if (!fetchedRoute?.user_id) return undefined;
+          try {
+            const profile = await userProfilesApi.get(fetchedRoute.user_id);
+            return profile?.display_name || undefined;
+          } catch (profileErr) {
+            console.error('Error fetching creator profile:', profileErr);
+            return undefined;
+          }
+        })(),
+        (async () => {
+          if (!fetchedRoute?.photo_id) return null;
+          try {
+            const holdsVersion = (fetchedRoute as any).photo?.holds_version;
+            return await detectedHoldsApi.listByPhoto(
+              fetchedRoute.photo_id,
+              holdsVersion,
+            );
+          } catch (holdsErr) {
+            console.error('Error fetching detected holds:', holdsErr);
+            return null;
+          }
+        })(),
+      ]);
 
       setRouteData({ ...fetchedRoute, creatorDisplayName } as RouteWithPhoto);
-
-      // Fetch detected holds for the photo (with version-based caching)
-      if (fetchedRoute?.photo_id) {
-        try {
-          const holdsVersion = (fetchedRoute as any).photo?.holds_version;
-          const detectedHoldsData = await detectedHoldsApi.listByPhoto(
-            fetchedRoute.photo_id,
-            holdsVersion,
-          );
-          setDetectedHolds(detectedHoldsData);
-        } catch (holdsErr) {
-          console.error('Error fetching detected holds:', holdsErr);
-        }
+      if (detectedHoldsData) {
+        setDetectedHolds(detectedHoldsData);
       }
     } catch (err) {
       console.error('Error fetching route:', err);
