@@ -16,7 +16,8 @@ export function formatDate(dateString: string | null): string {
  * - < 2 days: "Yesterday"
  * - >= 2 days: absolute date
  */
-export function formatRelativeDate(dateString: string): string {
+export function formatRelativeDate(dateString: string | null): string {
+  if (!dateString) return '-';
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();

@@ -88,4 +88,12 @@ describe('formatRelativeDate', () => {
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
     expect(formatRelativeDate(oneHourAgo)).toBe('1h ago');
   });
+
+  it('returns "-" for null input', () => {
+    expect(formatRelativeDate(null)).toBe('-');
+  });
+
+  it('returns "-" for empty string input', () => {
+    expect(formatRelativeDate('')).toBe('-');
+  });
 });

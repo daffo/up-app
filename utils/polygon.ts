@@ -7,6 +7,7 @@ export interface Point {
 
 // Point-in-polygon test using ray casting algorithm
 export const isPointInPolygon = (x: number, y: number, polygon: Point[]): boolean => {
+  if (polygon.length < 3) return false;
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
     const xi = polygon[i].x, yi = polygon[i].y;
