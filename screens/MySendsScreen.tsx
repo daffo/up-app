@@ -1,5 +1,4 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
 import { useThemeColors } from '../lib/theme-context';
@@ -21,9 +20,3 @@ export default function MySendsScreen() {
     </SafeScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
