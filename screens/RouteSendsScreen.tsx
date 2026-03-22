@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { sendsApi, userProfilesApi } from '../lib/api';
+import { sendsApi, enrichWithDisplayNames } from '../lib/api';
 import { Send } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import UserNameLink from '../components/UserNameLink';
@@ -27,17 +27,7 @@ export default function RouteSendsScreen({ route }: any) {
   const { data: sends, loading, refreshing, refresh } = useApiQuery(
     async () => {
       const data = await sendsApi.listByRoute(routeId);
-      const userIds = [...new Set(data.map(s => s.user_id))];
-      const profiles = await Promise.all(
-        userIds.map(async (id) => {
-          try {
-            const profile = await userProfilesApi.get(id);
-            return { id, displayName: profile?.display_name };
-          } catch { return { id, displayName: undefined }; }
-        })
-      );
-      const profileMap = new Map(profiles.map(p => [p.id, p.displayName]));
-      return data.map(send => ({ ...send, displayName: profileMap.get(send.user_id) || undefined }));
+      return enrichWithDisplayNames(data);
     },
     [routeId],
     { cacheKey: 'sends', initialData: [] as SendWithProfile[] },

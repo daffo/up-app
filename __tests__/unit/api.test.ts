@@ -5,6 +5,7 @@ import {
   photosApi,
   detectedHoldsApi,
   userProfilesApi,
+  enrichWithDisplayNames,
   sendsApi,
   commentsApi,
 } from '../../lib/api';
@@ -34,7 +35,7 @@ const mockFrom = supabase.from as jest.Mock;
 function createBuilder(resolvedValue: { data: any; error: any }) {
   const builder: any = {};
   const methods = [
-    'select', 'eq', 'not', 'is', 'or', 'ilike', 'order',
+    'select', 'eq', 'in', 'not', 'is', 'or', 'ilike', 'order',
     'insert', 'update', 'upsert', 'delete', 'single',
   ];
   for (const m of methods) {
@@ -767,6 +768,141 @@ describe('userProfilesApi', () => {
 
       await expect(userProfilesApi.upsert('u1', { display_name: 'X' })).rejects.toEqual({ message: 'fail' });
     });
+  });
+
+  describe('getMany', () => {
+    it('returns profiles for multiple user IDs in a single query', async () => {
+      const builder = createBuilder({
+        data: [
+          { user_id: 'u1', display_name: 'Alice' },
+          { user_id: 'u2', display_name: 'Bob' },
+        ],
+        error: null,
+      });
+      mockFrom.mockReturnValue(builder);
+
+      const result = await userProfilesApi.getMany(['u1', 'u2']);
+      expect(result.size).toBe(2);
+      expect(result.get('u1')).toEqual({ user_id: 'u1', display_name: 'Alice' });
+      expect(result.get('u2')).toEqual({ user_id: 'u2', display_name: 'Bob' });
+    });
+
+    it('deduplicates user IDs', async () => {
+      const builder = createBuilder({
+        data: [
+          { user_id: 'u1', display_name: 'Alice' },
+          { user_id: 'u2', display_name: 'Bob' },
+        ],
+        error: null,
+      });
+      mockFrom.mockReturnValue(builder);
+
+      await userProfilesApi.getMany(['u1', 'u1', 'u2']);
+      expect(builder.in).toHaveBeenCalledWith('user_id', ['u1', 'u2']);
+    });
+
+    it('uses cache for already-fetched profiles', async () => {
+      // Populate cache for u1 via get()
+      const builder1 = createBuilder({ data: { user_id: 'u1', display_name: 'Alice' }, error: null });
+      mockFrom.mockReturnValue(builder1);
+      await userProfilesApi.get('u1');
+      mockFrom.mockClear();
+
+      // getMany with u1 (cached) and u2 (not cached)
+      const builder2 = createBuilder({
+        data: [{ user_id: 'u2', display_name: 'Bob' }],
+        error: null,
+      });
+      mockFrom.mockReturnValue(builder2);
+
+      const result = await userProfilesApi.getMany(['u1', 'u2']);
+      expect(result.size).toBe(2);
+      expect(result.get('u1')).toEqual({ user_id: 'u1', display_name: 'Alice' });
+      // Only u2 should have been fetched
+      expect(builder2.in).toHaveBeenCalledWith('user_id', ['u2']);
+    });
+
+    it('returns empty map for empty input', async () => {
+      mockFrom.mockClear();
+      const result = await userProfilesApi.getMany([]);
+      expect(result.size).toBe(0);
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('handles users with no profile (not found)', async () => {
+      const builder = createBuilder({
+        data: [{ user_id: 'u1', display_name: 'Alice' }],
+        error: null,
+      });
+      mockFrom.mockReturnValue(builder);
+
+      const result = await userProfilesApi.getMany(['u1', 'u2']);
+      expect(result.size).toBe(1);
+      expect(result.has('u1')).toBe(true);
+      expect(result.has('u2')).toBe(false);
+    });
+
+    it('populates cache for fetched profiles', async () => {
+      const builder1 = createBuilder({
+        data: [{ user_id: 'u1', display_name: 'Alice' }],
+        error: null,
+      });
+      mockFrom.mockReturnValue(builder1);
+
+      await userProfilesApi.getMany(['u1']);
+      mockFrom.mockClear();
+
+      // get() should now return from cache
+      const result = await userProfilesApi.get('u1');
+      expect(result).toEqual({ user_id: 'u1', display_name: 'Alice' });
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('throws on error', async () => {
+      const builder = createBuilder({ data: null, error: { message: 'fail' } });
+      mockFrom.mockReturnValue(builder);
+
+      await expect(userProfilesApi.getMany(['u1'])).rejects.toEqual({ message: 'fail' });
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// enrichWithDisplayNames
+// ---------------------------------------------------------------------------
+describe('enrichWithDisplayNames', () => {
+  beforeEach(() => {
+    userProfilesApi._clearCache();
+  });
+
+  it('adds displayName to items from profiles', async () => {
+    const builder = createBuilder({
+      data: [{ user_id: 'u1', display_name: 'Alice' }],
+      error: null,
+    });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await enrichWithDisplayNames([
+      { user_id: 'u1', id: 'item1' } as any,
+    ]);
+    expect(result).toEqual([
+      { user_id: 'u1', id: 'item1', displayName: 'Alice' },
+    ]);
+  });
+
+  it('sets displayName to undefined when profile not found', async () => {
+    const builder = createBuilder({ data: [], error: null });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await enrichWithDisplayNames([
+      { user_id: 'u1', id: 'item1' } as any,
+    ]);
+    expect(result[0].displayName).toBeUndefined();
+  });
+
+  it('handles empty array', async () => {
+    const result = await enrichWithDisplayNames([]);
+    expect(result).toEqual([]);
   });
 });
 

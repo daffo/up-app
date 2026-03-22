@@ -9,7 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Comment } from '../types/database.types';
-import { commentsApi, userProfilesApi } from '../lib/api';
+import { commentsApi, enrichWithDisplayNames } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import TrimmedTextInput from './TrimmedTextInput';
 import UserNameLink from './UserNameLink';
@@ -33,17 +33,7 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
   const { data: comments, loading } = useApiQuery(
     async () => {
       const data = await commentsApi.listByRoute(routeId);
-      const userIds = [...new Set(data.map(c => c.user_id))];
-      const profiles = await Promise.all(
-        userIds.map(async (id) => {
-          try {
-            const profile = await userProfilesApi.get(id);
-            return { id, displayName: profile?.display_name };
-          } catch { return { id, displayName: undefined }; }
-        })
-      );
-      const profileMap = new Map(profiles.map(p => [p.id, p.displayName]));
-      return data.map(c => ({ ...c, displayName: profileMap.get(c.user_id) || undefined }));
+      return enrichWithDisplayNames(data);
     },
     [routeId],
     { cacheKey: 'comments', initialData: [] as CommentWithProfile[] },

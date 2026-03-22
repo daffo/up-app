@@ -405,10 +405,64 @@ export const userProfilesApi = {
     return profile;
   },
 
+  async getMany(userIds: string[]): Promise<Map<string, UserProfile>> {
+    const unique = [...new Set(userIds)];
+    if (unique.length === 0) return new Map();
+
+    // Check cache first, collect misses
+    const result = new Map<string, UserProfile>();
+    const missingIds: string[] = [];
+
+    for (const id of unique) {
+      const cached = profileCache.get(id);
+      if (cached && Date.now() - cached.fetchedAt < PROFILE_TTL_MS) {
+        if (cached.profile) result.set(id, cached.profile);
+      } else {
+        missingIds.push(id);
+      }
+    }
+
+    // Batch fetch missing profiles in a single query
+    if (missingIds.length > 0) {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .in('user_id', missingIds);
+
+      if (error) throw error;
+
+      const fetchedMap = new Map((data || []).map((p: UserProfile) => [p.user_id, p]));
+      const now = Date.now();
+
+      for (const id of missingIds) {
+        const profile = fetchedMap.get(id) || null;
+        profileCache.set(id, { profile, fetchedAt: now });
+        if (profile) result.set(id, profile);
+      }
+    }
+
+    return result;
+  },
+
   _clearCache() {
     profileCache.clear();
   },
 };
+
+/**
+ * Enrich an array of items that have a user_id field with display names.
+ * Uses batch profile fetch (single DB query) instead of N individual queries.
+ */
+export async function enrichWithDisplayNames<T extends { user_id: string }>(
+  items: T[],
+): Promise<(T & { displayName?: string })[]> {
+  const userIds = items.map(item => item.user_id);
+  const profileMap = await userProfilesApi.getMany(userIds);
+  return items.map(item => ({
+    ...item,
+    displayName: profileMap.get(item.user_id)?.display_name || undefined,
+  }));
+}
 
 // Sends API
 export const sendsApi = {
