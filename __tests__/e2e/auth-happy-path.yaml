@@ -687,6 +687,14 @@ name: Auth User - Login Flow
 # Verify "My Routes" was cleared (user-specific filter)
 - assertNotVisible: "My Routes"
 
+# Verify session is actually cleared — tap + and expect login screen
+- tapOn: "+"
+- extendedWaitUntil:
+    visible: "Log In"
+    timeout: 5000
+- assertVisible: "Email"
+- pressKey: back
+
 # Log back in
 - runFlow: auth-login.yaml
 
