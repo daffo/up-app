@@ -81,7 +81,7 @@ export default function HoldEditModal({
 
               {routesUsingHold.length > 0 && (
                 <>
-                  <Text style={styles.warningText}>
+                  <Text style={[styles.warningText, { color: colors.danger }]}>
                     {t('editor.cannotDelete', { count: routesUsingHold.length })}
                   </Text>
                   {routesUsingHold.map((title, i) => (
@@ -142,7 +142,6 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontSize: 14,
-    color: '#dc3545',
     marginBottom: 8,
   },
   routeListItem: {

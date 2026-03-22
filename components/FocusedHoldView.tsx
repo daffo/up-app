@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import {
   View,
   Modal,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   StatusBar,
   GestureResponderEvent,
+  PanResponderInstance,
   useWindowDimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +48,7 @@ interface FocusedHoldViewProps {
   onAdjustZoom: (newSize: number) => void;
   // Move mode
   movingHoldId: string | null;
-  holdDragPanHandlers: any;
+  holdDragPanHandlers: PanResponderInstance['panHandlers'];
   onCancelMove: () => void;
   onSaveMove: () => void;
   isSavingMove: boolean;
@@ -56,7 +57,7 @@ interface FocusedHoldViewProps {
   isAddingHold: boolean;
   brushStrokes: Array<{ x: number; y: number }>;
   brushRadius: number;
-  redrawPanHandlers: any;
+  redrawPanHandlers: PanResponderInstance['panHandlers'];
   onCancelRedraw: () => void;
   onSaveRedraw: () => void;
   onCancelAddHold: () => void;
@@ -154,11 +155,16 @@ export default function FocusedHoldView({
   const windowDimensions = useWindowDimensions();
 
   const layout = computeLayout(focusRegion, imageNaturalSize, windowDimensions);
-  if (!layout) return null;
 
   // Store dimensions and offset for PanResponder coordinate conversion
-  focusedViewDimensionsRef.current = { width: layout.displayWidth, height: layout.displayHeight };
-  focusedViewOffsetRef.current = { x: layout.offsetX, y: layout.offsetY };
+  // useLayoutEffect ensures refs are set before the next paint (PanResponder reads them synchronously)
+  useLayoutEffect(() => {
+    if (!layout) return;
+    focusedViewDimensionsRef.current = { width: layout.displayWidth, height: layout.displayHeight };
+    focusedViewOffsetRef.current = { x: layout.offsetX, y: layout.offsetY };
+  }, [layout?.displayWidth, layout?.displayHeight, layout?.offsetX, layout?.offsetY]);
+
+  if (!layout) return null;
 
   // Filter and map holds to focus region coordinate space
   const holdsInRegion = filterHoldsInRegion(detectedHolds, focusRegion);
