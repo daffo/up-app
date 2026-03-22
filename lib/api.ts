@@ -382,9 +382,9 @@ export const userProfilesApi = {
       .from('user_profiles')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
+    if (error) throw error;
     profileCache.set(userId, { profile: data, fetchedAt: Date.now() });
     return data;
   },
@@ -494,9 +494,9 @@ export const sendsApi = {
       .select('*')
       .eq('user_id', userId)
       .eq('route_id', routeId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) throw error;
     return data;
   },
 

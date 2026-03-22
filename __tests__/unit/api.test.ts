@@ -36,7 +36,7 @@ function createBuilder(resolvedValue: { data: any; error: any }) {
   const builder: any = {};
   const methods = [
     'select', 'eq', 'in', 'not', 'is', 'or', 'ilike', 'order',
-    'insert', 'update', 'upsert', 'delete', 'single',
+    'insert', 'update', 'upsert', 'delete', 'single', 'maybeSingle',
   ];
   for (const m of methods) {
     builder[m] = jest.fn().mockReturnValue(builder);
@@ -697,8 +697,8 @@ describe('userProfilesApi', () => {
       expect(result).toEqual({ user_id: 'u1', display_name: 'Alice' });
     });
 
-    it('returns null on PGRST116 (not found)', async () => {
-      const builder = createBuilder({ data: null, error: { code: 'PGRST116' } });
+    it('returns null when profile not found', async () => {
+      const builder = createBuilder({ data: null, error: null });
       mockFrom.mockReturnValue(builder);
 
       const result = await userProfilesApi.get('u1');
@@ -959,8 +959,8 @@ describe('sendsApi', () => {
       expect(result).toEqual({ id: 's1' });
     });
 
-    it('returns null on PGRST116', async () => {
-      const builder = createBuilder({ data: null, error: { code: 'PGRST116' } });
+    it('returns null when send not found', async () => {
+      const builder = createBuilder({ data: null, error: null });
       mockFrom.mockReturnValue(builder);
 
       const result = await sendsApi.getByUserAndRoute('u1', 'r1');
