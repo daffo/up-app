@@ -1,29 +1,40 @@
-# Up App - Climbing Gym Route Tracker
+# Upp - Spray Wall Route Manager
 
-A mobile app for tracking new boulders and lead routes at your local climbing gym.
+A React Native (Expo) app for creating, sharing, and tracking climbing routes on spray walls. Users place holds on wall photos to define routes, log sends with ratings, and leave comments.
 
 ## Features
 
-- 📋 List boulders and lead routes
-- 📸 Photo uploads for each route
-- 📝 Short descriptions and grades
-- 🔐 User authentication
-- 📱 iOS & Android support
+- Interactive route creation by tapping detected holds on wall photos
+- ML-powered hold detection (Roboflow) with manual editing
+- Full-screen zoomable route viewer and editor
+- Send logging with difficulty ratings
+- Comments on routes
+- User profiles
+- Admin tools for managing wall photos and detected holds
+- Dark / Light / System theme
+- Localization
+- Android (Play Store internal testing) and iOS support
 
 ## Tech Stack
 
-- **Frontend**: Expo (React Native) with TypeScript
-- **Backend**: Supabase (Database, Auth, Storage)
-- **State Management**: React hooks
+- **Framework**: React Native with Expo SDK 54 (New Architecture)
+- **Language**: TypeScript
+- **Backend**: Supabase (PostgreSQL, Auth, Storage)
+- **Navigation**: React Navigation (native stack)
+- **Gestures**: react-native-gesture-handler, react-native-reanimated
+- **State**: React hooks + custom cache invalidation pattern
+- **Validation**: Zod
+- **i18n**: i18next + react-i18next
+- **Testing**: Jest (unit & contract), Maestro (E2E)
 
 ## Prerequisites
 
 - Node.js 18+
-- npm or yarn
-- Expo Go app (for testing on your phone)
-- A Supabase account (free tier)
+- npm
+- Expo dev client (not Expo Go — the app uses native modules)
+- A Supabase account (free tier works)
 
-## Setup Instructions
+## Setup
 
 ### 1. Clone and Install
 
@@ -33,60 +44,78 @@ cd up-app
 npm install
 ```
 
-### 2. Configure Environment Variables
-
-The app is pre-configured to use the production Supabase instance. Just copy the example file:
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-**Note:** The Supabase credentials in `.env.example` are public (anon key) and safe to share. Security is enforced by Row Level Security policies in the database.
+The Supabase URL and anon key in `.env.example` point to the production instance and are safe to share (security is enforced by Row Level Security). Add your own Roboflow API key for hold detection.
 
-### 3. Set Up Database Schema
+### 3. Database Schema
 
-The database is already configured. If you want to set up your own Supabase instance, see `supabase-setup.sql` for the complete schema.
+The database is already configured on the production Supabase instance. To set up your own, run `sql/schema-current.sql` — it contains the complete current schema. Incremental migrations are in `sql/migration-*.sql`.
 
-### 4. Set Up Storage (for photos)
-
-1. Go to Storage in your Supabase dashboard
-2. Create a new bucket called `spray-wall-photos`
-3. Make it public (or configure policies as needed)
-
-### 5. Run the App
+### 4. Run the App
 
 ```bash
-# Start the development server
-npm start
-
-# Or directly run on:
-npm run ios      # iOS simulator
-npm run android  # Android emulator
-npm run web      # Web browser
+npx expo start          # Dev server
+npm run android         # Android (requires emulator or device)
+npm run ios             # iOS (requires simulator or device)
 ```
-
-Scan the QR code with Expo Go app on your phone to test.
 
 ## Project Structure
 
 ```
 up-app/
-├── lib/              # Shared utilities and clients
-│   └── supabase.ts   # Supabase client configuration
-├── types/            # TypeScript type definitions
-│   └── database.types.ts
-├── App.tsx           # Main app entry point
-└── package.json
+├── components/          # Reusable UI components
+├── screens/             # Screen components
+├── navigation/          # React Navigation setup
+├── lib/                 # API layer, auth, supabase client, caching
+│   ├── api.ts           # All DB access (cache invalidation, typing)
+│   ├── schemas.ts       # Zod schemas for DB tables
+│   └── cache/           # Local caching (images, detected holds)
+├── hooks/               # Custom hooks
+├── utils/               # Helpers (polygon math, date formatting)
+├── types/               # TypeScript types
+├── locales/             # i18n translations (en.json, it.json)
+├── sql/                 # Database schema and migrations
+├── scripts/             # Build and utility scripts
+├── __tests__/           # Unit, contract, and E2E tests
+├── assets/              # Icons, splash screen
+├── App.tsx              # Entry point
+└── app.json             # Expo config (version: 0.5.4-beta)
 ```
 
-## Deployment
+## Testing
 
-When ready to deploy:
+```bash
+npm test                  # Unit tests (fast, no network)
+npm test -- --watch       # Watch mode
+npm run test:coverage     # Coverage report
+npm run test:contracts    # Contract tests (requires .env with Supabase creds)
+```
 
-1. Build for production: `eas build`
-2. Submit to app stores: `eas submit`
+### E2E Tests (Maestro)
 
-See [Expo EAS docs](https://docs.expo.dev/eas/) for detailed deployment instructions.
+Requires Maestro CLI, an Android emulator, and the dev server running.
+
+```bash
+export JAVA_HOME="/opt/homebrew/opt/openjdk@17"
+
+npm run test:e2e          # Both happy paths
+npm run test:e2e:guest    # Guest user flow
+npm run test:e2e:auth     # Authenticated user flow
+```
+
+## CI/CD
+
+Production releases are handled by GitHub Actions:
+
+1. Bump `version` in `app.json`
+2. Commit and push to `main`
+3. Push a release tag: `git tag release-v0.5.4-beta && git push origin release-v0.5.4-beta`
+4. GitHub Actions builds a production AAB and submits to Play Store internal testing
 
 ## License
 
