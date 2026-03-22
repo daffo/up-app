@@ -14,10 +14,11 @@ import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { ScreenProps } from '../navigation/types';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
-export default function AdminPhotosScreen({ navigation }: any) {
+export default function AdminPhotosScreen({ navigation }: ScreenProps<'AdminPhotos'>) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { data: photos, loading } = useApiQuery(

@@ -16,10 +16,11 @@ import { formatRelativeDate } from '../utils/date';
 import { getDifficultyLabel } from '../utils/sends';
 import SafeScreen from '../components/SafeScreen';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { ScreenProps } from '../navigation/types';
 
 type SendWithProfile = Send & { displayName?: string };
 
-export default function RouteSendsScreen({ route }: any) {
+export default function RouteSendsScreen({ route }: ScreenProps<'RouteSends'>) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { routeId } = route.params;

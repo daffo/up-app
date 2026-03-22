@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { AppNavigationProp } from '../navigation/types';
 import { sendsApi } from '../lib/api';
 import { Send } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
@@ -27,7 +28,7 @@ interface UserSendsListProps {
 export default function UserSendsList({ userId, emptyMessage }: UserSendsListProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<AppNavigationProp>();
   const { data: sends, loading, refreshing, refresh } = useApiQuery(
     () => sendsApi.listByUser(userId),
     [userId],

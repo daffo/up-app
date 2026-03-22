@@ -16,10 +16,11 @@ import { useThemeColors } from '../lib/theme-context';
 import { formatRelativeDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { ScreenProps } from '../navigation/types';
 
 type CommentWithRoute = Comment & { route: { id: string; title: string; grade: string } };
 
-export default function MyCommentsScreen({ navigation }: any) {
+export default function MyCommentsScreen({ navigation }: ScreenProps<'MyComments'>) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const colors = useThemeColors();

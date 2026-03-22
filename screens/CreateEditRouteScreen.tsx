@@ -25,16 +25,12 @@ import RouteOverlay from '../components/RouteOverlay';
 import { formatDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { ScreenProps } from '../navigation/types';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 type Route = Database['public']['Tables']['routes']['Row'];
 
-interface CreateEditRouteScreenProps {
-  navigation: any;
-  route: any;
-}
-
-export default function CreateEditRouteScreen({ navigation, route }: CreateEditRouteScreenProps) {
+export default function CreateEditRouteScreen({ navigation, route }: ScreenProps<'CreateEditRoute'>) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const colors = useThemeColors();
@@ -229,7 +225,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
 
       const routeHolds = { hand_holds: handHolds, foot_holds: footHolds };
 
-      if (isEditMode) {
+      if (isEditMode && routeId) {
         // Update existing route (automatically invalidates cache)
         await routesApi.update(routeId, {
           title: title.trim(),
@@ -273,6 +269,7 @@ export default function CreateEditRouteScreen({ navigation, route }: CreateEditR
           text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
+            if (!routeId) return;
             try {
               setSaving(true);
               await routesApi.delete(routeId);

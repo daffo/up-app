@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, TouchableOpacity, StyleSheet, StyleProp, TextStyle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { AppNavigationProp } from '../navigation/types';
 import { useThemeColors } from '../lib/theme-context';
 
 interface UserNameLinkProps {
@@ -13,7 +14,7 @@ interface UserNameLinkProps {
 export default function UserNameLink({ userId, displayName, style }: UserNameLinkProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<AppNavigationProp>();
 
   const handlePress = () => {
     navigation.navigate('UserProfile', { userId });

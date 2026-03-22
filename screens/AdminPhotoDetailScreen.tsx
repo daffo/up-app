@@ -20,6 +20,7 @@ import { formatDate } from '../utils/date';
 import { detectHolds } from '../lib/holdDetection';
 import SafeScreen from '../components/SafeScreen';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { ScreenProps } from '../navigation/types';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
 
@@ -67,7 +68,7 @@ function WebDateInput({ value, onChange, colors }: {
   );
 }
 
-export default function AdminPhotoDetailScreen({ route }: any) {
+export default function AdminPhotoDetailScreen({ route }: ScreenProps<'AdminPhotoDetail'>) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { photoId } = route.params;

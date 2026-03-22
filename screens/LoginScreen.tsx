@@ -12,8 +12,9 @@ import { useAuth } from '../lib/auth-context';
 import TrimmedTextInput from '../components/TrimmedTextInput';
 import AuthLayout from '../components/auth/AuthLayout';
 import { useAuthStyles } from '../components/auth/authStyles';
+import { ScreenProps } from '../navigation/types';
 
-export default function LoginScreen({ navigation, route }: any) {
+export default function LoginScreen({ navigation, route }: ScreenProps<'Login'>) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +24,8 @@ export default function LoginScreen({ navigation, route }: any) {
   const { styles, colors } = useAuthStyles();
 
   const handleLoginSuccess = () => {
-    navigation.replace(redirectTo || 'Home');
+    // redirectTo is already typed as keyof RootStackParamList from useRequireAuth
+    (navigation as { replace: (screen: string) => void }).replace(redirectTo || 'Home');
   };
 
   const handleLogin = async () => {

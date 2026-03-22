@@ -1,5 +1,6 @@
 import { useAuth } from '../lib/auth-context';
 import { useNavigation } from '@react-navigation/native';
+import { AppNavigationProp, RootStackParamList } from '../navigation/types';
 
 /**
  * Hook that provides a function to wrap actions requiring authentication.
@@ -8,14 +9,14 @@ import { useNavigation } from '@react-navigation/native';
  */
 export function useRequireAuth() {
   const { user, signOut } = useAuth();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<AppNavigationProp>();
 
   /**
    * Wrap an action that requires authentication.
    * @param action - Function to execute if authenticated
    * @param redirectTo - Screen to redirect to after login (optional)
    */
-  const requireAuth = (action: () => void, redirectTo?: string) => {
+  const requireAuth = (action: () => void, redirectTo?: keyof RootStackParamList) => {
     if (!user) {
       navigation.navigate('Login', { redirectTo });
     } else {

@@ -1,0 +1,22 @@
+import type { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+export type RootStackParamList = {
+  Home: undefined;
+  Login: { redirectTo?: keyof RootStackParamList } | undefined;
+  Signup: undefined;
+  RouteDetail: { routeId: string };
+  CreateEditRoute: { routeId?: string } | undefined;
+  AdminPhotos: undefined;
+  AdminPhotoDetail: { photoId: string };
+  Settings: undefined;
+  MySends: undefined;
+  MyComments: undefined;
+  RouteSends: { routeId: string };
+  UserProfile: { userId: string };
+};
+
+/** Screen props for a given route */
+export type ScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;
+
+/** Navigation prop usable with useNavigation() */
+export type AppNavigationProp = NativeStackNavigationProp<RootStackParamList>;

@@ -10,10 +10,11 @@ import RouteList from '../components/RouteList';
 import ProfileDropdown from '../components/ProfileDropdown';
 import FilterModal from '../components/FilterModal';
 import { useThemeColors } from '../lib/theme-context';
+import { ScreenProps } from '../navigation/types';
 
 const FILTERS_STORAGE_KEY = 'route_filters';
 
-export default function HomeScreen({ navigation }: any) {
+export default function HomeScreen({ navigation }: ScreenProps<'Home'>) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { user, signOut, requireAuth } = useRequireAuth();

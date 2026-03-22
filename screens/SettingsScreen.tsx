@@ -26,7 +26,7 @@ const THEME_OPTIONS: { value: ThemePreference; labelKey: string; icon: string }[
   { value: 'system', labelKey: 'account.themeSystem', icon: '\uD83D\uDCF1' },
 ];
 
-export default function SettingsScreen({ navigation }: any) {
+export default function SettingsScreen() {
   const { t } = useTranslation();
   const { user, deleteAccount } = useAuth();
   const { themePreference, setThemePreference, colors } = useTheme();

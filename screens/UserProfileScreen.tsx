@@ -11,8 +11,9 @@ import { useThemeColors } from '../lib/theme-context';
 import UserSendsList from '../components/UserSendsList';
 import SafeScreen from '../components/SafeScreen';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { ScreenProps } from '../navigation/types';
 
-export default function UserProfileScreen({ route, navigation }: any) {
+export default function UserProfileScreen({ route, navigation }: ScreenProps<'UserProfile'>) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { userId } = route.params;

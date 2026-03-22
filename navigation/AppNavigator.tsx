@@ -1,6 +1,7 @@
 import { NavigationContainer, LinkingOptions, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import { RootStackParamList } from './types';
 import * as Linking from 'expo-linking';
 import { useTheme } from '../lib/theme-context';
 import LoginScreen from '../screens/LoginScreen';
@@ -16,9 +17,9 @@ import MyCommentsScreen from '../screens/MyCommentsScreen';
 import RouteSendsScreen from '../screens/RouteSendsScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const linking: LinkingOptions<any> = {
+const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [Linking.createURL('/')],
   config: {
     screens: {
@@ -85,7 +86,7 @@ export default function AppNavigator() {
         <Stack.Screen
           name="CreateEditRoute"
           component={CreateEditRouteScreen}
-          options={({ route }: any) => ({
+          options={({ route }) => ({
             headerShown: true,
             title: route.params?.routeId ? t('nav.editRoute') : t('nav.createRoute'),
             headerBackTitle: t('common.back'),

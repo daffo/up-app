@@ -22,6 +22,7 @@ import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { ScreenProps } from '../navigation/types';
 
 type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -31,7 +32,7 @@ interface RouteWithPhoto extends Route {
   creatorDisplayName?: string;
 }
 
-export default function RouteDetailScreen({ route, navigation }: any) {
+export default function RouteDetailScreen({ route, navigation }: ScreenProps<'RouteDetail'>) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { routeId } = route.params;

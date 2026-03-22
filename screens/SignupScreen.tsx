@@ -10,8 +10,9 @@ import { useAuth } from '../lib/auth-context';
 import TrimmedTextInput from '../components/TrimmedTextInput';
 import AuthLayout from '../components/auth/AuthLayout';
 import { useAuthStyles } from '../components/auth/authStyles';
+import { ScreenProps } from '../navigation/types';
 
-export default function SignupScreen({ navigation }: any) {
+export default function SignupScreen({ navigation }: ScreenProps<'Signup'>) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
