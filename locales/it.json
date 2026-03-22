@@ -122,6 +122,7 @@
     "supportSection": "Supporto",
     "buyMeABeer": "Offrimi una birra \uD83C\uDF7A",
     "buyMeABeerSubtitle": "Ci vediamo in palestra!",
+    "appVersion": "Versione {{version}}",
     "dangerZoneSection": "Zona pericolosa"
   },
   "menu": {

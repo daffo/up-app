@@ -365,6 +365,14 @@ name: Auth User - Login Flow
 - assertVisible:
     text: ".*Italiano.*"
 
+# Verify version is displayed
+- scrollUntilVisible:
+    element: "Version ${APP_VERSION}"
+    direction: DOWN
+    speed: 40
+    timeout: 5000
+- assertVisible: "Version ${APP_VERSION}"
+
 # Enter display name
 - tapOn: "Display Name"
 - inputText: "E2E Tester"

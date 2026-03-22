@@ -122,6 +122,7 @@
     "supportSection": "Support",
     "buyMeABeer": "Buy me a beer \uD83C\uDF7A",
     "buyMeABeerSubtitle": "See you at the gym!",
+    "appVersion": "Version {{version}}",
     "dangerZoneSection": "Danger Zone"
   },
   "menu": {

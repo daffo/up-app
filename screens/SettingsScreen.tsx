@@ -9,6 +9,7 @@ import {
   ScrollView,
   Linking,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import TrimmedTextInput from '../components/TrimmedTextInput';
@@ -231,6 +232,10 @@ export default function SettingsScreen({ navigation }: any) {
         <Ionicons name="open-outline" size={20} color={colors.textTertiary} />
       </TouchableOpacity>
 
+      <Text style={[styles.versionText, { color: colors.textTertiary }]}>
+        {t('settings.appVersion', { version: Constants.expoConfig?.version })}
+      </Text>
+
       {/* Danger Zone Section */}
       <Text style={[styles.sectionHeader, { color: colors.danger }]}>{t('settings.dangerZoneSection')}</Text>
       <TouchableOpacity
@@ -352,5 +357,10 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  versionText: {
+    fontSize: 12,
+    textAlign: 'center' as const,
+    marginTop: 32,
   },
 });
