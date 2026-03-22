@@ -473,6 +473,40 @@ name: Auth User - Login Flow
     timeout: 5000
 - tapOn: "OK"
 
+# ============================================
+# TEST DELETE ACCOUNT (double confirmation)
+# ============================================
+
+# Scroll to Delete Account button
+- scrollUntilVisible:
+    element: "Delete Account"
+    direction: DOWN
+    timeout: 5000
+
+# Tap Delete Account — first confirmation alert
+- tapOn: "Delete Account"
+- extendedWaitUntil:
+    visible: "Delete Account?"
+    timeout: 3000
+
+# Cancel the first confirmation
+- tapOn: "Cancel"
+
+# Tap again — this time go through first confirmation
+- tapOn: "Delete Account"
+- extendedWaitUntil:
+    visible: "Delete Account?"
+    timeout: 3000
+- tapOn: "Delete"
+
+# Second confirmation should appear
+- extendedWaitUntil:
+    visible: "Are you absolutely sure?"
+    timeout: 3000
+
+# Cancel the second confirmation — do NOT actually delete the test account
+- tapOn: "Cancel"
+
 # Go back to home
 - pressKey: back
 - assertVisible: "Upp"
@@ -586,17 +620,7 @@ name: Auth User - Login Flow
     visible: "E2E Test Route Updated"
     timeout: 5000
 
-# Reset back to Active for subsequent steps
-- tapOn: "Open filters"
-- extendedWaitUntil:
-    visible: "Filters"
-    timeout: 5000
-- tapOn: "Active"
-- hideKeyboard
-- waitForAnimationToEnd
-- extendedWaitUntil:
-    visible: "E2E Test Route Updated"
-    timeout: 5000
+# Leave wall status on "All" — will verify it persists across logout later
 
 # ============================================
 # DELETE THE TEST ROUTE
@@ -653,21 +677,8 @@ name: Auth User - Login Flow
 # TEST LOGOUT PRESERVES PREFERENCES
 # ============================================
 
-# Clear My Routes filter first (it's user-specific and will be cleared on logout anyway)
-- tapOn: "Clear my routes filter"
-- waitForAnimationToEnd
-
-# Set wall status to "All" (non-default — default is "Active")
-- tapOn: "Open filters"
-- extendedWaitUntil:
-    visible: "Filters"
-    timeout: 5000
-- tapOn: "All"
-- hideKeyboard
-- waitForAnimationToEnd
-
-# Verify "All" chip is showing
-- assertVisible: "All"
+# Wall status is already "All" from the filter test above.
+# "My Routes" is active — logout should clear it (user-specific filter).
 
 # Logout via profile menu
 - tapOn: "Open menu"
@@ -695,20 +706,23 @@ name: Auth User - Login Flow
 - assertVisible: "Email"
 - pressKey: back
 
-# Log back in
-- runFlow: auth-login.yaml
+# Log back in (inline — cannot use auth-login.yaml because it runs clearState)
+- tapOn: "Login"
+- extendedWaitUntil:
+    visible: "Log In"
+    timeout: 5000
+- tapOn: "Email"
+- inputText: ${E2E_TEST_EMAIL}
+- tapOn: "Password"
+- inputText: ${E2E_TEST_PASSWORD}
+- tapOn: "Log In"
+- extendedWaitUntil:
+    visible: "Upp"
+    timeout: 10000
+- assertNotVisible: "Login"
 
 # Verify wall filter still persisted after re-login
 - assertVisible: "All"
-
-# Reset wall filter back to Active (clean state for future test runs)
-- tapOn: "Open filters"
-- extendedWaitUntil:
-    visible: "Filters"
-    timeout: 5000
-- tapOn: "Active"
-- hideKeyboard
-- waitForAnimationToEnd
 
 # ============================================
 # TEST COMPLETE
