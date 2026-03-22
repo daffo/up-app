@@ -94,6 +94,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 16,
+    fontWeight: '600',
   },
   content: {
     padding: 16,
