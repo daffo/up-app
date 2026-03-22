@@ -10,6 +10,9 @@ jest.mock('../lib/i18n', () => ({
         'date.minutesAgo': `${options?.count}m ago`,
         'date.hoursAgo': `${options?.count}h ago`,
         'date.yesterday': 'Yesterday',
+        'sends.soft': 'Soft',
+        'sends.accurate': 'Accurate',
+        'sends.hard': 'Hard',
       };
       return translations[key] || key;
     },

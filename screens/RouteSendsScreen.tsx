@@ -13,6 +13,7 @@ import { Send } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import UserNameLink from '../components/UserNameLink';
 import { formatRelativeDate } from '../utils/date';
+import { getDifficultyLabel } from '../utils/sends';
 import SafeScreen from '../components/SafeScreen';
 
 type SendWithProfile = Send & { displayName?: string };
@@ -66,13 +67,6 @@ export default function RouteSendsScreen({ route }: any) {
   const handleRefresh = () => {
     setRefreshing(true);
     loadSends();
-  };
-
-  const getDifficultyLabel = (rating: number | null) => {
-    if (rating === -1) return t('sends.soft');
-    if (rating === 0) return t('sends.accurate');
-    if (rating === 1) return t('sends.hard');
-    return null;
   };
 
   const renderSend = ({ item: send }: { item: SendWithProfile }) => (

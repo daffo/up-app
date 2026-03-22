@@ -14,6 +14,7 @@ import { sendsApi, cacheEvents } from '../lib/api';
 import { Send } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import { formatRelativeDate } from '../utils/date';
+import { getDifficultyLabel } from '../utils/sends';
 
 type SendWithRoute = Send & { route: { id: string; title: string; grade: string } };
 
@@ -51,13 +52,6 @@ export default function UserSendsList({ userId, emptyMessage }: UserSendsListPro
   const handleRefresh = () => {
     setRefreshing(true);
     loadSends();
-  };
-
-  const getDifficultyLabel = (rating: number | null) => {
-    if (rating === -1) return t('sends.soft');
-    if (rating === 0) return t('sends.accurate');
-    if (rating === 1) return t('sends.hard');
-    return null;
   };
 
   const renderSend = ({ item: send }: { item: SendWithRoute }) => (
