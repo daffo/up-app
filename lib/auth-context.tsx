@@ -9,6 +9,23 @@ import { accountApi } from './api';
 // Required for proper browser session dismissal on mobile
 WebBrowser.maybeCompleteAuthSession();
 
+async function setSessionFromRedirectUrl(url: string): Promise<{ error: any } | null> {
+  const fragmentIndex = url.indexOf('#');
+  if (fragmentIndex === -1) return null;
+
+  const params = new URLSearchParams(url.substring(fragmentIndex + 1));
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+
+  if (!accessToken || !refreshToken) return null;
+
+  const { error } = await supabase.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+  return { error };
+}
+
 type AuthContextType = {
   session: Session | null;
   user: User | null;
@@ -66,26 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Handle deep links for OAuth callback (mobile only - fallback)
     const handleDeepLink = async (event: { url: string }) => {
-      const url = event.url;
-
-      // Check if this is an OAuth callback with tokens
-      if (url.includes('access_token') || url.includes('refresh_token')) {
-        // Extract the fragment (everything after #)
-        const fragmentIndex = url.indexOf('#');
-        if (fragmentIndex !== -1) {
-          const fragment = url.substring(fragmentIndex + 1);
-          const params = new URLSearchParams(fragment);
-          const accessToken = params.get('access_token');
-          const refreshToken = params.get('refresh_token');
-
-          if (accessToken && refreshToken) {
-            await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-          }
-        }
-      }
+      await setSessionFromRedirectUrl(event.url);
     };
 
     // Listen for incoming deep links
@@ -120,15 +118,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithOAuthProvider = async (provider: 'google' | 'facebook'): Promise<{ error: any }> => {
     const redirectTo = Platform.OS === 'web'
       ? window.location.origin
       : Linking.createURL('/');
 
     if (Platform.OS === 'web') {
-      // Web: use default browser redirect
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider,
         options: { redirectTo },
       });
       return { error };
@@ -136,59 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Mobile: use in-app browser session
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        skipBrowserRedirect: true, // Don't auto-open browser, we'll do it manually
-      },
-    });
-
-    if (error) return { error };
-
-    if (data?.url) {
-      // Open auth URL in an in-app browser that can intercept the redirect
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-
-      if (result.type === 'success' && result.url) {
-        // Extract tokens from the redirect URL
-        const url = result.url;
-        const fragmentIndex = url.indexOf('#');
-        if (fragmentIndex !== -1) {
-          const fragment = url.substring(fragmentIndex + 1);
-          const params = new URLSearchParams(fragment);
-          const accessToken = params.get('access_token');
-          const refreshToken = params.get('refresh_token');
-
-          if (accessToken && refreshToken) {
-            const { error: sessionError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-            return { error: sessionError };
-          }
-        }
-      }
-    }
-
-    return { error: null };
-  };
-
-  const signInWithFacebook = async () => {
-    const redirectTo = Platform.OS === 'web'
-      ? window.location.origin
-      : Linking.createURL('/');
-
-    if (Platform.OS === 'web') {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'facebook',
-        options: { redirectTo },
-      });
-      return { error };
-    }
-
-    // Mobile: use in-app browser session
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'facebook',
+      provider,
       options: {
         redirectTo,
         skipBrowserRedirect: true,
@@ -201,27 +146,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
 
       if (result.type === 'success' && result.url) {
-        const url = result.url;
-        const fragmentIndex = url.indexOf('#');
-        if (fragmentIndex !== -1) {
-          const fragment = url.substring(fragmentIndex + 1);
-          const params = new URLSearchParams(fragment);
-          const accessToken = params.get('access_token');
-          const refreshToken = params.get('refresh_token');
-
-          if (accessToken && refreshToken) {
-            const { error: sessionError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-            return { error: sessionError };
-          }
-        }
+        const sessionResult = await setSessionFromRedirectUrl(result.url);
+        if (sessionResult) return sessionResult;
       }
     }
 
     return { error: null };
   };
+
+  const signInWithGoogle = () => signInWithOAuthProvider('google');
+  const signInWithFacebook = () => signInWithOAuthProvider('facebook');
 
   const deleteAccount = async () => {
     if (!user) return { error: new Error('Not logged in') };
