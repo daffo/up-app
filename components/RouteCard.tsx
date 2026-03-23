@@ -31,9 +31,17 @@ export default function RouteCard({ route, onPress }: RouteCardProps) {
           {route.description}
         </Text>
       )}
-      <Text style={[styles.date, { color: colors.textTertiary }]}>
-        {formatDate(route.created_at)}
-      </Text>
+      <View style={styles.footer}>
+        <Text style={[styles.date, { color: colors.textTertiary }]}>
+          {formatDate(route.created_at)}
+        </Text>
+        <View style={styles.holdCounts}>
+          <Text style={[styles.holdCount, { color: colors.textTertiary }]}>🤚 {route.holds.hand_holds.length}</Text>
+          {route.holds.foot_holds.length > 0 && (
+            <Text style={[styles.holdCount, { color: colors.textTertiary }]}>🦶 {route.holds.foot_holds.length}</Text>
+          )}
+        </View>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -79,7 +87,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 8,
   },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   date: {
+    fontSize: 12,
+  },
+  holdCounts: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  holdCount: {
     fontSize: 12,
   },
 });
