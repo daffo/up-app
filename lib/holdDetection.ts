@@ -1,5 +1,6 @@
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { getImageDimensions } from './cache/image-cache';
+import { getLocalImageUri } from './cache/image-file-cache';
 
 const MODEL_ENDPOINT = 'hold-detector-rnvkl/2';
 const API_URL = `https://serverless.roboflow.com/${MODEL_ENDPOINT}`;
@@ -115,6 +116,9 @@ export async function detectHolds(
   confidence = 0.5,
   onProgress?: (tile: number, total: number) => void,
 ): Promise<DetectedHoldResult[]> {
+  // Resolve to local file URI (avoids re-downloading)
+  const localUri = await getLocalImageUri(imageUrl);
+
   // Get image dimensions
   const { width, height } = await getImageDimensions(imageUrl);
 
@@ -147,7 +151,7 @@ export async function detectHolds(
 
       // Crop tile and get base64
       const result = await manipulateAsync(
-        imageUrl,
+        localUri,
         [{ crop: { originX: x1, originY: y1, width: cropWidth, height: cropHeight } }],
         { base64: true, format: SaveFormat.JPEG },
       );

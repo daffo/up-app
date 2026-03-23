@@ -6,6 +6,10 @@ jest.mock('../../lib/cache/image-cache', () => ({
   getImageDimensions: jest.fn(),
 }));
 
+jest.mock('../../lib/cache/image-file-cache', () => ({
+  getLocalImageUri: jest.fn((url: string) => Promise.resolve(`file:///local/${url.split('/').pop()}`)),
+}));
+
 jest.mock('expo-image-manipulator', () => ({
   manipulateAsync: jest.fn(),
   SaveFormat: { JPEG: 'jpeg' },

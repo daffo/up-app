@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
+import { getLocalImageUri } from './image-file-cache';
 
 const STORAGE_KEY = '@image_dimensions';
 
@@ -46,35 +47,22 @@ function schedulePersist(): void {
 }
 
 /**
- * Get image dimensions, checking memory cache → AsyncStorage → network (via expo-image prefetch).
+ * Get image dimensions, checking memory cache → AsyncStorage → local file.
+ * Resolves remote URLs to local file URIs first to avoid network fetches.
  */
 export async function getImageDimensions(url: string): Promise<Dimensions> {
   // 1. Check memory cache
   const cached = memoryCache.get(url);
   if (cached) return cached;
 
-  // 2. Try expo-image prefetch only if not already in disk cache
-  try {
-    const cachedPath = await Image.getCachePathAsync(url);
-    if (!cachedPath) {
-      const result = await Image.prefetch(url, 'memory-disk');
-      if (result && typeof result === 'object' && 'width' in result && 'height' in result) {
-        const dims = { width: (result as any).width, height: (result as any).height };
-        memoryCache.set(url, dims);
-        schedulePersist();
-        return dims;
-      }
-    }
-  } catch {
-    // prefetch doesn't return dimensions on all platforms
-  }
+  // 2. Resolve to local file URI (downloads once if needed)
+  const localUri = await getLocalImageUri(url);
 
-  // 3. Fall back to creating a temporary Image to measure
+  // 3. Measure from local file
   return new Promise<Dimensions>((resolve, reject) => {
-    // Use react-native Image.getSize as last resort
     const { Image: RNImage } = require('react-native');
     RNImage.getSize(
-      url,
+      localUri,
       (width: number, height: number) => {
         const dims = { width, height };
         memoryCache.set(url, dims);

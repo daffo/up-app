@@ -19,6 +19,14 @@ jest.mock('expo-image', () => ({
   },
 }));
 
+// Mock image-file-cache — returns a local file:// path
+jest.mock('../../lib/cache/image-file-cache', () => ({
+  getLocalImageUri: jest.fn((url: string) => {
+    const filename = url.split('/').pop();
+    return Promise.resolve(`file:///data/app/image-cache/${filename}`);
+  }),
+}));
+
 // Mock react-native Image.getSize
 jest.mock('react-native', () => ({
   Image: {
@@ -72,10 +80,12 @@ describe('getImageDimensions', () => {
     expect(dims).toEqual({ width: 500, height: 400 });
   });
 
-  it('falls back to RNImage.getSize when not in cache', async () => {
+  it('resolves local URI and measures with RNImage.getSize', async () => {
     const { Image: RNImage } = require('react-native');
     RNImage.getSize.mockImplementation(
-      (_url: string, success: (w: number, h: number) => void) => {
+      (url: string, success: (w: number, h: number) => void) => {
+        // Verify it receives the local file URI, not the remote URL
+        expect(url).toBe('file:///data/app/image-cache/new.jpg');
         success(1200, 800);
       },
     );
