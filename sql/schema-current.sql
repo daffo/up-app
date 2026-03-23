@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-008-foot-holds
+-- Last updated: After migration-009-app-config-activity
 
 -- ============================================================================
 -- TABLES
@@ -76,6 +76,26 @@ CREATE TABLE comments (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- App config table (singleton row for remote config like force-update)
+CREATE TABLE app_config (
+  singleton_key BOOLEAN PRIMARY KEY DEFAULT true CHECK (singleton_key = true),
+  min_version TEXT NOT NULL DEFAULT '0.0.0',
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Seed the single config row
+INSERT INTO app_config (min_version) VALUES ('0.0.0');
+
+-- User activity table (tracks app version and last seen per user)
+CREATE TABLE user_activity (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  app_version TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('android', 'ios')),
+  os_version TEXT,
+  last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- ============================================================================
 -- INDEXES
 -- ============================================================================
@@ -90,6 +110,7 @@ CREATE INDEX idx_sends_route_id ON sends(route_id);
 CREATE INDEX idx_sends_user_id ON sends(user_id);
 CREATE INDEX idx_comments_route_id ON comments(route_id);
 CREATE INDEX idx_comments_route_created ON comments(route_id, created_at DESC);
+CREATE INDEX idx_user_activity_last_seen ON user_activity(last_seen_at DESC);
 
 -- ============================================================================
 -- ROW LEVEL SECURITY
@@ -102,6 +123,8 @@ ALTER TABLE routes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_activity ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- RLS POLICIES: admins
@@ -234,6 +257,42 @@ CREATE POLICY "Users can insert their own comments"
 CREATE POLICY "Users can delete their own comments"
   ON comments FOR DELETE
   USING (auth.uid() = user_id);
+
+-- ============================================================================
+-- RLS POLICIES: app_config
+-- ============================================================================
+
+CREATE POLICY "App config is readable by everyone"
+  ON app_config FOR SELECT
+  USING (true);
+
+CREATE POLICY "Only admins can update app config"
+  ON app_config FOR UPDATE
+  USING (
+    EXISTS (SELECT 1 FROM admins WHERE user_id = auth.uid())
+  );
+
+-- ============================================================================
+-- RLS POLICIES: user_activity
+-- ============================================================================
+
+CREATE POLICY "Users can view their own activity"
+  ON user_activity FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own activity"
+  ON user_activity FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own activity"
+  ON user_activity FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can view all activity"
+  ON user_activity FOR SELECT
+  USING (
+    EXISTS (SELECT 1 FROM admins WHERE user_id = auth.uid())
+  );
 
 -- ============================================================================
 -- FUNCTIONS & TRIGGERS

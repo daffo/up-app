@@ -234,6 +234,49 @@ export interface Database {
           created_at?: string
         }
       }
+      app_config: {
+        Row: {
+          singleton_key: boolean
+          min_version: string
+          updated_at: string
+        }
+        Insert: {
+          singleton_key?: boolean
+          min_version?: string
+          updated_at?: string
+        }
+        Update: {
+          singleton_key?: boolean
+          min_version?: string
+          updated_at?: string
+        }
+      }
+      user_activity: {
+        Row: {
+          user_id: string
+          app_version: string
+          platform: 'android' | 'ios'
+          os_version: string | null
+          last_seen_at: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          app_version: string
+          platform: 'android' | 'ios'
+          os_version?: string | null
+          last_seen_at?: string
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          app_version?: string
+          platform?: 'android' | 'ios'
+          os_version?: string | null
+          last_seen_at?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

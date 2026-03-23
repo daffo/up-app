@@ -213,6 +213,11 @@
     "cannotSetSetup": "Rileva le prese prima di impostare la data di montaggio",
     "dateUpdated": "Data aggiornata"
   },
+  "forceUpdate": {
+    "title": "Aggiornamento Richiesto",
+    "message": "Una nuova versione di Upp è disponibile. Aggiorna per continuare a usare l'app.",
+    "updateButton": "Aggiorna Ora"
+  },
   "editor": {
     "done": "Fatto",
     "cancel": "Annulla",

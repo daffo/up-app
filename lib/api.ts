@@ -593,3 +593,38 @@ export const commentsApi = {
     cacheEvents.invalidate('comments');
   },
 };
+
+// App Config API
+export const appConfigApi = {
+  async getMinVersion(): Promise<string> {
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('min_version')
+      .single();
+
+    if (error) throw error;
+    return data.min_version;
+  },
+};
+
+// User Activity API
+export const userActivityApi = {
+  async upsert(activity: {
+    user_id: string;
+    app_version: string;
+    platform: 'android' | 'ios';
+    os_version: string | null;
+  }): Promise<void> {
+    const { error } = await supabase
+      .from('user_activity')
+      .upsert(
+        {
+          ...activity,
+          last_seen_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      );
+
+    if (error) throw error;
+  },
+};

@@ -9,9 +9,19 @@ import { initI18n } from './lib/i18n';
 import { initImageDimensionsCache } from './lib/cache/image-cache';
 import ErrorBoundary from './components/ErrorBoundary';
 import AppNavigator from './navigation/AppNavigator';
+import ForceUpdateScreen from './screens/ForceUpdateScreen';
+import { useVersionCheck } from './hooks/useVersionCheck';
+import { useActivityTracker } from './hooks/useActivityTracker';
 
 function AppContent() {
   const { isDark } = useTheme();
+  const { updateRequired } = useVersionCheck();
+  useActivityTracker();
+
+  if (updateRequired) {
+    return <ForceUpdateScreen />;
+  }
+
   return (
     <>
       <AppNavigator />
