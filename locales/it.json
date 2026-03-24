@@ -154,14 +154,14 @@
     "clearSearch": "Rimuovi filtro ricerca",
     "clearGrade": "Rimuovi filtro grado",
     "clearMyRoutes": "Rimuovi filtro mie vie",
-    "wall": "Parete",
-    "wallActive": "Attiva",
-    "wallPast": "Passata",
+    "wall": "Pareti",
+    "wallActive": "Attive",
+    "wallPast": "Passate",
     "wallAll": "Tutte",
     "clearWall": "Rimuovi filtro parete"
   },
   "auth": {
-    "subtitle": "Gestore Vie Spray Wall",
+    "subtitle": "L'app per la Up",
     "email": "Email",
     "password": "Password",
     "passwordMin": "Password (min 6 caratteri)",

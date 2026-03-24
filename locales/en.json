@@ -154,14 +154,14 @@
     "clearSearch": "Clear search filter",
     "clearGrade": "Clear grade filter",
     "clearMyRoutes": "Clear my routes filter",
-    "wall": "Wall",
+    "wall": "Walls",
     "wallActive": "Active",
     "wallPast": "Past",
     "wallAll": "All",
     "clearWall": "Clear wall filter"
   },
   "auth": {
-    "subtitle": "Spray Wall Route Manager",
+    "subtitle": "The app for Up",
     "email": "Email",
     "password": "Password",
     "passwordMin": "Password (min 6 characters)",
