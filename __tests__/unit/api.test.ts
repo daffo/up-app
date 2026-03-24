@@ -35,7 +35,7 @@ const mockFrom = supabase.from as jest.Mock;
 function createBuilder(resolvedValue: { data: any; error: any }) {
   const builder: any = {};
   const methods = [
-    'select', 'eq', 'in', 'not', 'is', 'or', 'ilike', 'order',
+    'select', 'eq', 'in', 'not', 'is', 'or', 'ilike', 'order', 'limit', 'lt',
     'insert', 'update', 'upsert', 'delete', 'single', 'maybeSingle',
   ];
   for (const m of methods) {
@@ -123,9 +123,9 @@ describe('routesApi', () => {
       mockFrom.mockReturnValue(builder);
 
       const result = await routesApi.list();
-      expect(result).toHaveLength(1);
-      expect(result[0].avgRating).toBe(3);
-      expect(result[0].sendCount).toBe(2);
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].avgRating).toBe(3);
+      expect(result.data[0].sendCount).toBe(2);
     });
 
     it('returns null avgRating when no ratings', async () => {
@@ -138,8 +138,8 @@ describe('routesApi', () => {
       mockFrom.mockReturnValue(builder);
 
       const result = await routesApi.list();
-      expect(result[0].avgRating).toBeNull();
-      expect(result[0].sendCount).toBe(1);
+      expect(result.data[0].avgRating).toBeNull();
+      expect(result.data[0].sendCount).toBe(1);
     });
 
     it('defaults to active wall filter', async () => {
@@ -202,12 +202,59 @@ describe('routesApi', () => {
       await expect(routesApi.list()).rejects.toEqual({ message: 'fail' });
     });
 
-    it('returns [] when data is null', async () => {
+    it('returns empty data when data is null', async () => {
       const builder = createBuilder({ data: null, error: null });
       mockFrom.mockReturnValue(builder);
 
       const result = await routesApi.list();
-      expect(result).toEqual([]);
+      expect(result.data).toEqual([]);
+      expect(result.hasMore).toBe(false);
+    });
+
+    it('sets hasMore true when more results than pageSize', async () => {
+      // 21 items returned for default pageSize of 20 → hasMore = true
+      const items = Array.from({ length: 21 }, (_, i) => ({
+        id: `r${i}`, created_at: `2024-01-${String(i + 1).padStart(2, '0')}`,
+        sends: [], photo: {},
+      }));
+      const builder = createBuilder({ data: items, error: null });
+      mockFrom.mockReturnValue(builder);
+
+      const result = await routesApi.list();
+      expect(result.data).toHaveLength(20);
+      expect(result.hasMore).toBe(true);
+    });
+
+    it('sets hasMore false when results fit in page', async () => {
+      const items = Array.from({ length: 5 }, (_, i) => ({
+        id: `r${i}`, sends: [], photo: {},
+      }));
+      const builder = createBuilder({ data: items, error: null });
+      mockFrom.mockReturnValue(builder);
+
+      const result = await routesApi.list();
+      expect(result.data).toHaveLength(5);
+      expect(result.hasMore).toBe(false);
+    });
+
+    it('applies cursor filter with tiebreaker', async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list(undefined, {
+        cursor: { created_at: '2024-06-15T12:00:00Z', id: 'abc' },
+      });
+      expect(builder.or).toHaveBeenCalledWith(
+        'created_at.lt.2024-06-15T12:00:00Z,and(created_at.eq.2024-06-15T12:00:00Z,id.lt.abc)',
+      );
+    });
+
+    it('applies limit based on pageSize', async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list(undefined, { pageSize: 5 });
+      expect(builder.limit).toHaveBeenCalledWith(6);
     });
   });
 

@@ -4,7 +4,7 @@ import { RouteFilters } from '../types/database.types';
 import { routesApi, RouteWithStats } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import RouteCard from './RouteCard';
-import { useApiQuery } from '../hooks/useApiQuery';
+import { usePaginatedQuery } from '../hooks/usePaginatedQuery';
 
 interface RouteListProps {
   onRoutePress: (routeId: string) => void;
@@ -14,10 +14,16 @@ interface RouteListProps {
 export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
-  const { data: routes, loading, error, refreshing, refresh } = useApiQuery(
-    () => routesApi.list(filters),
+  const { data: routes, loading, loadingMore, error, refreshing, hasMore, refresh, loadMore } = usePaginatedQuery(
+    (cursor) => routesApi.list(filters, { cursor }),
     [filters],
-    { cacheKey: ['routes', 'sends'], initialData: [] as RouteWithStats[] },
+    {
+      cacheKey: ['routes', 'sends'],
+      getCursor: (items) => {
+        const last = items[items.length - 1];
+        return { created_at: last.created_at, id: last.id };
+      },
+    },
   );
 
   if (loading) {
@@ -63,6 +69,11 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
           colors={[colors.primary]}
         />
       }
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.1}
+      ListFooterComponent={loadingMore ? (
+        <ActivityIndicator style={styles.footer} color={colors.primary} />
+      ) : null}
     />
   );
 }
@@ -88,5 +99,8 @@ const styles = StyleSheet.create({
   },
   emptySubtext: {
     fontSize: 14,
+  },
+  footer: {
+    paddingVertical: 16,
   },
 });

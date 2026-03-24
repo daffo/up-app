@@ -37,14 +37,24 @@ export type RouteWithStats = Route & {
 };
 
 // Routes API
+export type PaginationOptions = {
+  cursor?: { created_at: string; id: string };
+  pageSize?: number;
+};
+
 export const routesApi = {
-  async list(filters?: RouteFilters): Promise<RouteWithStats[]> {
+  async list(
+    filters?: RouteFilters,
+    pagination?: PaginationOptions,
+  ): Promise<{ data: RouteWithStats[]; hasMore: boolean }> {
     const wallStatus = filters?.wallStatus ?? 'active';
+    const pageSize = pagination?.pageSize ?? 20;
 
     let query = supabase
       .from('routes')
       .select('*, sends(quality_rating), photo:photos!inner(setup_date, teardown_date)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false });
 
     // Wall status filter
     if (wallStatus === 'active') {
@@ -69,12 +79,25 @@ export const routesApi = {
       query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
     }
 
+    // Cursor-based pagination with tiebreaker
+    if (pagination?.cursor) {
+      const { created_at, id } = pagination.cursor;
+      query = query.or(`created_at.lt.${created_at},and(created_at.eq.${created_at},id.lt.${id})`);
+    }
+
+    // Fetch one extra to detect if there are more results
+    query = query.limit(pageSize + 1);
+
     const { data, error } = await query;
 
     if (error) throw error;
 
+    const rows = data || [];
+    const hasMore = rows.length > pageSize;
+    const pageRows = hasMore ? rows.slice(0, pageSize) : rows;
+
     // Compute average rating from sends
-    return (data || []).map((route: Route & { sends: { quality_rating: number | null }[]; photo: unknown }) => {
+    const mapped = pageRows.map((route: Route & { sends: { quality_rating: number | null }[]; photo: unknown }) => {
       const ratings = route.sends
         .map(s => s.quality_rating)
         .filter((r): r is number => r !== null);
@@ -88,6 +111,8 @@ export const routesApi = {
         sendCount: route.sends.length,
       };
     });
+
+    return { data: mapped, hasMore };
   },
 
   async listByPhoto(photoId: string): Promise<Route[]> {
