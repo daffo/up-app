@@ -26,7 +26,8 @@
     "mySends": "Le Mie Chiusure",
     "myComments": "I Miei Commenti",
     "sends": "Chiusure",
-    "profile": "Profilo"
+    "profile": "Profilo",
+    "changePassword": "Cambia Password"
   },
   "home": {
     "title": "Upp",
@@ -119,6 +120,16 @@
     "deleteAccountError": "Eliminazione account fallita. Riprova.",
     "deleting": "Eliminazione..."
   },
+  "changePassword": {
+    "currentPassword": "Password Attuale",
+    "newPassword": "Nuova Password",
+    "newPasswordMin": "Nuova password (min 6 caratteri)",
+    "confirmNewPassword": "Conferma Nuova Password",
+    "currentPasswordWrong": "La password attuale non è corretta",
+    "updatePassword": "Aggiorna Password",
+    "updating": "Aggiornamento...",
+    "success": "Password aggiornata con successo"
+  },
   "settings": {
     "accountSection": "Account",
     "preferencesSection": "Preferenze",
@@ -126,7 +137,8 @@
     "buyMeABeer": "Offrimi una birra \uD83C\uDF7A",
     "buyMeABeerSubtitle": "Ci vediamo in palestra!",
     "appVersion": "Versione {{version}}",
-    "dangerZoneSection": "Zona pericolosa"
+    "dangerZoneSection": "Zona pericolosa",
+    "changePassword": "Cambia Password"
   },
   "menu": {
     "openMenu": "Apri menu",
@@ -179,7 +191,9 @@
     "errorPasswordLength": "La password deve essere di almeno 6 caratteri",
     "loginFailed": "Accesso Fallito",
     "signupFailed": "Registrazione Fallita",
-    "signupSuccess": "Account creato! Controlla la tua email per confermare l'account."
+    "signupSuccess": "Account creato! Controlla la tua email per confermare l'account.",
+    "showPassword": "Mostra password",
+    "hidePassword": "Nascondi password"
   },
   "routes": {
     "error": "Errore: {{message}}",

@@ -16,6 +16,7 @@ import MySendsScreen from '../screens/MySendsScreen';
 import MyCommentsScreen from '../screens/MyCommentsScreen';
 import RouteSendsScreen from '../screens/RouteSendsScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -35,6 +36,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       MyComments: 'comments',
       RouteSends: 'route/:routeId/sends',
       UserProfile: 'user/:userId',
+      ChangePassword: 'settings/change-password',
     },
   },
 };
@@ -152,6 +154,15 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: t('nav.profile'),
+            headerBackTitle: t('common.back'),
+          }}
+        />
+        <Stack.Screen
+          name="ChangePassword"
+          component={ChangePasswordScreen}
+          options={{
+            headerShown: true,
+            title: t('nav.changePassword'),
             headerBackTitle: t('common.back'),
           }}
         />

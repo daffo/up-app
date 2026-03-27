@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import {
   Text,
-  TextInput,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
 import TrimmedTextInput from '../components/TrimmedTextInput';
+import PasswordInput from '../components/auth/PasswordInput';
 import AuthLayout from '../components/auth/AuthLayout';
 import { useAuthStyles } from '../components/auth/authStyles';
 import { ScreenProps } from '../navigation/types';
@@ -66,24 +66,20 @@ export default function SignupScreen({ navigation }: ScreenProps<'Signup'>) {
         accessibilityLabel={t('auth.email')}
       />
 
-      <TextInput
-        style={styles.input}
+      <PasswordInput
         placeholder={t('auth.passwordMin')}
         placeholderTextColor={colors.placeholderText}
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
         editable={!loading}
         accessibilityLabel={t('auth.password')}
       />
 
-      <TextInput
-        style={styles.input}
+      <PasswordInput
         placeholder={t('auth.confirmPassword')}
         placeholderTextColor={colors.placeholderText}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
-        secureTextEntry
         editable={!loading}
         accessibilityLabel={t('auth.confirmPassword')}
       />

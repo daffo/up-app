@@ -44,6 +44,23 @@ function createAuthStyles(colors: ThemeColors) {
         borderColor: colors.border,
         color: colors.textPrimary,
       },
+      passwordContainer: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        backgroundColor: colors.inputBackground,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+      },
+      passwordInput: {
+        flex: 1,
+        padding: 16,
+        fontSize: 16,
+        color: colors.textPrimary,
+      },
+      eyeButton: {
+        padding: 16,
+      },
       button: {
         backgroundColor: colors.primary,
         padding: 16,

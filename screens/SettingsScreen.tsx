@@ -19,6 +19,8 @@ import { SUPPORTED_LANGUAGES, changeLanguage, getCurrentLanguage, LanguageCode }
 import { useTheme, ThemePreference } from '../lib/theme-context';
 import SafeScreen from '../components/SafeScreen';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { useNavigation } from '@react-navigation/native';
+import { AppNavigationProp } from '../navigation/types';
 
 const THEME_OPTIONS: { value: ThemePreference; labelKey: string; icon: string }[] = [
   { value: 'light', labelKey: 'account.themeLight', icon: '\u2600\uFE0F' },
@@ -28,6 +30,7 @@ const THEME_OPTIONS: { value: ThemePreference; labelKey: string; icon: string }[
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
+  const navigation = useNavigation<AppNavigationProp>();
   const { user, deleteAccount } = useAuth();
   const { themePreference, setThemePreference, colors } = useTheme();
   const { data: profile, loading: isLoading } = useApiQuery(
@@ -126,6 +129,19 @@ export default function SettingsScreen() {
         </View>
 
         <View style={[styles.cardSeparator, { backgroundColor: colors.separator }]} />
+
+        {user?.identities?.some((i) => i.provider === 'email') && (
+          <>
+            <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('ChangePassword')}>
+              <View style={styles.rowBetween}>
+                <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>{t('settings.changePassword')}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.chevron} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={[styles.cardSeparator, { backgroundColor: colors.separator }]} />
+          </>
+        )}
 
         <View style={styles.cardRow}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>{t('account.displayName')}</Text>
@@ -344,6 +360,11 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center' as const,
     borderWidth: 1,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   deleteButtonText: {
     fontSize: 16,

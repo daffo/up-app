@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   Alert,
 } from 'react-native';
@@ -10,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../lib/auth-context';
 import TrimmedTextInput from '../components/TrimmedTextInput';
+import PasswordInput from '../components/auth/PasswordInput';
 import AuthLayout from '../components/auth/AuthLayout';
 import { useAuthStyles } from '../components/auth/authStyles';
 import { ScreenProps } from '../navigation/types';
@@ -83,13 +83,11 @@ export default function LoginScreen({ navigation, route }: ScreenProps<'Login'>)
         accessibilityLabel={t('auth.email')}
       />
 
-      <TextInput
-        style={styles.input}
+      <PasswordInput
         placeholder={t('auth.password')}
         placeholderTextColor={colors.placeholderText}
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
         editable={!loading}
         accessibilityLabel={t('auth.password')}
       />

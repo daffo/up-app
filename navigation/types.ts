@@ -13,6 +13,7 @@ export type RootStackParamList = {
   MyComments: undefined;
   RouteSends: { routeId: string };
   UserProfile: { userId: string };
+  ChangePassword: undefined;
 };
 
 /** Screen props for a given route */

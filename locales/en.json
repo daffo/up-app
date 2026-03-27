@@ -26,7 +26,8 @@
     "mySends": "My Sends",
     "myComments": "My Comments",
     "sends": "Sends",
-    "profile": "Profile"
+    "profile": "Profile",
+    "changePassword": "Change Password"
   },
   "home": {
     "title": "Upp",
@@ -119,6 +120,16 @@
     "deleteAccountError": "Failed to delete account. Please try again.",
     "deleting": "Deleting..."
   },
+  "changePassword": {
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "newPasswordMin": "New password (min 6 characters)",
+    "confirmNewPassword": "Confirm New Password",
+    "currentPasswordWrong": "Current password is incorrect",
+    "updatePassword": "Update Password",
+    "updating": "Updating...",
+    "success": "Password updated successfully"
+  },
   "settings": {
     "accountSection": "Account",
     "preferencesSection": "Preferences",
@@ -126,7 +137,8 @@
     "buyMeABeer": "Buy me a beer \uD83C\uDF7A",
     "buyMeABeerSubtitle": "See you at the gym!",
     "appVersion": "Version {{version}}",
-    "dangerZoneSection": "Danger Zone"
+    "dangerZoneSection": "Danger Zone",
+    "changePassword": "Change Password"
   },
   "menu": {
     "openMenu": "Open menu",
@@ -179,7 +191,9 @@
     "errorPasswordLength": "Password must be at least 6 characters",
     "loginFailed": "Login Failed",
     "signupFailed": "Signup Failed",
-    "signupSuccess": "Account created! Please check your email to confirm your account."
+    "signupSuccess": "Account created! Please check your email to confirm your account.",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "routes": {
     "error": "Error: {{message}}",
