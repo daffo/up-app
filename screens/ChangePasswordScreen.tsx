@@ -43,12 +43,12 @@ export default function ChangePasswordScreen({ navigation }: ScreenProps<'Change
     setLoading(true);
 
     // Verify current password by re-authenticating
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email: user!.email!,
       password: currentPassword,
     });
 
-    if (signInError) {
+    if (signInError || !data.session) {
       setLoading(false);
       Alert.alert(t('common.error'), t('changePassword.currentPasswordWrong'));
       return;
@@ -64,8 +64,14 @@ export default function ChangePasswordScreen({ navigation }: ScreenProps<'Change
     if (updateError) {
       Alert.alert(t('common.error'), updateError.message);
     } else {
+      await supabase.auth.signOut({ scope: 'global' });
       Alert.alert(t('common.success'), t('changePassword.success'), [
-        { text: 'OK', onPress: () => navigation.goBack() },
+        {
+          text: 'OK',
+          onPress: () => {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          },
+        },
       ]);
     }
   };
