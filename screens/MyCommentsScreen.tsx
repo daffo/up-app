@@ -1,13 +1,8 @@
 import React from 'react';
 import {
-  View,
   Text,
-  TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
-  FlatList,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth-context';
 import { commentsApi } from '../lib/api';
@@ -15,6 +10,8 @@ import { Comment } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import { formatRelativeDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
+import ListItemWithRoute from '../components/ListItemWithRoute';
+import DataListView from '../components/DataListView';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { ScreenProps } from '../navigation/types';
 
@@ -31,42 +28,30 @@ export default function MyCommentsScreen({ navigation }: ScreenProps<'MyComments
   );
 
   const renderComment = ({ item: comment }: { item: CommentWithRoute }) => (
-    <TouchableOpacity
-      style={[styles.commentItem, { backgroundColor: colors.cardBackground, borderBottomColor: colors.separator }]}
-      onPress={() => navigation.navigate('RouteDetail', { routeId: comment.route.id })}
-    >
-      <View style={styles.commentHeader}>
-        <Text style={[styles.routeTitle, { color: colors.textPrimary }]}>{comment.route.title}</Text>
+    <ListItemWithRoute
+      title={comment.route.title}
+      titleRight={
         <Text style={[styles.routeGrade, { color: colors.primary }]}>{comment.route.grade}</Text>
-      </View>
-      <Text style={[styles.commentText, { color: colors.textSecondary }]} numberOfLines={2}>
-        {comment.text}
-      </Text>
-      <Text style={[styles.commentDate, { color: colors.textTertiary }]}>{formatRelativeDate(comment.created_at)}</Text>
-      <View style={styles.chevron}>
-        <Ionicons name="chevron-forward" size={20} color={colors.chevron} />
-      </View>
-    </TouchableOpacity>
+      }
+      subtitle={comment.text}
+      metadata={
+        <Text style={[styles.commentDate, { color: colors.textTertiary }]}>
+          {formatRelativeDate(comment.created_at)}
+        </Text>
+      }
+      onPress={() => navigation.navigate('RouteDetail', { routeId: comment.route.id })}
+    />
   );
-
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.screenBackground }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
 
   return (
     <SafeScreen>
-      <FlatList
+      <DataListView
+        loading={loading}
         data={comments}
+        emptyMessage={t('comments.noCommentsYet')}
         keyExtractor={(item) => item.id}
         renderItem={renderComment}
-        contentContainerStyle={comments.length === 0 ? styles.emptyContainer : undefined}
-        ListEmptyComponent={
-          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{t('comments.noCommentsYet')}</Text>
-        }
+        loadingStyle={{ backgroundColor: colors.screenBackground }}
         refreshing={refreshing}
         onRefresh={refresh}
       />
@@ -75,51 +60,11 @@ export default function MyCommentsScreen({ navigation }: ScreenProps<'MyComments
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-  },
-  commentItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    position: 'relative',
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  routeTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
   routeGrade: {
     fontSize: 14,
     fontWeight: '600',
   },
-  commentText: {
-    fontSize: 15,
-    lineHeight: 20,
-    marginBottom: 4,
-    paddingRight: 24,
-  },
   commentDate: {
     fontSize: 12,
-  },
-  chevron: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
-    marginTop: -10,
   },
 });

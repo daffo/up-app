@@ -34,7 +34,16 @@ export function sanitizeFilterValue(value: string): string {
 }
 
 // Simple event emitter for cache invalidation
-type InvalidationEvent = 'routes' | 'route' | 'photos' | 'detected_holds' | 'sends' | 'comments';
+export const CACHE_EVENTS = {
+  ROUTES: 'routes',
+  ROUTE: 'route',
+  PHOTOS: 'photos',
+  DETECTED_HOLDS: 'detected_holds',
+  SENDS: 'sends',
+  COMMENTS: 'comments',
+} as const;
+
+type InvalidationEvent = typeof CACHE_EVENTS[keyof typeof CACHE_EVENTS];
 type Listener = () => void;
 
 const listeners: Map<InvalidationEvent, Set<Listener>> = new Map();
@@ -56,6 +65,14 @@ export const cacheEvents = {
     listeners.get(event)?.forEach(listener => listener());
   },
 };
+
+// Typed invalidation helpers
+const invalidateRoutes = () => cacheEvents.invalidate(CACHE_EVENTS.ROUTES);
+const invalidateRoute = () => cacheEvents.invalidate(CACHE_EVENTS.ROUTE);
+const invalidatePhotos = () => cacheEvents.invalidate(CACHE_EVENTS.PHOTOS);
+const invalidateDetectedHolds = () => cacheEvents.invalidate(CACHE_EVENTS.DETECTED_HOLDS);
+const invalidateSends = () => cacheEvents.invalidate(CACHE_EVENTS.SENDS);
+const invalidateComments = () => cacheEvents.invalidate(CACHE_EVENTS.COMMENTS);
 
 // Route with computed stats
 export type RouteWithStats = Route & {
@@ -185,8 +202,7 @@ export const routesApi = {
 
     if (error) throw error;
 
-    // Invalidate routes list cache
-    cacheEvents.invalidate('routes');
+    invalidateRoutes();
 
     return data;
   },
@@ -205,9 +221,8 @@ export const routesApi = {
 
     if (error) throw error;
 
-    // Invalidate both routes list and specific route
-    cacheEvents.invalidate('routes');
-    cacheEvents.invalidate('route');
+    invalidateRoutes();
+    invalidateRoute();
   },
 
   async delete(routeId: string) {
@@ -218,7 +233,8 @@ export const routesApi = {
 
     if (error) throw error;
 
-    cacheEvents.invalidate('routes');
+    invalidateRoutes();
+    invalidateRoute();
   },
 };
 
@@ -270,7 +286,7 @@ export const photosApi = {
 
     if (error) throw error;
 
-    cacheEvents.invalidate('photos');
+    invalidatePhotos();
   },
 };
 
@@ -328,7 +344,7 @@ export const detectedHoldsApi = {
     if (error) throw error;
 
     if (photoId) invalidateHoldsCache(photoId).catch(() => {});
-    cacheEvents.invalidate('detected_holds');
+    invalidateDetectedHolds();
   },
 
   async create(hold: Omit<DetectedHold, 'id'>) {
@@ -341,7 +357,7 @@ export const detectedHoldsApi = {
     if (error) throw error;
 
     invalidateHoldsCache(hold.photo_id).catch(() => {});
-    cacheEvents.invalidate('detected_holds');
+    invalidateDetectedHolds();
 
     return data as DetectedHold;
   },
@@ -359,7 +375,7 @@ export const detectedHoldsApi = {
     // Invalidate cache for all affected photos
     const photoIds = new Set(holds.map(h => h.photo_id));
     photoIds.forEach(pid => invalidateHoldsCache(pid).catch(() => {}));
-    cacheEvents.invalidate('detected_holds');
+    invalidateDetectedHolds();
 
     return (data || []) as DetectedHold[];
   },
@@ -373,7 +389,7 @@ export const detectedHoldsApi = {
     if (error) throw error;
 
     if (photoId) invalidateHoldsCache(photoId).catch(() => {});
-    cacheEvents.invalidate('detected_holds');
+    invalidateDetectedHolds();
   },
 
   async deleteByPhoto(photoId: string): Promise<void> {
@@ -385,7 +401,7 @@ export const detectedHoldsApi = {
     if (error) throw error;
 
     invalidateHoldsCache(photoId).catch(() => {});
-    cacheEvents.invalidate('detected_holds');
+    invalidateDetectedHolds();
   },
 };
 
@@ -417,9 +433,9 @@ export const accountApi = {
       .eq('user_id', userId);
     if (profileError) throw profileError;
 
-    cacheEvents.invalidate('sends');
-    cacheEvents.invalidate('comments');
-    cacheEvents.invalidate('routes');
+    invalidateSends();
+    invalidateComments();
+    invalidateRoutes();
   },
 };
 
@@ -569,7 +585,8 @@ export const sendsApi = {
       .single();
 
     if (error) throw error;
-    cacheEvents.invalidate('sends');
+    invalidateSends();
+    invalidateRoutes();
     return data as Send;
   },
 
@@ -584,7 +601,8 @@ export const sendsApi = {
       .eq('id', sendId);
 
     if (error) throw error;
-    cacheEvents.invalidate('sends');
+    invalidateSends();
+    invalidateRoutes();
   },
 
   async delete(sendId: string): Promise<void> {
@@ -594,7 +612,8 @@ export const sendsApi = {
       .eq('id', sendId);
 
     if (error) throw error;
-    cacheEvents.invalidate('sends');
+    invalidateSends();
+    invalidateRoutes();
   },
 };
 
@@ -634,7 +653,7 @@ export const commentsApi = {
       .single();
 
     if (error) throw error;
-    cacheEvents.invalidate('comments');
+    invalidateComments();
     return data as Comment;
   },
 
@@ -645,7 +664,7 @@ export const commentsApi = {
       .eq('id', commentId);
 
     if (error) throw error;
-    cacheEvents.invalidate('comments');
+    invalidateComments();
   },
 };
 

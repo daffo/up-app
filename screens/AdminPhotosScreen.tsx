@@ -1,10 +1,8 @@
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
 } from 'react-native';
 import CachedImage from '../components/CachedImage';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +11,7 @@ import { photosApi } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
+import DataListView from '../components/DataListView';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRequireAdmin } from '../hooks/useRequireAdmin';
 import { ScreenProps } from '../navigation/types';
@@ -60,35 +59,22 @@ export default function AdminPhotosScreen({ navigation }: ScreenProps<'AdminPhot
     return null;
   }
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <SafeScreen>
-      <FlatList
+      <DataListView
+        loading={loading}
         data={photos}
+        emptyMessage={t('admin.noPhotosFound')}
         keyExtractor={(item) => item.id}
         renderItem={renderPhoto}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('admin.noPhotosFound')}</Text>
-        }
+        emptyTextStyle={[styles.emptyText, { color: colors.textSecondary }]}
       />
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   list: {
     padding: 16,
   },

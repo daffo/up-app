@@ -2,10 +2,7 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
-  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -16,6 +13,8 @@ import { Send } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import { formatRelativeDate } from '../utils/date';
 import { getDifficultyLabel } from '../utils/sends';
+import ListItemWithRoute from './ListItemWithRoute';
+import DataListView from './DataListView';
 import { useApiQuery } from '../hooks/useApiQuery';
 
 type SendWithRoute = Send & { route: { id: string; title: string; grade: string } };
@@ -36,49 +35,41 @@ export default function UserSendsList({ userId, emptyMessage }: UserSendsListPro
   );
 
   const renderSend = ({ item: send }: { item: SendWithRoute }) => (
-    <TouchableOpacity
-      style={[styles.sendItem, { backgroundColor: colors.cardBackground, borderBottomColor: colors.separator }]}
+    <ListItemWithRoute
+      title={send.route.title}
+      titleStyle={styles.sendTitle}
+      headerStyle={styles.sendHeader}
+      metadata={
+        <>
+          <View style={styles.sendMeta}>
+            <Text style={[styles.sendGrade, { color: colors.primary }]}>{send.route.grade}</Text>
+            {send.quality_rating && (
+              <View style={styles.sendRating}>
+                <Ionicons name="star" size={12} color={colors.star} />
+                <Text style={[styles.sendRatingText, { color: colors.textSecondary }]}>{send.quality_rating}</Text>
+              </View>
+            )}
+            {send.difficulty_rating !== null && (
+              <Text style={[styles.sendDifficulty, { color: colors.textSecondary }]}>
+                {getDifficultyLabel(send.difficulty_rating)}
+              </Text>
+            )}
+          </View>
+          <Text style={[styles.sendDate, { color: colors.textTertiary }]}>{formatRelativeDate(send.sent_at)}</Text>
+        </>
+      }
       onPress={() => navigation.navigate('RouteDetail', { routeId: send.route.id })}
-    >
-      <View style={styles.sendInfo}>
-        <Text style={[styles.sendTitle, { color: colors.textPrimary }]}>{send.route.title}</Text>
-        <View style={styles.sendMeta}>
-          <Text style={[styles.sendGrade, { color: colors.primary }]}>{send.route.grade}</Text>
-          {send.quality_rating && (
-            <View style={styles.sendRating}>
-              <Ionicons name="star" size={12} color={colors.star} />
-              <Text style={[styles.sendRatingText, { color: colors.textSecondary }]}>{send.quality_rating}</Text>
-            </View>
-          )}
-          {send.difficulty_rating !== null && (
-            <Text style={[styles.sendDifficulty, { color: colors.textSecondary }]}>
-              {getDifficultyLabel(send.difficulty_rating)}
-            </Text>
-          )}
-        </View>
-        <Text style={[styles.sendDate, { color: colors.textTertiary }]}>{formatRelativeDate(send.sent_at)}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.chevron} />
-    </TouchableOpacity>
+      chevronPosition="inline"
+    />
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
-    <FlatList
+    <DataListView
+      loading={loading}
       data={sends}
+      emptyMessage={emptyMessage || t('sends.noSendsYet')}
       keyExtractor={(item) => item.id}
       renderItem={renderSend}
-      contentContainerStyle={sends.length === 0 ? styles.emptyContainer : undefined}
-      ListEmptyComponent={
-        <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{emptyMessage || t('sends.noSendsYet')}</Text>
-      }
       refreshing={refreshing}
       onRefresh={refresh}
     />
@@ -86,31 +77,11 @@ export default function UserSendsList({ userId, emptyMessage }: UserSendsListPro
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-  },
-  sendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  sendInfo: {
-    flex: 1,
-  },
   sendTitle: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  sendHeader: {
     marginBottom: 4,
   },
   sendMeta: {
