@@ -981,13 +981,13 @@ describe('userProfilesApi', () => {
       mockFrom.mockReturnValue(builder2);
       mockFrom.mockClear();
 
-      // Within TTL — should return cached value, no DB call
-      jest.advanceTimersByTime(4 * 60 * 1000);
+      // Within TTL (29 min) — should return cached value, no DB call
+      jest.advanceTimersByTime(29 * 60 * 1000);
       const cached = await userProfilesApi.get('u1');
       expect(cached).toEqual({ user_id: 'u1', display_name: 'Alice' });
       expect(mockFrom).not.toHaveBeenCalled();
 
-      // Past TTL — should re-fetch from DB
+      // Past TTL (31 min total) — should re-fetch from DB
       jest.advanceTimersByTime(2 * 60 * 1000);
       const refreshed = await userProfilesApi.get('u1');
       expect(refreshed).toEqual({ user_id: 'u1', display_name: 'Alice Updated' });
@@ -1133,6 +1133,42 @@ describe('enrichWithDisplayNames', () => {
     expect(result).toEqual([
       { user_id: 'u1', id: 'item1', displayName: 'Alice' },
     ]);
+  });
+
+  it('fetches 3 unique users in a single bulk query for 5 items', async () => {
+    const builder = createBuilder({
+      data: [
+        { user_id: 'u1', display_name: 'Alice' },
+        { user_id: 'u2', display_name: 'Bob' },
+        { user_id: 'u3', display_name: 'Carol' },
+      ],
+      error: null,
+    });
+    mockFrom.mockReturnValue(builder);
+
+    mockFrom.mockClear();
+
+    const items = [
+      { user_id: 'u1', id: 'c1' },
+      { user_id: 'u2', id: 'c2' },
+      { user_id: 'u1', id: 'c3' },
+      { user_id: 'u3', id: 'c4' },
+      { user_id: 'u2', id: 'c5' },
+    ] as any[];
+
+    const result = await enrichWithDisplayNames(items);
+
+    // Single DB call for 3 unique users, not 5 individual calls
+    expect(mockFrom).toHaveBeenCalledTimes(1);
+    expect(builder.in).toHaveBeenCalledWith('user_id', ['u1', 'u2', 'u3']);
+
+    // All 5 items enriched correctly
+    expect(result).toHaveLength(5);
+    expect(result[0].displayName).toBe('Alice');
+    expect(result[1].displayName).toBe('Bob');
+    expect(result[2].displayName).toBe('Alice');
+    expect(result[3].displayName).toBe('Carol');
+    expect(result[4].displayName).toBe('Bob');
   });
 
   it('sets displayName to undefined when profile not found', async () => {

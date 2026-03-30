@@ -425,7 +425,7 @@ export const accountApi = {
 
 // User Profiles API
 // In-memory profile cache with TTL (invalidated on upsert)
-const PROFILE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const PROFILE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const profileCache = new Map<string, { profile: UserProfile | null; fetchedAt: number }>();
 
 export const userProfilesApi = {
