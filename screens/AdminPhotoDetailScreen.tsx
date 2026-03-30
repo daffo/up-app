@@ -20,6 +20,7 @@ import { formatDate } from '../utils/date';
 import { detectHolds } from '../lib/holdDetection';
 import SafeScreen from '../components/SafeScreen';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { useRequireAdmin } from '../hooks/useRequireAdmin';
 import { ScreenProps } from '../navigation/types';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -69,6 +70,7 @@ function WebDateInput({ value, onChange, colors }: {
 }
 
 export default function AdminPhotoDetailScreen({ route }: ScreenProps<'AdminPhotoDetail'>) {
+  const { isAdmin, loading: adminLoading } = useRequireAdmin();
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { photoId } = route.params;
@@ -259,6 +261,10 @@ export default function AdminPhotoDetailScreen({ route }: ScreenProps<'AdminPhot
 
   const hasHolds = detectedHolds.length > 0;
   const isLive = !!photo?.setup_date;
+
+  if (adminLoading || !isAdmin) {
+    return null;
+  }
 
   if (loading) {
     return (
