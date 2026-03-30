@@ -8,6 +8,8 @@ import {
   enrichWithDisplayNames,
   sendsApi,
   commentsApi,
+  validateCursor,
+  sanitizeFilterValue,
 } from '../../lib/api';
 
 jest.mock('../../lib/supabase', () => ({
@@ -53,6 +55,114 @@ afterEach(() => {
   unsubs.forEach(fn => fn());
   unsubs.length = 0;
   jest.restoreAllMocks();
+});
+
+// ---------------------------------------------------------------------------
+// validateCursor
+// ---------------------------------------------------------------------------
+describe('validateCursor', () => {
+  it('accepts a valid UUID and ISO timestamp', () => {
+    expect(() =>
+      validateCursor({
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        created_at: '2024-06-15T12:00:00Z',
+      }),
+    ).not.toThrow();
+  });
+
+  it('accepts ISO timestamp with fractional seconds', () => {
+    expect(() =>
+      validateCursor({
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        created_at: '2024-06-15T12:00:00.123Z',
+      }),
+    ).not.toThrow();
+  });
+
+  it('accepts ISO timestamp with timezone offset', () => {
+    expect(() =>
+      validateCursor({
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        created_at: '2024-06-15T12:00:00+02:00',
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects non-UUID id', () => {
+    expect(() =>
+      validateCursor({
+        id: 'not-a-uuid',
+        created_at: '2024-06-15T12:00:00Z',
+      }),
+    ).toThrow('Invalid cursor: id must be a valid UUID');
+  });
+
+  it('rejects id with SQL/operator injection payload', () => {
+    expect(() =>
+      validateCursor({
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890),or(1=1',
+        created_at: '2024-06-15T12:00:00Z',
+      }),
+    ).toThrow('Invalid cursor: id must be a valid UUID');
+  });
+
+  it('rejects non-ISO timestamp', () => {
+    expect(() =>
+      validateCursor({
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        created_at: 'not-a-date',
+      }),
+    ).toThrow('Invalid cursor: created_at must be a valid ISO 8601 timestamp');
+  });
+
+  it('rejects timestamp with operator injection payload', () => {
+    expect(() =>
+      validateCursor({
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        created_at: '2024-01-01,id.gt.0',
+      }),
+    ).toThrow('Invalid cursor: created_at must be a valid ISO 8601 timestamp');
+  });
+
+  it('rejects empty strings', () => {
+    expect(() =>
+      validateCursor({ id: '', created_at: '' }),
+    ).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sanitizeFilterValue
+// ---------------------------------------------------------------------------
+describe('sanitizeFilterValue', () => {
+  it('returns normal text unchanged', () => {
+    expect(sanitizeFilterValue('Cool Route')).toBe('Cool Route');
+  });
+
+  it('escapes commas to prevent multi-filter injection', () => {
+    expect(sanitizeFilterValue('a,b')).toBe('a\\,b');
+  });
+
+  it('escapes dots to prevent operator injection', () => {
+    expect(sanitizeFilterValue('title.ilike.%hack%')).toBe('title\\.ilike\\.%hack%');
+  });
+
+  it('escapes parentheses to prevent grouping injection', () => {
+    expect(sanitizeFilterValue('V5).or(1=1')).toBe('V5\\)\\.or\\(1=1');
+  });
+
+  it('escapes backslashes', () => {
+    expect(sanitizeFilterValue('test\\value')).toBe('test\\\\value');
+  });
+
+  it('handles combined injection payload', () => {
+    // Simulates: search = "x%,description.ilike.%,title.eq.hacked"
+    const malicious = 'x%,description.ilike.%,title.eq.hacked';
+    const result = sanitizeFilterValue(malicious);
+    // Commas and dots are escaped — PostgREST will not interpret them as operators
+    expect(result).not.toMatch(/(?<!\\),/);
+    expect(result).toBe('x%\\,description\\.ilike\\.%\\,title\\.eq\\.hacked');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -242,10 +352,10 @@ describe('routesApi', () => {
       mockFrom.mockReturnValue(builder);
 
       await routesApi.list(undefined, {
-        cursor: { created_at: '2024-06-15T12:00:00Z', id: 'abc' },
+        cursor: { created_at: '2024-06-15T12:00:00Z', id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
       });
       expect(builder.or).toHaveBeenCalledWith(
-        'created_at.lt.2024-06-15T12:00:00Z,and(created_at.eq.2024-06-15T12:00:00Z,id.lt.abc)',
+        'created_at.lt.2024-06-15T12:00:00Z,and(created_at.eq.2024-06-15T12:00:00Z,id.lt.a1b2c3d4-e5f6-7890-abcd-ef1234567890)',
       );
     });
 
@@ -255,6 +365,94 @@ describe('routesApi', () => {
 
       await routesApi.list(undefined, { pageSize: 5 });
       expect(builder.limit).toHaveBeenCalledWith(6);
+    });
+
+    // -- SQL injection prevention --
+
+    it('escapes % and _ wildcards in grade filter', async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list({ grade: 'V5%_drop' });
+      expect(builder.ilike).toHaveBeenCalledWith('grade', '%V5\\%\\_drop%');
+    });
+
+    it('sanitizes search input to prevent PostgREST operator injection', async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      // Attacker tries to inject a second filter via comma and .ilike. operator
+      await routesApi.list({ search: 'x,description.ilike.%hack%' });
+      const orCall = builder.or.mock.calls[0][0] as string;
+      // The comma and dots must be escaped so PostgREST treats them as literals
+      expect(orCall).not.toContain(',description.ilike.%hack%');
+      expect(orCall).toContain('x\\,description\\.ilike\\.%hack%');
+    });
+
+    it('sanitizes search with parentheses injection', async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list({ search: 'V5).or(1=1' });
+      const orCall = builder.or.mock.calls[0][0] as string;
+      expect(orCall).toContain('V5\\)\\.or\\(1=1');
+    });
+
+    it('throws on malformed cursor with non-UUID id', async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await expect(
+        routesApi.list(undefined, {
+          cursor: { created_at: '2024-06-15T12:00:00Z', id: 'not-a-uuid' },
+        }),
+      ).rejects.toThrow('Invalid cursor: id must be a valid UUID');
+    });
+
+    it('throws on malformed cursor with non-ISO timestamp', async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await expect(
+        routesApi.list(undefined, {
+          cursor: {
+            created_at: '2024-01-01,id.gt.00000000-0000-0000-0000-000000000000',
+            id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          },
+        }),
+      ).rejects.toThrow('Invalid cursor: created_at must be a valid ISO 8601 timestamp');
+    });
+
+    it('accepts valid cursor and passes it to query', async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      const validCursor = {
+        created_at: '2024-06-15T12:00:00Z',
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      };
+      await routesApi.list(undefined, { cursor: validCursor });
+      expect(builder.or).toHaveBeenCalledWith(
+        `created_at.lt.${validCursor.created_at},and(created_at.eq.${validCursor.created_at},id.lt.${validCursor.id})`,
+      );
+    });
+
+    it('normal grade filter still works after sanitization', async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list({ grade: 'V5' });
+      expect(builder.ilike).toHaveBeenCalledWith('grade', '%V5%');
+    });
+
+    it('normal search filter still works after sanitization', async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list({ search: 'cool route' });
+      expect(builder.or).toHaveBeenCalledWith(
+        'title.ilike.%cool route%,description.ilike.%cool route%',
+      );
     });
   });
 

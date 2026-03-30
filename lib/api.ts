@@ -6,6 +6,33 @@ type Route = Database['public']['Tables']['routes']['Row'];
 type Photo = Database['public']['Tables']['photos']['Row'];
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
 
+// UUID v4 pattern
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// ISO 8601 timestamp (with optional fractional seconds and Z or ±HH:MM offset)
+const ISO_TS_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * Validate pagination cursor values to prevent injection via .or() filter strings.
+ * Throws if the cursor contains invalid values.
+ */
+export function validateCursor(cursor: { created_at: string; id: string }): void {
+  if (!UUID_RE.test(cursor.id)) {
+    throw new Error('Invalid cursor: id must be a valid UUID');
+  }
+  if (!ISO_TS_RE.test(cursor.created_at)) {
+    throw new Error('Invalid cursor: created_at must be a valid ISO 8601 timestamp');
+  }
+}
+
+/**
+ * Escape a string for safe use inside a PostgREST filter value.
+ * PostgREST uses commas, dots, parentheses, and backslashes as operators
+ * in filter strings — these must be backslash-escaped when they appear in values.
+ */
+export function sanitizeFilterValue(value: string): string {
+  return value.replace(/[\\.,()]/g, ch => `\\${ch}`);
+}
+
 // Simple event emitter for cache invalidation
 type InvalidationEvent = 'routes' | 'route' | 'photos' | 'detected_holds' | 'sends' | 'comments';
 type Listener = () => void;
@@ -72,15 +99,18 @@ export const routesApi = {
     }
 
     if (filters?.grade) {
-      query = query.ilike('grade', `%${filters.grade}%`);
+      const safeGrade = filters.grade.replace(/[%_]/g, ch => `\\${ch}`);
+      query = query.ilike('grade', `%${safeGrade}%`);
     }
 
     if (filters?.search) {
-      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+      const sanitized = sanitizeFilterValue(filters.search);
+      query = query.or(`title.ilike.%${sanitized}%,description.ilike.%${sanitized}%`);
     }
 
     // Cursor-based pagination with tiebreaker
     if (pagination?.cursor) {
+      validateCursor(pagination.cursor);
       const { created_at, id } = pagination.cursor;
       query = query.or(`created_at.lt.${created_at},and(created_at.eq.${created_at},id.lt.${id})`);
     }
