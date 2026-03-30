@@ -49,3 +49,6 @@ coverage/
 
 # Claude Code
 .claude/
+
+# Local backlog
+backlog/
