@@ -8,6 +8,7 @@ import {
   enrichWithDisplayNames,
   sendsApi,
   commentsApi,
+  accountApi,
   validateCursor,
   sanitizeFilterValue,
 } from '../../lib/api';
@@ -1419,5 +1420,206 @@ describe('commentsApi', () => {
 
       await expect(commentsApi.delete('c1')).rejects.toEqual({ message: 'fail' });
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// accountApi
+// ---------------------------------------------------------------------------
+describe('accountApi', () => {
+  describe('deleteAllUserData', () => {
+    it('deletes all user data in order and invalidates caches', async () => {
+      const builder = createBuilder({ data: null, error: null });
+      mockFrom.mockReturnValue(builder);
+
+      const sendsListener = jest.fn();
+      const commentsListener = jest.fn();
+      const routesListener = jest.fn();
+      unsubs.push(cacheEvents.subscribe('sends', sendsListener));
+      unsubs.push(cacheEvents.subscribe('comments', commentsListener));
+      unsubs.push(cacheEvents.subscribe('routes', routesListener));
+
+      await accountApi.deleteAllUserData('u1');
+
+      expect(sendsListener).toHaveBeenCalledTimes(1);
+      expect(commentsListener).toHaveBeenCalledTimes(1);
+      expect(routesListener).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws on sends deletion error and stops', async () => {
+      const errorBuilder = createBuilder({ data: null, error: { message: 'sends fail', code: '42501' } });
+      mockFrom.mockReturnValue(errorBuilder);
+
+      await expect(accountApi.deleteAllUserData('u1')).rejects.toEqual({ message: 'sends fail', code: '42501' });
+    });
+
+    it('throws on comments deletion error after sends succeed', async () => {
+      const okBuilder = createBuilder({ data: null, error: null });
+      const errorBuilder = createBuilder({ data: null, error: { message: 'comments fail' } });
+      // First call (sends) succeeds, second call (comments) fails
+      mockFrom.mockReturnValueOnce(okBuilder).mockReturnValueOnce(errorBuilder);
+
+      await expect(accountApi.deleteAllUserData('u1')).rejects.toEqual({ message: 'comments fail' });
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Error handling & cache invalidation during failures
+// ---------------------------------------------------------------------------
+describe('error handling - cache invalidation on failure', () => {
+  it('routesApi.create does not invalidate cache when insert fails', async () => {
+    const builder = createBuilder({ data: null, error: { message: 'constraint violation', code: '23505' } });
+    mockFrom.mockReturnValue(builder);
+
+    const listener = jest.fn();
+    unsubs.push(cacheEvents.subscribe('routes', listener));
+
+    await expect(routesApi.create({
+      title: 'T', description: null, grade: 'V3',
+      photo_id: 'p1', holds: { hand_holds: [], foot_holds: [] }, user_id: 'u1',
+    })).rejects.toEqual({ message: 'constraint violation', code: '23505' });
+
+    // Cache should NOT be invalidated because the error is thrown before invalidation
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('routesApi.update does not invalidate cache when update fails', async () => {
+    const builder = createBuilder({ data: null, error: { message: 'fail' } });
+    mockFrom.mockReturnValue(builder);
+
+    const routesListener = jest.fn();
+    const routeListener = jest.fn();
+    unsubs.push(cacheEvents.subscribe('routes', routesListener));
+    unsubs.push(cacheEvents.subscribe('route', routeListener));
+
+    await expect(routesApi.update('r1', { title: 'New' })).rejects.toEqual({ message: 'fail' });
+
+    expect(routesListener).not.toHaveBeenCalled();
+    expect(routeListener).not.toHaveBeenCalled();
+  });
+
+  it('routesApi.delete does not invalidate cache when delete fails', async () => {
+    const builder = createBuilder({ data: null, error: { message: 'fail' } });
+    mockFrom.mockReturnValue(builder);
+
+    const listener = jest.fn();
+    unsubs.push(cacheEvents.subscribe('routes', listener));
+
+    await expect(routesApi.delete('r1')).rejects.toEqual({ message: 'fail' });
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('sendsApi.create does not invalidate cache when insert fails', async () => {
+    const builder = createBuilder({ data: null, error: { message: 'duplicate send', code: '23505' } });
+    mockFrom.mockReturnValue(builder);
+
+    const listener = jest.fn();
+    unsubs.push(cacheEvents.subscribe('sends', listener));
+
+    await expect(sendsApi.create({ user_id: 'u1', route_id: 'r1' })).rejects.toEqual({
+      message: 'duplicate send', code: '23505',
+    });
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('sendsApi.update does not invalidate cache when update fails', async () => {
+    const builder = createBuilder({ data: null, error: { message: 'fail' } });
+    mockFrom.mockReturnValue(builder);
+
+    const listener = jest.fn();
+    unsubs.push(cacheEvents.subscribe('sends', listener));
+
+    await expect(sendsApi.update('s1', { quality_rating: 5 })).rejects.toEqual({ message: 'fail' });
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('commentsApi.create does not invalidate cache when insert fails', async () => {
+    const builder = createBuilder({ data: null, error: { message: 'fail' } });
+    mockFrom.mockReturnValue(builder);
+
+    const listener = jest.fn();
+    unsubs.push(cacheEvents.subscribe('comments', listener));
+
+    await expect(commentsApi.create({
+      user_id: 'u1', route_id: 'r1', text: 'X',
+    })).rejects.toEqual({ message: 'fail' });
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('commentsApi.delete does not invalidate cache when delete fails', async () => {
+    const builder = createBuilder({ data: null, error: { message: 'fail' } });
+    mockFrom.mockReturnValue(builder);
+
+    const listener = jest.fn();
+    unsubs.push(cacheEvents.subscribe('comments', listener));
+
+    await expect(commentsApi.delete('c1')).rejects.toEqual({ message: 'fail' });
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('photosApi.update does not invalidate cache when update fails', async () => {
+    const builder = createBuilder({ data: null, error: { message: 'fail' } });
+    mockFrom.mockReturnValue(builder);
+
+    const listener = jest.fn();
+    unsubs.push(cacheEvents.subscribe('photos', listener));
+
+    await expect(photosApi.update('p1', { setup_date: '2025-01-01' })).rejects.toEqual({ message: 'fail' });
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pagination edge cases
+// ---------------------------------------------------------------------------
+describe('routesApi.list - pagination edge cases', () => {
+  it('returns empty array and hasMore=false for last page (0 results)', async () => {
+    const builder = createBuilder({ data: [], error: null });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await routesApi.list(undefined, {
+      cursor: { created_at: '2024-01-01T00:00:00Z', id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
+    });
+    expect(result.data).toEqual([]);
+    expect(result.hasMore).toBe(false);
+  });
+
+  it('returns hasMore=false when results exactly equal pageSize', async () => {
+    const items = Array.from({ length: 5 }, (_, i) => ({
+      id: `r${i}`, sends: [], photo: {},
+    }));
+    const builder = createBuilder({ data: items, error: null });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await routesApi.list(undefined, { pageSize: 5 });
+    expect(result.data).toHaveLength(5);
+    expect(result.hasMore).toBe(false);
+  });
+
+  it('returns hasMore=true with custom pageSize when results exceed it', async () => {
+    const items = Array.from({ length: 4 }, (_, i) => ({
+      id: `r${i}`, sends: [], photo: {},
+    }));
+    const builder = createBuilder({ data: items, error: null });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await routesApi.list(undefined, { pageSize: 3 });
+    expect(result.data).toHaveLength(3);
+    expect(result.hasMore).toBe(true);
+  });
+
+  it('requests pageSize + 1 from database to detect more results', async () => {
+    const builder = createBuilder({ data: [], error: null });
+    mockFrom.mockReturnValue(builder);
+
+    await routesApi.list(undefined, { pageSize: 10 });
+    expect(builder.limit).toHaveBeenCalledWith(11);
   });
 });
