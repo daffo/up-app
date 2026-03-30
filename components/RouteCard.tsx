@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RouteWithStats } from '../lib/api';
@@ -6,14 +7,15 @@ import { formatDate } from '../utils/date';
 
 interface RouteCardProps {
   route: RouteWithStats;
-  onPress: () => void;
+  routeId: string;
+  onPress: (routeId: string) => void;
 }
 
-export default function RouteCard({ route, onPress }: RouteCardProps) {
+function RouteCard({ route, routeId, onPress }: RouteCardProps) {
   const colors = useThemeColors();
 
   return (
-    <TouchableOpacity style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={onPress}>
+    <TouchableOpacity style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={() => onPress(routeId)}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{route.title}</Text>
         <View style={styles.headerRight}>
@@ -45,6 +47,8 @@ export default function RouteCard({ route, onPress }: RouteCardProps) {
     </TouchableOpacity>
   );
 }
+
+export default React.memo(RouteCard);
 
 const styles = StyleSheet.create({
   card: {

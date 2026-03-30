@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, StyleSheet, LayoutChangeEvent, TouchableOpacity } from 'react-native';
 import { HandHold, FootHold, DetectedHold } from '../types/database.types';
 import CachedImage from './CachedImage';
@@ -51,7 +51,7 @@ export default function RouteVisualization({
   };
 
   // Calculate actual displayed image dimensions based on contain mode
-  const getDisplayedImageDimensions = () => {
+  const displayedDimensions = useMemo(() => {
     if (!imageNaturalSize.width || !imageNaturalSize.height || !containerDimensions.width) {
       return { width: 0, height: 0 };
     }
@@ -72,13 +72,11 @@ export default function RouteVisualization({
     }
 
     return { width: displayWidth, height: displayHeight };
-  };
-
-  const displayedDimensions = getDisplayedImageDimensions();
+  }, [imageNaturalSize.width, imageNaturalSize.height, containerDimensions.width, containerDimensions.height]);
 
   // Calculate centering offsets for overlay
-  const offsetX = (containerDimensions.width - displayedDimensions.width) / 2;
-  const offsetY = (containerDimensions.height - displayedDimensions.height) / 2;
+  const offsetX = useMemo(() => (containerDimensions.width - displayedDimensions.width) / 2, [containerDimensions.width, displayedDimensions.width]);
+  const offsetY = useMemo(() => (containerDimensions.height - displayedDimensions.height) / 2, [containerDimensions.height, displayedDimensions.height]);
 
   return (
     <>

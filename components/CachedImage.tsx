@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Image, ImageProps } from 'expo-image';
 import { getLocalImageUri } from '../lib/cache/image-file-cache';
 
@@ -35,8 +36,10 @@ export default function CachedImage({ source, ...props }: ImageProps) {
     return <Image cachePolicy="memory-disk" source={source} {...props} />;
   }
 
-  // While resolving, render nothing to avoid a network fetch
-  if (!localUri) return null;
+  // While resolving, show placeholder to prevent layout shift
+  if (!localUri) {
+    return <View style={[props.style, styles.placeholder]} />;
+  }
 
   return (
     <Image
@@ -46,3 +49,9 @@ export default function CachedImage({ source, ...props }: ImageProps) {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  placeholder: {
+    backgroundColor: 'transparent',
+  },
+});

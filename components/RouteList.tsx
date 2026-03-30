@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { View, FlatList, Text, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { RouteFilters } from '../types/database.types';
@@ -11,9 +12,14 @@ interface RouteListProps {
   filters?: RouteFilters;
 }
 
+const keyExtractor = (item: RouteWithStats) => item.id;
+
 export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
+  const handleRoutePress = useCallback((routeId: string) => {
+    onRoutePress(routeId);
+  }, [onRoutePress]);
   const { data: routes, loading, loadingMore, error, refreshing, hasMore, refresh, loadMore } = usePaginatedQuery(
     (cursor) => routesApi.list(filters, { cursor }),
     [filters],
@@ -56,9 +62,9 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
   return (
     <FlatList
       data={routes}
-      keyExtractor={(item) => item.id}
+      keyExtractor={keyExtractor}
       renderItem={({ item }) => (
-        <RouteCard route={item} onPress={() => onRoutePress(item.id)} />
+        <RouteCard route={item} routeId={item.id} onPress={handleRoutePress} />
       )}
       contentContainerStyle={styles.listContainer}
       refreshControl={
