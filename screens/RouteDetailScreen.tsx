@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Keyboard,
   Platform,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -95,6 +96,13 @@ export default function RouteDetailScreen({ route, navigation }: ScreenProps<'Ro
     };
   }, []);
 
+  const handleShare = async () => {
+    const title = routeData?.title ?? '';
+    const grade = routeData?.grade ?? '';
+    const message = t('route.shareMessage', { title, grade, url: `https://up-app-one.vercel.app/route/${routeId}` });
+    await Share.share({ message });
+  };
+
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -174,7 +182,7 @@ export default function RouteDetailScreen({ route, navigation }: ScreenProps<'Ro
           </Text>
         </View>
         <TouchableOpacity
-          style={[styles.detailRow, { borderBottomColor: colors.separator }, !(user && routeData.user_id === user.id) && styles.detailRowLast]}
+          style={[styles.detailRow, { borderBottomColor: colors.separator }]}
           onPress={() => navigation.navigate('RouteSends', { routeId })}
         >
           <Text style={[styles.detailLabel, { color: colors.textPrimary }]}>{t('route.rating')}</Text>
@@ -194,6 +202,14 @@ export default function RouteDetailScreen({ route, navigation }: ScreenProps<'Ro
             })()}
             <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} style={styles.chevron} />
           </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.detailRow, !(user && routeData.user_id === user.id) && styles.detailRowLast, { borderBottomColor: colors.separator }]}
+          onPress={handleShare}
+          accessibilityLabel={t('route.share')}
+        >
+          <Text style={[styles.editRouteLabel, { color: colors.primary }]}>{t('route.share')}</Text>
+          <Ionicons name="share-outline" size={20} color={colors.primary} />
         </TouchableOpacity>
         {user && routeData.user_id === user.id && (
           <TouchableOpacity

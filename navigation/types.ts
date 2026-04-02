@@ -4,6 +4,8 @@ export type RootStackParamList = {
   Home: undefined;
   Login: { redirectTo?: keyof RootStackParamList } | undefined;
   Signup: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: undefined;
   RouteDetail: { routeId: string };
   CreateEditRoute: { routeId?: string } | undefined;
   AdminPhotos: undefined;

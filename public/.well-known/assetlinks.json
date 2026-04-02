@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.daffo.upapp",
+      "sha256_cert_fingerprints": [
+        "56:99:EE:28:7D:B4:B7:99:F4:70:79:A2:47:06:BC:A5:97:6E:B5:AE:2B:1F:44:3B:A8:85:F7:4A:81:D8:B5:CB"
+      ]
+    }
+  }
+]

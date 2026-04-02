@@ -104,6 +104,16 @@ export default function LoginScreen({ navigation, route }: ScreenProps<'Login'>)
 
       <TouchableOpacity
         style={styles.linkButton}
+        onPress={() => navigation.navigate('ForgotPassword')}
+        disabled={loading}
+      >
+        <Text style={styles.linkText}>
+          {t('auth.forgotPassword')}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.linkButton}
         onPress={() => navigation.navigate('Signup')}
         disabled={loading}
       >

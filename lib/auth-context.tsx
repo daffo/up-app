@@ -9,13 +9,14 @@ import { accountApi } from './api';
 // Required for proper browser session dismissal on mobile
 WebBrowser.maybeCompleteAuthSession();
 
-async function setSessionFromRedirectUrl(url: string): Promise<{ error: any } | null> {
+async function setSessionFromRedirectUrl(url: string): Promise<{ error: any; isRecovery: boolean } | null> {
   const fragmentIndex = url.indexOf('#');
   if (fragmentIndex === -1) return null;
 
   const params = new URLSearchParams(url.substring(fragmentIndex + 1));
   const accessToken = params.get('access_token');
   const refreshToken = params.get('refresh_token');
+  const type = params.get('type');
 
   if (!accessToken || !refreshToken) return null;
 
@@ -23,7 +24,7 @@ async function setSessionFromRedirectUrl(url: string): Promise<{ error: any } | 
     access_token: accessToken,
     refresh_token: refreshToken,
   });
-  return { error };
+  return { error, isRecovery: type === 'recovery' };
 }
 
 type AuthContextType = {
@@ -31,6 +32,8 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  isPasswordRecovery: boolean;
+  clearPasswordRecovery: () => void;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
@@ -46,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // Check admin status when user changes
   useEffect(() => {
@@ -75,15 +79,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
     });
 
-    // Handle deep links for OAuth callback (mobile only - fallback)
+    // Handle deep links for OAuth callback and password recovery (mobile only)
     const handleDeepLink = async (event: { url: string }) => {
-      await setSessionFromRedirectUrl(event.url);
+      const result = await setSessionFromRedirectUrl(event.url);
+      if (result?.isRecovery) {
+        setIsPasswordRecovery(true);
+      }
     };
 
     // Listen for incoming deep links
@@ -189,6 +200,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         loading,
         isAdmin,
+        isPasswordRecovery,
+        clearPasswordRecovery: () => setIsPasswordRecovery(false),
         signUp,
         signIn,
         signInWithGoogle,

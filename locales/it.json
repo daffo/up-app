@@ -41,7 +41,9 @@
     "created": "Creato",
     "rating": "Valutazione",
     "noRatingsYet": "Nessuna valutazione",
-    "editRoute": "Modifica Via"
+    "editRoute": "Modifica Via",
+    "share": "Condividi",
+    "shareMessage": "Guarda \"{{title}}\" ({{grade}}) su Upp! {{url}}"
   },
   "routeForm": {
     "title": "Titolo",
@@ -120,6 +122,25 @@
     "deleteAccountError": "Eliminazione account fallita. Riprova.",
     "deleting": "Eliminazione..."
   },
+  "forgotPassword": {
+    "title": "Reimposta Password",
+    "subtitle": "Inserisci la tua email e ti invieremo un link per reimpostare la password",
+    "sendLink": "Invia Link",
+    "sending": "Invio...",
+    "checkEmail": "Controlla la Tua Email",
+    "checkEmailMessage": "Se esiste un account per {{email}}, riceverai a breve un link per reimpostare la password.",
+    "backToLogin": "Torna al Login"
+  },
+  "resetPassword": {
+    "title": "Nuova Password",
+    "subtitle": "Inserisci la tua nuova password",
+    "newPassword": "Nuova Password",
+    "newPasswordMin": "Nuova password (min 6 caratteri)",
+    "confirmPassword": "Conferma Nuova Password",
+    "resetButton": "Reimposta Password",
+    "resetting": "Reimpostazione...",
+    "success": "Password reimpostata con successo. Accedi con la tua nuova password."
+  },
   "changePassword": {
     "currentPassword": "Password Attuale",
     "newPassword": "Nuova Password",
@@ -138,7 +159,9 @@
     "buyMeABeerSubtitle": "Ci vediamo in palestra!",
     "appVersion": "Versione {{version}}",
     "dangerZoneSection": "Zona pericolosa",
-    "changePassword": "Cambia Password"
+    "changePassword": "Cambia Password",
+    "forgotPassword": "Password Dimenticata",
+    "resetPassword": "Reimposta Password"
   },
   "menu": {
     "openMenu": "Apri menu",
@@ -182,6 +205,7 @@
     "logIn": "Accedi",
     "creatingAccount": "Creazione account...",
     "signUp": "Registrati",
+    "forgotPassword": "Password dimenticata?",
     "noAccount": "Non hai un account? Registrati",
     "hasAccount": "Hai già un account? Accedi",
     "orContinueWith": "oppure continua con",

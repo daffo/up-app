@@ -41,7 +41,9 @@
     "created": "Created",
     "rating": "Rating",
     "noRatingsYet": "No ratings yet",
-    "editRoute": "Edit Route"
+    "editRoute": "Edit Route",
+    "share": "Share",
+    "shareMessage": "Check out \"{{title}}\" ({{grade}}) on Upp! {{url}}"
   },
   "routeForm": {
     "title": "Title",
@@ -120,6 +122,25 @@
     "deleteAccountError": "Failed to delete account. Please try again.",
     "deleting": "Deleting..."
   },
+  "forgotPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your email and we'll send you a reset link",
+    "sendLink": "Send Reset Link",
+    "sending": "Sending...",
+    "checkEmail": "Check Your Email",
+    "checkEmailMessage": "If an account exists for {{email}}, you'll receive a password reset link shortly.",
+    "backToLogin": "Back to Login"
+  },
+  "resetPassword": {
+    "title": "Set New Password",
+    "subtitle": "Enter your new password below",
+    "newPassword": "New Password",
+    "newPasswordMin": "New password (min 6 characters)",
+    "confirmPassword": "Confirm New Password",
+    "resetButton": "Reset Password",
+    "resetting": "Resetting...",
+    "success": "Password reset successfully. Please log in with your new password."
+  },
   "changePassword": {
     "currentPassword": "Current Password",
     "newPassword": "New Password",
@@ -138,7 +159,9 @@
     "buyMeABeerSubtitle": "See you at the gym!",
     "appVersion": "Version {{version}}",
     "dangerZoneSection": "Danger Zone",
-    "changePassword": "Change Password"
+    "changePassword": "Change Password",
+    "forgotPassword": "Forgot Password",
+    "resetPassword": "Reset Password"
   },
   "menu": {
     "openMenu": "Open menu",
@@ -182,6 +205,7 @@
     "logIn": "Log In",
     "creatingAccount": "Creating account...",
     "signUp": "Sign Up",
+    "forgotPassword": "Forgot password?",
     "noAccount": "Don't have an account? Sign up",
     "hasAccount": "Already have an account? Log in",
     "orContinueWith": "or continue with",
