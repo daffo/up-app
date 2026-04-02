@@ -3,7 +3,7 @@
     "name": "Upp",
     "slug": "up-app",
     "scheme": "upapp",
-    "version": "0.9.1-beta",
+    "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
