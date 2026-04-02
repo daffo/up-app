@@ -27,6 +27,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [Linking.createURL('/'), 'https://up-app-one.vercel.app', 'upapp:///'],
   config: {
+    initialRouteName: 'Home',
     screens: {
       Home: '',
       Login: 'login',
