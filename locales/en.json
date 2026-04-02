@@ -251,6 +251,11 @@
     "cannotSetSetup": "Detect holds before setting setup date",
     "dateUpdated": "Date updated"
   },
+  "installBanner": {
+    "message": "Get Upp on the Play Store",
+    "install": "Install",
+    "dismiss": "Dismiss"
+  },
   "forceUpdate": {
     "title": "Update Required",
     "message": "A new version of Upp is available. Please update to continue using the app.",

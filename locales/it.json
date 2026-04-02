@@ -251,6 +251,11 @@
     "cannotSetSetup": "Rileva le prese prima di impostare la data di montaggio",
     "dateUpdated": "Data aggiornata"
   },
+  "installBanner": {
+    "message": "Scarica Upp dal Play Store",
+    "install": "Installa",
+    "dismiss": "Chiudi"
+  },
   "forceUpdate": {
     "title": "Aggiornamento Richiesto",
     "message": "Una nuova versione di Upp è disponibile. Aggiorna per continuare a usare l'app.",

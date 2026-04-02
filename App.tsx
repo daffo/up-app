@@ -9,6 +9,7 @@ import { initI18n } from './lib/i18n';
 import { initImageDimensionsCache } from './lib/cache/image-cache';
 import ErrorBoundary from './components/ErrorBoundary';
 import AppNavigator from './navigation/AppNavigator';
+import InstallBanner from './components/InstallBanner';
 import ForceUpdateScreen from './screens/ForceUpdateScreen';
 import { useVersionCheck } from './hooks/useVersionCheck';
 import { useActivityTracker } from './hooks/useActivityTracker';
@@ -24,6 +25,7 @@ function AppContent() {
 
   return (
     <>
+      <InstallBanner />
       <AppNavigator />
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </>
