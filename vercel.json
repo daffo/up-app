@@ -3,13 +3,13 @@
   "outputDirectory": "dist",
   "headers": [
     {
-      "source": "/.well-known/assetlinks.json",
+      "source": "/.well-known/(.*)",
       "headers": [
         { "key": "Content-Type", "value": "application/json" }
       ]
     }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/((?!\\.well-known).*)", "destination": "/" }
   ]
 }
