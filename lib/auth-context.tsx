@@ -2,9 +2,12 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { accountApi } from './api';
+
+const PASSWORD_RECOVERY_KEY = '@password_recovery_pending';
 
 // Required for proper browser session dismissal on mobile
 WebBrowser.maybeCompleteAuthSession();
@@ -69,11 +72,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    // Check for incomplete password recovery — sign out to prevent session hijack
+    const checkPendingRecovery = async () => {
+      const pending = await AsyncStorage.getItem(PASSWORD_RECOVERY_KEY);
+      if (pending) {
+        await AsyncStorage.removeItem(PASSWORD_RECOVERY_KEY);
+        await supabase.auth.signOut({ scope: 'local' });
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return true;
+      }
+      return false;
+    };
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    checkPendingRecovery().then((wasRecovery) => {
+      if (wasRecovery) return;
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      });
     });
 
     // Listen for auth changes
@@ -85,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       setLoading(false);
       if (event === 'PASSWORD_RECOVERY') {
+        AsyncStorage.setItem(PASSWORD_RECOVERY_KEY, 'true');
         setIsPasswordRecovery(true);
       }
     });
@@ -93,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleDeepLink = async (event: { url: string }) => {
       const result = await setSessionFromRedirectUrl(event.url);
       if (result?.isRecovery) {
+        AsyncStorage.setItem(PASSWORD_RECOVERY_KEY, 'true');
         setIsPasswordRecovery(true);
       }
     };
@@ -201,7 +223,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         isAdmin,
         isPasswordRecovery,
-        clearPasswordRecovery: () => setIsPasswordRecovery(false),
+        clearPasswordRecovery: () => {
+          AsyncStorage.removeItem(PASSWORD_RECOVERY_KEY);
+          setIsPasswordRecovery(false);
+        },
         signUp,
         signIn,
         signInWithGoogle,
