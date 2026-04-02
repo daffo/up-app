@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx expo export --platform web && cp -r public/.well-known dist/.well-known",
+  "buildCommand": "npx expo export --platform web && cp -r public/.well-known dist/.well-known && sed -i 's/<head>/<head><meta name=\"google-play-app\" content=\"app-id=com.daffo.upapp\">/' dist/index.html",
   "outputDirectory": "dist",
   "headers": [
     {
