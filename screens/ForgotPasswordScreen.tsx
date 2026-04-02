@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import {
-  View,
   Text,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Platform } from 'react-native';
-import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 import TrimmedTextInput from '../components/TrimmedTextInput';
 import AuthLayout from '../components/auth/AuthLayout';

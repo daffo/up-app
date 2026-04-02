@@ -21,7 +21,7 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
     onRoutePress(routeId);
   }, [onRoutePress]);
   const { data: routes, loading, loadingMore, error, refreshing, hasMore, refresh, loadMore } = usePaginatedQuery(
-    (cursor) => routesApi.list(filters, { cursor }),
+    (cursor?: { created_at: string; id: string }) => routesApi.list(filters, { cursor }),
     [filters],
     {
       cacheKey: ['routes', 'sends'],
