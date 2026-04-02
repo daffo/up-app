@@ -113,7 +113,7 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
    ```bash
    git tag release-v0.1.3-alpha && git push origin release-v0.1.3-alpha
    ```
-4. GitHub Actions builds **production AAB** and submits to Play Store internal testing track
+4. GitHub Actions builds **production AAB** and submits to Play Store production track
 
 **Required GitHub Secrets** (Settings → Secrets → Actions):
 - `EXPO_TOKEN` - Expo access token for EAS CLI
