@@ -1,0 +1,6 @@
+What's new in 1.0.1:
+- Share routes with a link that opens directly in the app
+- Password reset flow via email
+- Install banner for users without the app
+- Fixed back navigation when opening shared links
+- Security improvements

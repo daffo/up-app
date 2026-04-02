@@ -1,0 +1,6 @@
+Novità nella versione 1.0.1:
+- Condividi le vie con un link che si apre direttamente nell'app
+- Reimpostazione password tramite email
+- Banner di installazione per chi non ha l'app
+- Corretta la navigazione indietro dai link condivisi
+- Miglioramenti di sicurezza
