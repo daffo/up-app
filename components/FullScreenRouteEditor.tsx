@@ -14,7 +14,7 @@ import { Hold, HandHold, FootHold, DetectedHold } from '../types/database.types'
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
-import { getHoldLabel, canSetStart, canSetTop, isDualSideNote } from '../utils/holds';
+import { getHoldLabel, canSetStart, canSetTop, isDualSideNote, findFreeLabelPosition } from '../utils/holds';
 import { useDragDelta } from '../hooks/useDragDelta';
 import { useThemeColors } from '../lib/theme-context';
 
@@ -215,10 +215,12 @@ export default function FullScreenRouteEditor({
           return;
         }
 
+        const existingLabels = [...handHolds, ...footHolds];
+        const { labelX, labelY } = findFreeLabelPosition(xPercent, yPercent, existingLabels);
         const newFootHold: FootHold = {
           detected_hold_id: smallestDetectedHold.id,
-          labelX: xPercent + 3,
-          labelY: yPercent - 3,
+          labelX,
+          labelY,
         };
         setFootHolds([...footHolds, newFootHold]);
       } else {
@@ -229,11 +231,13 @@ export default function FullScreenRouteEditor({
           return;
         }
 
+        const existingLabels = [...handHolds, ...footHolds];
+        const { labelX, labelY } = findFreeLabelPosition(xPercent, yPercent, existingLabels);
         const newHandHold: HandHold = {
           order: handHolds.length + 1,
           detected_hold_id: smallestDetectedHold.id,
-          labelX: xPercent + 3,
-          labelY: yPercent - 3,
+          labelX,
+          labelY,
           note: '',
         };
         setHandHolds([...handHolds, newHandHold]);

@@ -1,3 +1,48 @@
+// Estimated label half-size in percentage coordinates (0-100 space)
+const LABEL_HALF_W = 4;
+const LABEL_HALF_H = 1.5;
+
+// Candidate offsets ordered by preference: close first, then farther out
+const CANDIDATE_OFFSETS = [
+  { x: 3, y: -3 },   { x: -3, y: -3 },  { x: 3, y: 3 },    { x: -3, y: 3 },
+  { x: 5, y: 0 },    { x: -5, y: 0 },   { x: 0, y: -5 },   { x: 0, y: 5 },
+  { x: 6, y: -5 },   { x: -6, y: -5 },  { x: 6, y: 5 },    { x: -6, y: 5 },
+  { x: 8, y: 0 },    { x: -8, y: 0 },   { x: 0, y: -8 },   { x: 0, y: 8 },
+];
+
+function labelsOverlap(ax: number, ay: number, bx: number, by: number): boolean {
+  return Math.abs(ax - bx) < LABEL_HALF_W * 2 && Math.abs(ay - by) < LABEL_HALF_H * 2;
+}
+
+/**
+ * Finds a label position near (holdX, holdY) that doesn't overlap existing labels.
+ * Tries multiple candidate offsets and returns the first free one.
+ */
+export function findFreeLabelPosition(
+  holdX: number,
+  holdY: number,
+  existingLabels: Array<{ labelX: number; labelY: number }>,
+): { labelX: number; labelY: number } {
+  for (const offset of CANDIDATE_OFFSETS) {
+    const candidateX = Math.max(0, Math.min(100, holdX + offset.x));
+    const candidateY = Math.max(0, Math.min(100, holdY + offset.y));
+
+    const hasOverlap = existingLabels.some(label =>
+      labelsOverlap(candidateX, candidateY, label.labelX, label.labelY)
+    );
+
+    if (!hasOverlap) {
+      return { labelX: candidateX, labelY: candidateY };
+    }
+  }
+
+  // All candidates overlap — fall back to default offset
+  return {
+    labelX: Math.max(0, Math.min(100, holdX + 3)),
+    labelY: Math.max(0, Math.min(100, holdY - 3)),
+  };
+}
+
 /**
  * Checks if a note indicates a dual side (starts with "DX" or "SX").
  * Used for both dual-start and dual-top holds.
