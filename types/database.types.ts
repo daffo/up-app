@@ -20,6 +20,7 @@ export interface Hold {
   labelX: number
   labelY: number
   note?: string
+  labelPinned?: boolean
 }
 
 export interface HandHold extends Hold {

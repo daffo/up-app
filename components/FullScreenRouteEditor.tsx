@@ -14,7 +14,7 @@ import { Hold, HandHold, FootHold, DetectedHold } from '../types/database.types'
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
-import { getHoldLabel, canSetStart, canSetTop, isDualSideNote, findFreeLabelPosition } from '../utils/holds';
+import { getHoldLabel, canSetStart, canSetTop, isDualSideNote, findFreeLabelPosition, resolveAllLabelOverlaps } from '../utils/holds';
 import { useDragDelta } from '../hooks/useDragDelta';
 import { useThemeColors } from '../lib/theme-context';
 
@@ -103,7 +103,7 @@ export default function FullScreenRouteEditor({
 
   // Apply label position delta to a hold list
   const applyLabelDelta = <T extends Hold>(holds: T[], index: number, delta: { x: number; y: number }): T[] =>
-    holds.map((hold, i) => i === index ? { ...hold, labelX: hold.labelX + delta.x, labelY: hold.labelY + delta.y } : hold);
+    holds.map((hold, i) => i === index ? { ...hold, labelX: hold.labelX + delta.x, labelY: hold.labelY + delta.y, labelPinned: true } : hold);
 
   // Save move
   const saveMoveLabel = () => {
@@ -140,20 +140,27 @@ export default function FullScreenRouteEditor({
   };
 
   const addHoldToRoute = (detectedHoldId: string, labelCenterX: number, labelCenterY: number) => {
-    const existingLabels = [...handHolds, ...footHolds];
-    const routeHoldCenters = getRouteHoldCenters(handHolds, footHolds, detectedHolds);
-    const { labelX, labelY } = findFreeLabelPosition(labelCenterX, labelCenterY, existingLabels, routeHoldCenters);
+    // Place new hold at its ideal (closest) position — don't dodge existing labels
+    const allRouteCenters = getRouteHoldCenters(handHolds, footHolds, detectedHolds);
+    const { labelX, labelY } = findFreeLabelPosition(labelCenterX, labelCenterY, [], allRouteCenters);
+
+    // Settle new hold first, then reflow existing labels around it
+    const newHoldCenter = detectedHolds.find(dh => dh.id === detectedHoldId)?.center ?? { x: labelCenterX, y: labelCenterY };
+    const newLabel = { detected_hold_id: detectedHoldId, labelX, labelY };
+    const allCenters = [newHoldCenter, ...allRouteCenters];
+    const allHolds = [newLabel, ...handHolds, ...footHolds];
+    const resolved = resolveAllLabelOverlaps(allHolds, allCenters);
+
+    const resolvedNew = resolved[0];
+    const resolvedHands = resolved.slice(1, 1 + handHolds.length) as HandHold[];
+    const resolvedFeet = resolved.slice(1 + handHolds.length) as FootHold[];
 
     if (editMode === 'feet') {
-      setFootHolds([...footHolds, { detected_hold_id: detectedHoldId, labelX, labelY }]);
+      setHandHolds(resolvedHands);
+      setFootHolds([...resolvedFeet, { ...resolvedNew } as FootHold]);
     } else {
-      setHandHolds([...handHolds, {
-        order: handHolds.length + 1,
-        detected_hold_id: detectedHoldId,
-        labelX,
-        labelY,
-        note: '',
-      }]);
+      setHandHolds([...resolvedHands, { order: handHolds.length + 1, ...resolvedNew, note: '' } as HandHold]);
+      setFootHolds(resolvedFeet);
     }
   };
 

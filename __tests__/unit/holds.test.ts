@@ -6,6 +6,7 @@ import {
   canSetStart,
   canSetTop,
   findFreeLabelPosition,
+  resolveAllLabelOverlaps,
 } from '../../utils/holds';
 
 describe('isDualSideNote', () => {
@@ -284,5 +285,74 @@ describe('findFreeLabelPosition', () => {
     const result = findFreeLabelPosition(50, 50, blockers);
     // Falls back to default offset
     expect(result).toEqual({ labelX: 53, labelY: 47 });
+  });
+});
+
+describe('resolveAllLabelOverlaps', () => {
+  const noOverlaps = (holds: Array<{ labelX: number; labelY: number }>) => {
+    for (let i = 0; i < holds.length; i++) {
+      for (let j = i + 1; j < holds.length; j++) {
+        if (Math.abs(holds[i].labelX - holds[j].labelX) < 8 &&
+            Math.abs(holds[i].labelY - holds[j].labelY) < 3) return false;
+      }
+    }
+    return true;
+  };
+
+  it('places each label near its hold center', () => {
+    const holds = [
+      { labelX: 99, labelY: 99 },
+      { labelX: 99, labelY: 99 },
+    ];
+    const centers = [{ x: 10, y: 10 }, { x: 30, y: 30 }];
+    const result = resolveAllLabelOverlaps(holds, centers);
+    // Labels end up near their hold centers, not at original (99,99)
+    expect(Math.abs(result[0].labelX - 10)).toBeLessThan(15);
+    expect(Math.abs(result[1].labelX - 30)).toBeLessThan(15);
+  });
+
+  it('repositions overlapping labels', () => {
+    const holds = [
+      { labelX: 50, labelY: 50 },
+      { labelX: 51, labelY: 50 },
+    ];
+    const centers = [{ x: 47, y: 53 }, { x: 48, y: 53 }];
+    const result = resolveAllLabelOverlaps(holds, centers);
+    expect(noOverlaps(result)).toBe(true);
+  });
+
+  it('handles three-way overlaps', () => {
+    const holds = [
+      { labelX: 50, labelY: 50 },
+      { labelX: 51, labelY: 50 },
+      { labelX: 52, labelY: 50 },
+    ];
+    const centers = [{ x: 47, y: 53 }, { x: 48, y: 53 }, { x: 49, y: 53 }];
+    const result = resolveAllLabelOverlaps(holds, centers);
+    expect(noOverlaps(result)).toBe(true);
+  });
+
+  it('does not mutate original array', () => {
+    const holds = [
+      { labelX: 50, labelY: 50 },
+      { labelX: 51, labelY: 50 },
+    ];
+    const origLabel = holds[1].labelX;
+    resolveAllLabelOverlaps(holds, []);
+    expect(holds[1].labelX).toBe(origLabel);
+  });
+
+  it('does not move pinned labels', () => {
+    const holds = [
+      { labelX: 50, labelY: 50 },
+      { labelX: 51, labelY: 50, labelPinned: true as const },
+    ];
+    const centers = [{ x: 47, y: 53 }, { x: 48, y: 53 }];
+    const result = resolveAllLabelOverlaps(holds, centers);
+    // Pinned label stays exactly where it is
+    expect(result[1].labelX).toBe(51);
+    expect(result[1].labelY).toBe(50);
+    // Unpinned label gets repositioned to avoid the pinned one
+    expect(result[0].labelX).not.toBe(50);
   });
 });

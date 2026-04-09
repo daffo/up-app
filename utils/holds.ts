@@ -56,6 +56,29 @@ export function findFreeLabelPosition(
 }
 
 /**
+ * Reflows all labels so none overlap each other or hold centers.
+ * Processes holds in order; each label is placed via spiral search
+ * against already-settled labels.
+ */
+export function resolveAllLabelOverlaps<H extends { labelX: number; labelY: number; labelPinned?: boolean }>(
+  holds: H[],
+  holdCenters: Array<{ x: number; y: number }>,
+): H[] {
+  const settled: Array<{ labelX: number; labelY: number }> = [];
+  return holds.map((hold, i) => {
+    if (hold.labelPinned) {
+      settled.push(hold);
+      return hold;
+    }
+    const center = holdCenters[i] ?? { x: hold.labelX, y: hold.labelY };
+    const pos = findFreeLabelPosition(center.x, center.y, settled, holdCenters);
+    const updated = pos.labelX === hold.labelX && pos.labelY === hold.labelY ? hold : { ...hold, ...pos };
+    settled.push(updated);
+    return updated;
+  });
+}
+
+/**
  * Checks if a note indicates a dual side (starts with "DX" or "SX").
  * Used for both dual-start and dual-top holds.
  */
