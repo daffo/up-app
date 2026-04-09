@@ -60,3 +60,6 @@ jobs:
 
       - name: Build Production & Submit to Play Store
         run: eas build --profile production --platform android --non-interactive --auto-submit
+
+      - name: Update Play Store release notes
+        run: node scripts/update-play-store-notes.js

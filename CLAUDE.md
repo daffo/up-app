@@ -107,13 +107,14 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 ### CI/CD Workflow
 
 **Production Release (to Play Store internal testing):**
-1. Bump version in `app.json` (e.g., `0.1.2-alpha` → `0.1.3-alpha`)
-2. Commit and push to `main`
-3. Push a release tag:
+1. Run `npx expo-doctor@latest` and fix any dependency mismatches with `npx expo install --fix`
+2. Bump version in `app.json` (e.g., `0.1.2-alpha` → `0.1.3-alpha`)
+3. Commit dependency updates + version bump + changelogs together and push to `main`
+4. Push a release tag:
    ```bash
    git tag release-v0.1.3-alpha && git push origin release-v0.1.3-alpha
    ```
-4. GitHub Actions builds **production AAB** and submits to Play Store production track
+5. GitHub Actions builds **production AAB** and submits to Play Store production track
 
 **Required GitHub Secrets** (Settings → Secrets → Actions):
 - `EXPO_TOKEN` - Expo access token for EAS CLI
