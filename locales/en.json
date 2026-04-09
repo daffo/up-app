@@ -275,8 +275,6 @@
     "enterNote": "Enter note (optional)",
     "whichHoldToEdit": "Which hold to edit?",
     "hold": "Hold",
-    "holdAlreadyUsed": "Hold Already Used",
-    "holdAlreadyUsedMessage": "This hold is already part of the route.",
     "setStart": "Set as Start",
     "setStartDX": "Set as Start DX",
     "setStartSX": "Set as Start SX",

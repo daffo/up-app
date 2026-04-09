@@ -1,42 +1,54 @@
-// Estimated label half-size in percentage coordinates (0-100 space)
+// Estimated half-sizes in percentage coordinates (0-100 space)
 const LABEL_HALF_W = 4;
 const LABEL_HALF_H = 1.5;
+const HOLD_HALF_W = 3;
+const HOLD_HALF_H = 3;
 
-// Candidate offsets ordered by preference: close first, then farther out
-const CANDIDATE_OFFSETS = [
-  { x: 3, y: -3 },   { x: -3, y: -3 },  { x: 3, y: 3 },    { x: -3, y: 3 },
-  { x: 5, y: 0 },    { x: -5, y: 0 },   { x: 0, y: -5 },   { x: 0, y: 5 },
-  { x: 6, y: -5 },   { x: -6, y: -5 },  { x: 6, y: 5 },    { x: -6, y: 5 },
-  { x: 8, y: 0 },    { x: -8, y: 0 },   { x: 0, y: -8 },   { x: 0, y: 8 },
-];
+// Spiral parameters
+const START_RADIUS = 3;     // % distance for first ring
+const RADIUS_GROWTH = 0.5;  // % increase per step
+const ANGLE_STEP = Math.PI / 4;  // 45° — 8 positions per revolution
+const START_ANGLE = -Math.PI / 4; // upper-right, clockwise
+const MAX_TRIES = 36;
 
-function labelsOverlap(ax: number, ay: number, bx: number, by: number): boolean {
-  return Math.abs(ax - bx) < LABEL_HALF_W * 2 && Math.abs(ay - by) < LABEL_HALF_H * 2;
+function rectsOverlap(
+  ax: number, ay: number, aHalfW: number, aHalfH: number,
+  bx: number, by: number, bHalfW: number, bHalfH: number,
+): boolean {
+  return Math.abs(ax - bx) < aHalfW + bHalfW && Math.abs(ay - by) < aHalfH + bHalfH;
 }
 
 /**
- * Finds a label position near (holdX, holdY) that doesn't overlap existing labels.
- * Tries multiple candidate offsets and returns the first free one.
+ * Finds a label position near (holdX, holdY) that doesn't overlap existing
+ * labels or hold positions. Sweeps outward in a clockwise spiral starting
+ * from the upper-right.
  */
 export function findFreeLabelPosition(
   holdX: number,
   holdY: number,
   existingLabels: Array<{ labelX: number; labelY: number }>,
+  holdCenters: Array<{ x: number; y: number }> = [],
 ): { labelX: number; labelY: number } {
-  for (const offset of CANDIDATE_OFFSETS) {
-    const candidateX = Math.max(0, Math.min(100, holdX + offset.x));
-    const candidateY = Math.max(0, Math.min(100, holdY + offset.y));
+  for (let i = 0; i < MAX_TRIES; i++) {
+    const angle = START_ANGLE + i * ANGLE_STEP;
+    const radius = START_RADIUS + i * RADIUS_GROWTH;
+    const cx = Math.max(0, Math.min(100, holdX + radius * Math.cos(angle)));
+    const cy = Math.max(0, Math.min(100, holdY + radius * Math.sin(angle)));
 
-    const hasOverlap = existingLabels.some(label =>
-      labelsOverlap(candidateX, candidateY, label.labelX, label.labelY)
+    const hitsLabel = existingLabels.some(l =>
+      rectsOverlap(cx, cy, LABEL_HALF_W, LABEL_HALF_H, l.labelX, l.labelY, LABEL_HALF_W, LABEL_HALF_H)
     );
+    if (hitsLabel) continue;
 
-    if (!hasOverlap) {
-      return { labelX: candidateX, labelY: candidateY };
-    }
+    const hitsHold = holdCenters.some(h =>
+      rectsOverlap(cx, cy, LABEL_HALF_W, LABEL_HALF_H, h.x, h.y, HOLD_HALF_W, HOLD_HALF_H)
+    );
+    if (hitsHold) continue;
+
+    return { labelX: cx, labelY: cy };
   }
 
-  // All candidates overlap — fall back to default offset
+  // All candidates blocked — fall back to default offset
   return {
     labelX: Math.max(0, Math.min(100, holdX + 3)),
     labelY: Math.max(0, Math.min(100, holdY - 3)),

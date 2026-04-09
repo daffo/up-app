@@ -18,6 +18,17 @@ import { getHoldLabel, canSetStart, canSetTop, isDualSideNote, findFreeLabelPosi
 import { useDragDelta } from '../hooks/useDragDelta';
 import { useThemeColors } from '../lib/theme-context';
 
+/** Collect centers of all holds currently in the route. */
+function getRouteHoldCenters(
+  handHolds: HandHold[],
+  footHolds: FootHold[],
+  detectedHolds: DetectedHold[],
+): Array<{ x: number; y: number }> {
+  const byId = new Map(detectedHolds.map(dh => [dh.id, dh.center]));
+  const ids = [...handHolds, ...footHolds].map(h => h.detected_hold_id);
+  return ids.flatMap(id => { const c = byId.get(id); return c ? [c] : []; });
+}
+
 interface FullScreenRouteEditorProps {
   visible: boolean;
   photoUrl: string;
@@ -128,6 +139,24 @@ export default function FullScreenRouteEditor({
     setMatchingHoldRefs([]);
   };
 
+  const addHoldToRoute = (detectedHoldId: string, labelCenterX: number, labelCenterY: number) => {
+    const existingLabels = [...handHolds, ...footHolds];
+    const routeHoldCenters = getRouteHoldCenters(handHolds, footHolds, detectedHolds);
+    const { labelX, labelY } = findFreeLabelPosition(labelCenterX, labelCenterY, existingLabels, routeHoldCenters);
+
+    if (editMode === 'feet') {
+      setFootHolds([...footHolds, { detected_hold_id: detectedHoldId, labelX, labelY }]);
+    } else {
+      setHandHolds([...handHolds, {
+        order: handHolds.length + 1,
+        detected_hold_id: detectedHoldId,
+        labelX,
+        labelY,
+        note: '',
+      }]);
+    }
+  };
+
   const handleImageTap = (event: any) => {
     // Ignore taps when in moving mode (handled by PanResponder)
     if (movingLabelIndex !== null) return;
@@ -207,41 +236,7 @@ export default function FullScreenRouteEditor({
     // Check if tapped on any detected hold to add to route (prioritize smallest)
     const smallestDetectedHold = findSmallestPolygonAtPoint(xPercent, yPercent, detectedHolds);
     if (smallestDetectedHold) {
-      if (editMode === 'feet') {
-        // Add as foot hold — same detected hold CAN be both hand and foot
-        const alreadyFootHold = footHolds.some(h => h.detected_hold_id === smallestDetectedHold.id);
-        if (alreadyFootHold) {
-          Alert.alert(t('editor.holdAlreadyUsed'), t('editor.holdAlreadyUsedMessage'));
-          return;
-        }
-
-        const existingLabels = [...handHolds, ...footHolds];
-        const { labelX, labelY } = findFreeLabelPosition(xPercent, yPercent, existingLabels);
-        const newFootHold: FootHold = {
-          detected_hold_id: smallestDetectedHold.id,
-          labelX,
-          labelY,
-        };
-        setFootHolds([...footHolds, newFootHold]);
-      } else {
-        // Add as hand hold
-        const alreadyUsed = handHolds.some(h => h.detected_hold_id === smallestDetectedHold.id);
-        if (alreadyUsed) {
-          Alert.alert(t('editor.holdAlreadyUsed'), t('editor.holdAlreadyUsedMessage'));
-          return;
-        }
-
-        const existingLabels = [...handHolds, ...footHolds];
-        const { labelX, labelY } = findFreeLabelPosition(xPercent, yPercent, existingLabels);
-        const newHandHold: HandHold = {
-          order: handHolds.length + 1,
-          detected_hold_id: smallestDetectedHold.id,
-          labelX,
-          labelY,
-          note: '',
-        };
-        setHandHolds([...handHolds, newHandHold]);
-      }
+      addHoldToRoute(smallestDetectedHold.id, xPercent, yPercent);
       return;
     }
 
@@ -302,25 +297,7 @@ export default function FullScreenRouteEditor({
     const centerX = detectedHold.polygon.reduce((sum, p) => sum + p.x, 0) / detectedHold.polygon.length;
     const centerY = detectedHold.polygon.reduce((sum, p) => sum + p.y, 0) / detectedHold.polygon.length;
 
-    if (editMode === 'feet') {
-      if (footHolds.some(h => h.detected_hold_id === selectedHold.detected_hold_id)) {
-        Alert.alert(t('editor.holdAlreadyUsed'), t('editor.holdAlreadyUsedMessage'));
-        return;
-      }
-      setFootHolds([...footHolds, {
-        detected_hold_id: selectedHold.detected_hold_id,
-        labelX: centerX + 3,
-        labelY: centerY - 3,
-      }]);
-    } else {
-      setHandHolds([...handHolds, {
-        order: handHolds.length + 1,
-        detected_hold_id: selectedHold.detected_hold_id,
-        labelX: centerX + 3,
-        labelY: centerY - 3,
-        note: '',
-      }]);
-    }
+    addHoldToRoute(selectedHold.detected_hold_id, centerX, centerY);
     clearSelection();
   };
 

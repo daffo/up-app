@@ -213,61 +213,76 @@ describe('getFootHoldLabel', () => {
 });
 
 describe('findFreeLabelPosition', () => {
-  it('returns first candidate (upper-right) when no existing labels', () => {
+  const noOverlapWith = (
+    result: { labelX: number; labelY: number },
+    obstacles: Array<{ x: number; y: number; halfW: number; halfH: number }>,
+  ) => obstacles.every(o =>
+    !(Math.abs(result.labelX - o.x) < 4 + o.halfW && Math.abs(result.labelY - o.y) < 1.5 + o.halfH)
+  );
+
+  it('places label in upper-right area when no obstacles', () => {
     const result = findFreeLabelPosition(50, 50, []);
-    expect(result).toEqual({ labelX: 53, labelY: 47 });
+    // First spiral position: radius=3, angle=-45° → upper-right quadrant
+    expect(result.labelX).toBeGreaterThan(50);
+    expect(result.labelY).toBeLessThan(50);
   });
 
-  it('avoids overlapping an existing label at upper-right', () => {
-    const existing = [{ labelX: 53, labelY: 47 }];
-    const result = findFreeLabelPosition(50, 50, existing);
-    // Should pick a different candidate that doesn't overlap (53, 47)
-    const overlaps = Math.abs(result.labelX - 53) < 8 && Math.abs(result.labelY - 47) < 3;
-    expect(overlaps).toBe(false);
+  it('spirals past a blocked position', () => {
+    const first = findFreeLabelPosition(50, 50, []);
+    // Block the first result
+    const result = findFreeLabelPosition(50, 50, [first]);
+    expect(noOverlapWith(result, [{ x: first.labelX, y: first.labelY, halfW: 4, halfH: 1.5 }])).toBe(true);
   });
 
-  it('picks a non-overlapping position among many labels', () => {
-    // Crowd the area around (50, 50) with labels at several candidate offsets
-    const existing = [
-      { labelX: 53, labelY: 47 },  // blocks upper-right
-      { labelX: 47, labelY: 47 },  // blocks upper-left
-      { labelX: 53, labelY: 53 },  // blocks lower-right
+  it('finds a free spot among many labels', () => {
+    const labels = [
+      { labelX: 53, labelY: 47 },
+      { labelX: 47, labelY: 47 },
+      { labelX: 53, labelY: 53 },
+      { labelX: 47, labelY: 53 },
     ];
-    const result = findFreeLabelPosition(50, 50, existing);
-    // Should not overlap with any existing label
-    for (const label of existing) {
-      const overlaps = Math.abs(result.labelX - label.labelX) < 8 &&
-                        Math.abs(result.labelY - label.labelY) < 3;
-      expect(overlaps).toBe(false);
+    const result = findFreeLabelPosition(50, 50, labels);
+    expect(noOverlapWith(result, labels.map(l => ({ x: l.labelX, y: l.labelY, halfW: 4, halfH: 1.5 })))).toBe(true);
+  });
+
+  it('avoids hold centers', () => {
+    const holds = [{ x: 52, y: 48 }];
+    const result = findFreeLabelPosition(50, 50, [], holds);
+    expect(noOverlapWith(result, [{ x: 52, y: 48, halfW: 3, halfH: 3 }])).toBe(true);
+  });
+
+  it('avoids both labels and hold centers', () => {
+    const labels = [{ labelX: 47, labelY: 47 }];
+    const holds = [{ x: 53, y: 47 }];
+    const result = findFreeLabelPosition(50, 50, labels, holds);
+    expect(noOverlapWith(result, [
+      { x: 47, y: 47, halfW: 4, halfH: 1.5 },
+      { x: 53, y: 47, halfW: 3, halfH: 3 },
+    ])).toBe(true);
+  });
+
+  it('clamps within 0-100 bounds', () => {
+    const resultLeft = findFreeLabelPosition(1, 50, []);
+    expect(resultLeft.labelX).toBeGreaterThanOrEqual(0);
+    const resultTop = findFreeLabelPosition(50, 1, []);
+    expect(resultTop.labelY).toBeGreaterThanOrEqual(0);
+    const resultRight = findFreeLabelPosition(99, 50, []);
+    expect(resultRight.labelX).toBeLessThanOrEqual(100);
+  });
+
+  it('falls back to default when all spiral positions are blocked', () => {
+    // Generate blockers at every spiral position
+    const blockers: Array<{ labelX: number; labelY: number }> = [];
+    for (let i = 0; i < 36; i++) {
+      const angle = -Math.PI / 4 + i * (Math.PI / 4);
+      const radius = 3 + i * 0.5;
+      blockers.push({
+        labelX: 50 + radius * Math.cos(angle),
+        labelY: 50 + radius * Math.sin(angle),
+      });
     }
-  });
-
-  it('clamps label position near left edge', () => {
-    const result = findFreeLabelPosition(1, 50, []);
-    expect(result.labelX).toBeGreaterThanOrEqual(0);
-  });
-
-  it('clamps label position near top edge', () => {
-    const result = findFreeLabelPosition(50, 1, []);
-    expect(result.labelY).toBeGreaterThanOrEqual(0);
-  });
-
-  it('clamps label position near right edge', () => {
-    const result = findFreeLabelPosition(99, 50, []);
-    expect(result.labelX).toBeLessThanOrEqual(100);
-  });
-
-  it('falls back to default offset when all candidates are blocked', () => {
-    // Create labels at every candidate offset position
-    const offsets = [
-      { x: 3, y: -3 }, { x: -3, y: -3 }, { x: 3, y: 3 }, { x: -3, y: 3 },
-      { x: 5, y: 0 }, { x: -5, y: 0 }, { x: 0, y: -5 }, { x: 0, y: 5 },
-      { x: 6, y: -5 }, { x: -6, y: -5 }, { x: 6, y: 5 }, { x: -6, y: 5 },
-      { x: 8, y: 0 }, { x: -8, y: 0 }, { x: 0, y: -8 }, { x: 0, y: 8 },
-    ];
-    const existing = offsets.map(o => ({ labelX: 50 + o.x, labelY: 50 + o.y }));
-    const result = findFreeLabelPosition(50, 50, existing);
-    // Falls back to default (53, 47)
+    const result = findFreeLabelPosition(50, 50, blockers);
+    // Falls back to default offset
     expect(result).toEqual({ labelX: 53, labelY: 47 });
   });
 });

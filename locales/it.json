@@ -275,8 +275,6 @@
     "enterNote": "Inserisci nota (opzionale)",
     "whichHoldToEdit": "Quale presa modificare?",
     "hold": "Presa",
-    "holdAlreadyUsed": "Presa Già Usata",
-    "holdAlreadyUsedMessage": "Questa presa fa già parte della via.",
     "setStart": "Imposta come Start",
     "setStartDX": "Imposta come Start DX",
     "setStartSX": "Imposta come Start SX",
