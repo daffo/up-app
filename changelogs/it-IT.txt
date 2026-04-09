@@ -1,6 +1,6 @@
-Novità nella versione 1.0.1:
-- Condividi le vie con un link che si apre direttamente nell'app
-- Reimpostazione password tramite email
-- Banner di installazione per chi non ha l'app
-- Corretta la navigazione indietro dai link condivisi
-- Miglioramenti di sicurezza
+Novità nella versione 1.0.2:
+- Le etichette delle prese si posizionano automaticamente senza sovrapporsi
+- Aggiungendo una nuova presa, le etichette esistenti si spostano per evitare sovrapposizioni
+- Le etichette evitano anche le sagome delle prese
+- Le etichette spostate manualmente restano fisse e non vengono riposizionate
+- La stessa presa può essere riutilizzata liberamente in una via
