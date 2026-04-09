@@ -13,18 +13,18 @@ import PasswordInput from '../components/auth/PasswordInput';
 import AuthLayout from '../components/auth/AuthLayout';
 import { useAuthStyles } from '../components/auth/authStyles';
 import { ScreenProps } from '../navigation/types';
+import { useAuthHandler } from '../hooks/useAuthHandler';
 
 export default function LoginScreen({ navigation, route }: ScreenProps<'Login'>) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const { signIn, signInWithGoogle, signInWithFacebook } = useAuth();
   const { redirectTo } = route.params || {};
   const { styles, colors } = useAuthStyles();
+  const { loading, handleAuth } = useAuthHandler();
 
-  const handleLoginSuccess = () => {
-    // redirectTo is already typed as keyof RootStackParamList from useRequireAuth
+  const onSuccess = () => {
     (navigation as { replace: (screen: string) => void }).replace(redirectTo || 'Home');
   };
 
@@ -33,41 +33,14 @@ export default function LoginScreen({ navigation, route }: ScreenProps<'Login'>)
       Alert.alert(t('common.error'), t('auth.errorFillFields'));
       return;
     }
-
-    setLoading(true);
-    const { error } = await signIn(email, password);
-    setLoading(false);
-
-    if (error) {
-      Alert.alert(t('auth.loginFailed'), error.message);
-    } else {
-      handleLoginSuccess();
-    }
+    handleAuth(() => signIn(email, password), t('auth.loginFailed'), onSuccess);
   };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    const { error } = await signInWithGoogle();
-    setLoading(false);
+  const handleGoogleLogin = () =>
+    handleAuth(() => signInWithGoogle(), t('auth.loginFailed'), onSuccess);
 
-    if (error) {
-      Alert.alert(t('auth.loginFailed'), error.message);
-    } else {
-      handleLoginSuccess();
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    setLoading(true);
-    const { error } = await signInWithFacebook();
-    setLoading(false);
-
-    if (error) {
-      Alert.alert(t('auth.loginFailed'), error.message);
-    } else {
-      handleLoginSuccess();
-    }
-  };
+  const handleFacebookLogin = () =>
+    handleAuth(() => signInWithFacebook(), t('auth.loginFailed'), onSuccess);
 
   return (
     <AuthLayout subtitle={t('auth.subtitle')}>

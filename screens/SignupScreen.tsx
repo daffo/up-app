@@ -11,15 +11,16 @@ import PasswordInput from '../components/auth/PasswordInput';
 import AuthLayout from '../components/auth/AuthLayout';
 import { useAuthStyles } from '../components/auth/authStyles';
 import { ScreenProps } from '../navigation/types';
+import { useAuthHandler } from '../hooks/useAuthHandler';
 
 export default function SignupScreen({ navigation }: ScreenProps<'Signup'>) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const { styles, colors } = useAuthStyles();
+  const { loading, handleAuth } = useAuthHandler();
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword) {
@@ -37,19 +38,15 @@ export default function SignupScreen({ navigation }: ScreenProps<'Signup'>) {
       return;
     }
 
-    setLoading(true);
-    const { error } = await signUp(email, password);
-    setLoading(false);
-
-    if (error) {
-      Alert.alert(t('auth.signupFailed'), error.message);
-    } else {
-      Alert.alert(
+    handleAuth(
+      () => signUp(email, password),
+      t('auth.signupFailed'),
+      () => Alert.alert(
         t('common.success'),
         t('auth.signupSuccess'),
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
-      );
-    }
+        [{ text: 'OK', onPress: () => navigation.navigate('Login') }],
+      ),
+    );
   };
 
   return (
