@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { cacheEvents } from '../lib/api';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { cacheEvents } from "../lib/api";
 
 type UseApiQueryOptions<T> = {
   /** Cache event key(s) to subscribe to for auto-refetch. Omit for one-off fetches. */
@@ -47,35 +47,44 @@ export function useApiQuery<T>(
   const mountedRef = useRef(true);
   const fetchIdRef = useRef(0);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const stableFetcher = useCallback(fetcher, deps);
+  const fetcherRef = useRef(fetcher);
+  fetcherRef.current = fetcher;
 
-  const fetchData = useCallback(async (isRefresh = false) => {
-    const fetchId = ++fetchIdRef.current;
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError(null);
-    try {
-      const result = await stableFetcher();
-      if (mountedRef.current && fetchId === fetchIdRef.current) {
-        setData(result);
+  const depsKey = JSON.stringify(deps);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableFetcher = useCallback(() => fetcherRef.current(), [depsKey]);
+
+  const fetchData = useCallback(
+    async (isRefresh = false) => {
+      const fetchId = ++fetchIdRef.current;
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      try {
+        const result = await stableFetcher();
+        if (mountedRef.current && fetchId === fetchIdRef.current) {
+          setData(result);
+        }
+      } catch (err) {
+        console.error("useApiQuery error:", err);
+        if (mountedRef.current && fetchId === fetchIdRef.current) {
+          setError(err instanceof Error ? err.message : "An error occurred");
+        }
+      } finally {
+        if (mountedRef.current && fetchId === fetchIdRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
-    } catch (err) {
-      console.error('useApiQuery error:', err);
-      if (mountedRef.current && fetchId === fetchIdRef.current) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      }
-    } finally {
-      if (mountedRef.current && fetchId === fetchIdRef.current) {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    }
-  }, [stableFetcher]);
+    },
+    [stableFetcher],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   // Main fetch effect
@@ -88,21 +97,27 @@ export function useApiQuery<T>(
   }, [enabled, fetchData]);
 
   // Cache subscription — serialize cacheKey for stable deps
-  const cacheKeyStr = Array.isArray(cacheKey) ? cacheKey.join(',') : cacheKey;
+  const cacheKeyStr = Array.isArray(cacheKey) ? cacheKey.join(",") : cacheKey;
   useEffect(() => {
     if (!enabled || !cacheKey) return;
 
     const keys = Array.isArray(cacheKey) ? cacheKey : [cacheKey];
-    const unsubscribes = keys.map(key =>
+    const unsubscribes = keys.map((key) =>
       cacheEvents.subscribe(key as any, () => fetchData()),
     );
 
-    return () => { unsubscribes.forEach(unsub => unsub()); };
+    return () => {
+      unsubscribes.forEach((unsub) => unsub());
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, cacheKeyStr, fetchData]);
 
-  const refresh = useCallback(() => { fetchData(true); }, [fetchData]);
-  const refetch = useCallback(() => { fetchData(); }, [fetchData]);
+  const refresh = useCallback(() => {
+    fetchData(true);
+  }, [fetchData]);
+  const refetch = useCallback(() => {
+    fetchData();
+  }, [fetchData]);
 
   return { data, loading, error, refreshing, refresh, refetch } as any;
 }
