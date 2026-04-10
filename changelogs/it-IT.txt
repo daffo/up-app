@@ -1,6 +1,5 @@
-Novità nella versione 1.0.2:
-- Le etichette delle prese si posizionano automaticamente senza sovrapporsi
-- Aggiungendo una nuova presa, le etichette esistenti si spostano per evitare sovrapposizioni
-- Le etichette evitano anche le sagome delle prese
-- Le etichette spostate manualmente restano fisse e non vengono riposizionate
-- La stessa presa può essere riutilizzata liberamente in una via
+Novità nella versione 1.0.3:
+- Corretto il modulo di invio che perdeva le modifiche durante l'aggiornamento in background
+- Aggiunta validazione delle valutazioni con messaggi di errore chiari
+- Migliorate le prestazioni dell'app: meno re-render e richieste di rete non necessarie
+- Il tracciamento attività ora attende 30s prima di registrare, risparmiando batteria

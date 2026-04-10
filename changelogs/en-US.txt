@@ -1,6 +1,5 @@
-What's new in 1.0.2:
-- Hold labels now auto-place in non-overlapping positions
-- Adding a new hold reflows existing labels to avoid collisions
-- Labels also avoid overlapping hold shapes
-- Manually moved labels stay pinned and won't be auto-repositioned
-- Same hold can now be reused freely in a route
+What's new in 1.0.3:
+- Fixed send form losing your edits during background refresh
+- Added rating validation with clear error messages
+- Improved app performance: fewer unnecessary re-renders and network requests
+- Activity tracking now waits 30s before logging, saving battery on quick glances
