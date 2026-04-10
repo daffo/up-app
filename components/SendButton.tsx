@@ -38,13 +38,13 @@ export default function SendButton({
     { value: 1, label: t("sends.hard") },
   ];
 
-  // Sync form state when send data changes
+  // Sync form state when send data changes, but not while user is editing
   useEffect(() => {
-    if (send) {
+    if (send && !modalVisible) {
       setQualityRating(send.quality_rating);
       setDifficultyRating(send.difficulty_rating);
     }
-  }, [send]);
+  }, [send, modalVisible]);
 
   const handlePress = () => {
     if (!userId) {
