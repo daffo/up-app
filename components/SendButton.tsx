@@ -1,16 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTranslation } from 'react-i18next';
-import { sendsApi } from '../lib/api';
-import { useThemeColors } from '../lib/theme-context';
-import { useApiQuery } from '../hooks/useApiQuery';
-import BottomSheet from './BottomSheet';
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { sendsApi } from "../lib/api";
+import { useThemeColors } from "../lib/theme-context";
+import { useApiQuery } from "../hooks/useApiQuery";
+import BottomSheet from "./BottomSheet";
 
 interface SendButtonProps {
   routeId: string;
@@ -19,13 +14,18 @@ interface SendButtonProps {
   compact?: boolean;
 }
 
-export default function SendButton({ routeId, userId, onLoginRequired, compact }: SendButtonProps) {
+export default function SendButton({
+  routeId,
+  userId,
+  onLoginRequired,
+  compact,
+}: SendButtonProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { data: send, loading } = useApiQuery(
     () => sendsApi.getByUserAndRoute(userId!, routeId),
     [userId, routeId],
-    { cacheKey: 'sends', enabled: !!userId },
+    { cacheKey: "sends", enabled: !!userId },
   );
   const [modalVisible, setModalVisible] = useState(false);
   const [qualityRating, setQualityRating] = useState<number | null>(null);
@@ -33,9 +33,9 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
   const [saving, setSaving] = useState(false);
 
   const DIFFICULTY_OPTIONS = [
-    { value: -1, label: t('sends.soft') },
-    { value: 0, label: t('sends.accurate') },
-    { value: 1, label: t('sends.hard') },
+    { value: -1, label: t("sends.soft") },
+    { value: 0, label: t("sends.accurate") },
+    { value: 1, label: t("sends.hard") },
   ];
 
   // Sync form state when send data changes
@@ -56,6 +56,17 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
 
   const handleSave = async () => {
     if (!userId) return;
+    if (qualityRating !== null && (qualityRating < 1 || qualityRating > 5)) {
+      Alert.alert(t("common.error"), t("sends.errorQualityRange"));
+      return;
+    }
+    if (
+      difficultyRating !== null &&
+      (difficultyRating < -1 || difficultyRating > 1)
+    ) {
+      Alert.alert(t("common.error"), t("sends.errorDifficultyRange"));
+      return;
+    }
     setSaving(true);
     try {
       if (send) {
@@ -73,7 +84,7 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
       }
       setModalVisible(false);
     } catch (err) {
-      console.error('Error saving send:', err);
+      console.error("Error saving send:", err);
     } finally {
       setSaving(false);
     }
@@ -88,7 +99,7 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
       setDifficultyRating(null);
       setModalVisible(false);
     } catch (err) {
-      console.error('Error removing send:', err);
+      console.error("Error removing send:", err);
     } finally {
       setSaving(false);
     }
@@ -101,26 +112,44 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
       {compact ? (
         <TouchableOpacity onPress={handlePress} style={styles.compactButton}>
           <Ionicons
-            name={send ? 'checkmark-circle' : 'checkmark-circle-outline'}
+            name={send ? "checkmark-circle" : "checkmark-circle-outline"}
             size={18}
             color={send ? colors.success : colors.primary}
           />
-          <Text style={[styles.compactText, { color: send ? colors.success : colors.primary }]}>
-            {send ? t('sends.sent') : t('sends.send')}
+          <Text
+            style={[
+              styles.compactText,
+              { color: send ? colors.success : colors.primary },
+            ]}
+          >
+            {send ? t("sends.sent") : t("sends.send")}
           </Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
-          style={[styles.button, { borderColor: colors.primary, backgroundColor: colors.cardBackground }, send && { backgroundColor: colors.primary }]}
+          style={[
+            styles.button,
+            {
+              borderColor: colors.primary,
+              backgroundColor: colors.cardBackground,
+            },
+            send && { backgroundColor: colors.primary },
+          ]}
           onPress={handlePress}
         >
           <Ionicons
-            name={send ? 'checkmark-circle' : 'checkmark-circle-outline'}
+            name={send ? "checkmark-circle" : "checkmark-circle-outline"}
             size={20}
-            color={send ? '#fff' : colors.primary}
+            color={send ? "#fff" : colors.primary}
           />
-          <Text style={[styles.buttonText, { color: colors.primary }, send && styles.buttonTextSent]}>
-            {send ? t('sends.sent') : t('sends.logSend')}
+          <Text
+            style={[
+              styles.buttonText,
+              { color: colors.primary },
+              send && styles.buttonTextSent,
+            ]}
+          >
+            {send ? t("sends.sent") : t("sends.logSend")}
           </Text>
         </TouchableOpacity>
       )}
@@ -128,18 +157,22 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
       <BottomSheet
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        title={send ? t('sends.editSend') : t('sends.logSend')}
-        closeLabel={t('common.cancel')}
+        title={send ? t("sends.editSend") : t("sends.logSend")}
+        closeLabel={t("common.cancel")}
         closeLabelColor={colors.textSecondary}
         footer={
           <View style={styles.footerButtons}>
             <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: colors.primary }, saving && styles.saveButtonDisabled]}
+              style={[
+                styles.saveButton,
+                { backgroundColor: colors.primary },
+                saving && styles.saveButtonDisabled,
+              ]}
               onPress={handleSave}
               disabled={saving}
             >
               <Text style={styles.saveButtonText}>
-                {send ? t('common.update') : t('sends.logSend')}
+                {send ? t("common.update") : t("sends.logSend")}
               </Text>
             </TouchableOpacity>
 
@@ -149,22 +182,34 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
                 onPress={handleRemove}
                 disabled={saving}
               >
-                <Text style={[styles.removeButtonText, { color: colors.danger }]}>{t('sends.removeSend')}</Text>
+                <Text
+                  style={[styles.removeButtonText, { color: colors.danger }]}
+                >
+                  {t("sends.removeSend")}
+                </Text>
               </TouchableOpacity>
             )}
           </View>
         }
       >
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t('sends.qualityRating')}</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          {t("sends.qualityRating")}
+        </Text>
         <View style={styles.starsRow}>
           {[1, 2, 3, 4, 5].map((star) => (
             <TouchableOpacity
               key={star}
-              onPress={() => setQualityRating(qualityRating === star ? null : star)}
-              accessibilityLabel={t('sends.rateStar', { count: star })}
+              onPress={() =>
+                setQualityRating(qualityRating === star ? null : star)
+              }
+              accessibilityLabel={t("sends.rateStar", { count: star })}
             >
               <Ionicons
-                name={qualityRating && qualityRating >= star ? 'star' : 'star-outline'}
+                name={
+                  qualityRating && qualityRating >= star
+                    ? "star"
+                    : "star-outline"
+                }
                 size={32}
                 color={colors.star}
               />
@@ -172,7 +217,9 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
           ))}
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t('sends.difficultyForGrade')}</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          {t("sends.difficultyForGrade")}
+        </Text>
         <View style={styles.difficultyRow}>
           {DIFFICULTY_OPTIONS.map((option) => (
             <TouchableOpacity
@@ -180,17 +227,25 @@ export default function SendButton({ routeId, userId, onLoginRequired, compact }
               style={[
                 styles.difficultyOption,
                 { borderColor: colors.border },
-                difficultyRating === option.value && { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+                difficultyRating === option.value && {
+                  borderColor: colors.primary,
+                  backgroundColor: colors.primaryLight,
+                },
               ]}
               onPress={() =>
-                setDifficultyRating(difficultyRating === option.value ? null : option.value)
+                setDifficultyRating(
+                  difficultyRating === option.value ? null : option.value,
+                )
               }
             >
               <Text
                 style={[
                   styles.difficultyText,
                   { color: colors.textSecondary },
-                  difficultyRating === option.value && { color: colors.primary, fontWeight: '600' },
+                  difficultyRating === option.value && {
+                    color: colors.primary,
+                    fontWeight: "600",
+                  },
                 ]}
               >
                 {option.label}
@@ -208,18 +263,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   compactButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   compactText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -228,24 +283,24 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   buttonTextSent: {
-    color: '#fff',
+    color: "#fff",
   },
   sectionLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 12,
     marginTop: 8,
   },
   starsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginBottom: 16,
   },
   difficultyRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   difficultyOption: {
@@ -253,7 +308,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   difficultyText: {
     fontSize: 14,
@@ -261,19 +316,19 @@ const styles = StyleSheet.create({
   saveButton: {
     paddingVertical: 14,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
   saveButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   removeButton: {
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   removeButtonText: {
     fontSize: 16,

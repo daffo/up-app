@@ -90,7 +90,9 @@
     "soft": "Facile",
     "accurate": "Accurato",
     "hard": "Difficile",
-    "rateStar": "{{count}} stella"
+    "rateStar": "{{count}} stella",
+    "errorQualityRange": "La valutazione della qualità deve essere tra 1 e 5",
+    "errorDifficultyRange": "La difficoltà deve essere soft, accurata o hard"
   },
   "comments": {
     "title": "Commenti",

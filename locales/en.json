@@ -90,7 +90,9 @@
     "soft": "Soft",
     "accurate": "Accurate",
     "hard": "Hard",
-    "rateStar": "{{count}} star"
+    "rateStar": "{{count}} star",
+    "errorQualityRange": "Quality rating must be between 1 and 5",
+    "errorDifficultyRange": "Difficulty rating must be soft, accurate, or hard"
   },
   "comments": {
     "title": "Comments",
