@@ -1,11 +1,11 @@
-import React from 'react';
-import { act, create, ReactTestRenderer } from 'react-test-renderer';
+import React from "react";
+import { act, create, ReactTestRenderer } from "react-test-renderer";
 
 // Mock cacheEvents before importing the hook
 const mockSubscribe = jest.fn();
 const mockUnsubscribe = jest.fn();
 
-jest.mock('../../lib/api', () => ({
+jest.mock("../../lib/api", () => ({
   cacheEvents: {
     subscribe: (...args: any[]) => {
       mockSubscribe(...args);
@@ -14,7 +14,7 @@ jest.mock('../../lib/api', () => ({
   },
 }));
 
-import { useApiQuery } from '../../hooks/useApiQuery';
+import { useApiQuery } from "../../hooks/useApiQuery";
 
 // Minimal renderHook using react-test-renderer
 function renderHook<T>(hookFn: () => T) {
@@ -33,22 +33,24 @@ function renderHook<T>(hookFn: () => T) {
   return {
     result,
     unmount: () => act(() => renderer!.unmount()),
-    rerender: () => act(() => renderer!.update(React.createElement(TestComponent))),
+    rerender: () =>
+      act(() => renderer!.update(React.createElement(TestComponent))),
   };
 }
 
 // Helper to flush promises
-const flushPromises = () => act(async () => {
-  await new Promise(resolve => setTimeout(resolve, 0));
-});
+const flushPromises = () =>
+  act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
 
-describe('useApiQuery', () => {
+describe("useApiQuery", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('fetches data on mount and transitions loading', async () => {
-    const fetcher = jest.fn().mockResolvedValue({ id: 1, name: 'test' });
+  it("fetches data on mount and transitions loading", async () => {
+    const fetcher = jest.fn().mockResolvedValue({ id: 1, name: "test" });
 
     const { result } = renderHook(() => useApiQuery(fetcher, []));
 
@@ -58,52 +60,50 @@ describe('useApiQuery', () => {
     await flushPromises();
 
     expect(result.current.loading).toBe(false);
-    expect(result.current.data).toEqual({ id: 1, name: 'test' });
+    expect(result.current.data).toEqual({ id: 1, name: "test" });
     expect(result.current.error).toBeNull();
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
-  it('uses initialData when provided', async () => {
-    const fetcher = jest.fn().mockResolvedValue(['fetched']);
+  it("uses initialData when provided", async () => {
+    const fetcher = jest.fn().mockResolvedValue(["fetched"]);
 
     const { result } = renderHook(() =>
-      useApiQuery(fetcher, [], { initialData: ['initial'] }),
+      useApiQuery(fetcher, [], { initialData: ["initial"] }),
     );
 
-    expect(result.current.data).toEqual(['initial']);
+    expect(result.current.data).toEqual(["initial"]);
 
     await flushPromises();
 
-    expect(result.current.data).toEqual(['fetched']);
+    expect(result.current.data).toEqual(["fetched"]);
   });
 
-  it('subscribes to cache events when cacheKey is provided', async () => {
-    const fetcher = jest.fn().mockResolvedValue('data');
+  it("subscribes to cache events when cacheKey is provided", async () => {
+    const fetcher = jest.fn().mockResolvedValue("data");
+
+    renderHook(() => useApiQuery(fetcher, [], { cacheKey: "routes" }));
+
+    await flushPromises();
+
+    expect(mockSubscribe).toHaveBeenCalledWith("routes", expect.any(Function));
+  });
+
+  it("subscribes to multiple cache keys", async () => {
+    const fetcher = jest.fn().mockResolvedValue("data");
 
     renderHook(() =>
-      useApiQuery(fetcher, [], { cacheKey: 'routes' }),
+      useApiQuery(fetcher, [], { cacheKey: ["routes", "sends"] }),
     );
 
     await flushPromises();
 
-    expect(mockSubscribe).toHaveBeenCalledWith('routes', expect.any(Function));
+    expect(mockSubscribe).toHaveBeenCalledWith("routes", expect.any(Function));
+    expect(mockSubscribe).toHaveBeenCalledWith("sends", expect.any(Function));
   });
 
-  it('subscribes to multiple cache keys', async () => {
-    const fetcher = jest.fn().mockResolvedValue('data');
-
-    renderHook(() =>
-      useApiQuery(fetcher, [], { cacheKey: ['routes', 'sends'] }),
-    );
-
-    await flushPromises();
-
-    expect(mockSubscribe).toHaveBeenCalledWith('routes', expect.any(Function));
-    expect(mockSubscribe).toHaveBeenCalledWith('sends', expect.any(Function));
-  });
-
-  it('does not subscribe when no cacheKey', async () => {
-    const fetcher = jest.fn().mockResolvedValue('data');
+  it("does not subscribe when no cacheKey", async () => {
+    const fetcher = jest.fn().mockResolvedValue("data");
 
     renderHook(() => useApiQuery(fetcher, []));
 
@@ -112,8 +112,8 @@ describe('useApiQuery', () => {
     expect(mockSubscribe).not.toHaveBeenCalled();
   });
 
-  it('skips fetch and sets loading=false when enabled=false', async () => {
-    const fetcher = jest.fn().mockResolvedValue('data');
+  it("skips fetch and sets loading=false when enabled=false", async () => {
+    const fetcher = jest.fn().mockResolvedValue("data");
 
     const { result } = renderHook(() =>
       useApiQuery(fetcher, [], { enabled: false }),
@@ -126,11 +126,11 @@ describe('useApiQuery', () => {
     expect(result.current.data).toBeNull();
   });
 
-  it('does not subscribe to cache events when enabled=false', async () => {
-    const fetcher = jest.fn().mockResolvedValue('data');
+  it("does not subscribe to cache events when enabled=false", async () => {
+    const fetcher = jest.fn().mockResolvedValue("data");
 
     renderHook(() =>
-      useApiQuery(fetcher, [], { enabled: false, cacheKey: 'routes' }),
+      useApiQuery(fetcher, [], { enabled: false, cacheKey: "routes" }),
     );
 
     await flushPromises();
@@ -138,40 +138,40 @@ describe('useApiQuery', () => {
     expect(mockSubscribe).not.toHaveBeenCalled();
   });
 
-  it('handles errors and sets error state', async () => {
-    const error = new Error('Network error');
+  it("handles errors and sets error state", async () => {
+    const error = new Error("Network error");
     const fetcher = jest.fn().mockRejectedValue(error);
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
 
     const { result } = renderHook(() => useApiQuery(fetcher, []));
 
     await flushPromises();
 
     expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBe('Network error');
+    expect(result.current.error).toBe("Network error");
     expect(result.current.data).toBeNull();
 
     consoleSpy.mockRestore();
   });
 
-  it('handles non-Error thrown values', async () => {
-    const fetcher = jest.fn().mockRejectedValue('string error');
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+  it("handles non-Error thrown values", async () => {
+    const fetcher = jest.fn().mockRejectedValue("string error");
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
 
     const { result } = renderHook(() => useApiQuery(fetcher, []));
 
     await flushPromises();
 
-    expect(result.current.error).toBe('An error occurred');
+    expect(result.current.error).toBe("An error occurred");
 
     consoleSpy.mockRestore();
   });
 
-  it('unsubscribes from cache events on unmount', async () => {
-    const fetcher = jest.fn().mockResolvedValue('data');
+  it("unsubscribes from cache events on unmount", async () => {
+    const fetcher = jest.fn().mockResolvedValue("data");
 
     const { unmount } = renderHook(() =>
-      useApiQuery(fetcher, [], { cacheKey: 'routes' }),
+      useApiQuery(fetcher, [], { cacheKey: "routes" }),
     );
 
     await flushPromises();
@@ -183,14 +183,13 @@ describe('useApiQuery', () => {
     expect(mockUnsubscribe).toHaveBeenCalled();
   });
 
-  it('cache invalidation triggers refetch', async () => {
-    const fetcher = jest.fn()
-      .mockResolvedValueOnce('first')
-      .mockResolvedValueOnce('second');
+  it("cache invalidation triggers refetch", async () => {
+    const fetcher = jest
+      .fn()
+      .mockResolvedValueOnce("first")
+      .mockResolvedValueOnce("second");
 
-    renderHook(() =>
-      useApiQuery(fetcher, [], { cacheKey: 'routes' }),
-    );
+    renderHook(() => useApiQuery(fetcher, [], { cacheKey: "routes" }));
 
     await flushPromises();
 
@@ -200,64 +199,116 @@ describe('useApiQuery', () => {
     // Simulate cache invalidation
     await act(async () => {
       cacheCallback();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
-  it('refresh sets refreshing=true then back to false', async () => {
+  it("refresh sets refreshing=true then back to false", async () => {
     let resolvePromise: (value: string) => void;
     const fetcher = jest.fn().mockImplementation(
-      () => new Promise<string>(resolve => { resolvePromise = resolve; }),
+      () =>
+        new Promise<string>((resolve) => {
+          resolvePromise = resolve;
+        }),
     );
 
     const { result } = renderHook(() => useApiQuery(fetcher, []));
 
     // Resolve initial fetch
-    await act(async () => { resolvePromise!('first'); });
+    await act(async () => {
+      resolvePromise!("first");
+    });
 
     expect(result.current.refreshing).toBe(false);
 
     // Call refresh
-    const refreshPromise = new Promise<string>(resolve => {
-      fetcher.mockImplementation(() => new Promise<string>(r => { resolvePromise = r; resolve('started'); }));
+    const refreshPromise = new Promise<string>((resolve) => {
+      fetcher.mockImplementation(
+        () =>
+          new Promise<string>((r) => {
+            resolvePromise = r;
+            resolve("started");
+          }),
+      );
     });
 
-    act(() => { result.current.refresh(); });
+    act(() => {
+      result.current.refresh();
+    });
     await refreshPromise;
 
     expect(result.current.refreshing).toBe(true);
 
     // Resolve refresh
-    await act(async () => { resolvePromise!('second'); });
+    await act(async () => {
+      resolvePromise!("second");
+    });
 
     expect(result.current.refreshing).toBe(false);
-    expect(result.current.data).toBe('second');
+    expect(result.current.data).toBe("second");
   });
 
-  it('clears error before each fetch', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    const fetcher = jest.fn()
-      .mockRejectedValueOnce(new Error('fail'))
-      .mockResolvedValueOnce('success');
+  it("does not refetch when deps change by reference but not value", async () => {
+    const fetcher = jest
+      .fn()
+      .mockResolvedValueOnce("first")
+      .mockResolvedValueOnce("second");
+
+    // Use a mutable ref so the wrapper component can receive new deps on rerender
+    const depsRef = { current: [{ id: 1 }] as any[] };
+    let result: { current: ReturnType<typeof useApiQuery> } = {} as any;
+    let renderer: ReactTestRenderer;
+
+    function TestComponent() {
+      result.current = useApiQuery(fetcher, depsRef.current);
+      return null;
+    }
+
+    act(() => {
+      renderer = create(React.createElement(TestComponent));
+    });
+
+    await flushPromises();
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    fetcher.mockClear();
+
+    // Update the ref to a new object with the same value, then rerender
+    depsRef.current = [{ id: 1 }];
+    await act(async () => {
+      renderer!.update(React.createElement(TestComponent));
+    });
+
+    await flushPromises();
+
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("clears error before each fetch", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const fetcher = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("fail"))
+      .mockResolvedValueOnce("success");
 
     const { result } = renderHook(() =>
-      useApiQuery(fetcher, [], { cacheKey: 'routes' }),
+      useApiQuery(fetcher, [], { cacheKey: "routes" }),
     );
 
     await flushPromises();
-    expect(result.current.error).toBe('fail');
+    expect(result.current.error).toBe("fail");
 
     // Trigger refetch via cache
     const cacheCallback = mockSubscribe.mock.calls[0][1];
     await act(async () => {
       cacheCallback();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     expect(result.current.error).toBeNull();
-    expect(result.current.data).toBe('success');
+    expect(result.current.data).toBe("success");
 
     consoleSpy.mockRestore();
   });
