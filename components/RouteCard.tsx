@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RouteWithStats } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
+import { useTranslation } from 'react-i18next';
 
 interface RouteCardProps {
   route: RouteWithStats;
@@ -13,12 +14,18 @@ interface RouteCardProps {
 
 function RouteCard({ route, routeId, onPress }: RouteCardProps) {
   const colors = useThemeColors();
+  const { t } = useTranslation();
 
   return (
     <TouchableOpacity style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={() => onPress(routeId)}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{route.title}</Text>
         <View style={styles.headerRight}>
+          {route.is_draft && (
+            <View style={[styles.draftBadge, { backgroundColor: colors.primaryLightAlt }]}>
+              <Text style={[styles.draftBadgeText, { color: colors.warning }]}>{t('route.draft')}</Text>
+            </View>
+          )}
           {route.avgRating !== null && (
             <View style={styles.rating}>
               <Ionicons name="star" size={14} color={colors.star} />
@@ -105,5 +112,14 @@ const styles = StyleSheet.create({
   },
   holdCount: {
     fontSize: 12,
+  },
+  draftBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  draftBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

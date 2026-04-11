@@ -485,7 +485,15 @@ describe('routesApi', () => {
       const result = await routesApi.get('r1');
       expect(result).toEqual({ id: 'r1', photo: { id: 'p1' } });
       expect(builder.eq).toHaveBeenCalledWith('id', 'r1');
-      expect(builder.single).toHaveBeenCalled();
+      expect(builder.maybeSingle).toHaveBeenCalled();
+    });
+
+    it('returns null when route not found', async () => {
+      const builder = createBuilder({ data: null, error: null });
+      mockFrom.mockReturnValue(builder);
+
+      const result = await routesApi.get('r1');
+      expect(result).toBeNull();
     });
 
     it('throws on error', async () => {

@@ -141,6 +141,7 @@ export interface Database {
           photo_id: string
           holds: RouteHolds
           user_id: string
+          is_draft: boolean
         }
         Insert: {
           id?: string
@@ -151,6 +152,7 @@ export interface Database {
           photo_id: string
           holds: RouteHolds
           user_id: string
+          is_draft?: boolean
         }
         Update: {
           id?: string
@@ -161,6 +163,7 @@ export interface Database {
           photo_id?: string
           holds?: RouteHolds
           user_id?: string
+          is_draft?: boolean
         }
       }
       user_profiles: {

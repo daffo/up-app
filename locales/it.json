@@ -43,7 +43,9 @@
     "noRatingsYet": "Nessuna valutazione",
     "editRoute": "Modifica Via",
     "share": "Condividi",
-    "shareMessage": "Guarda \"{{title}}\" ({{grade}}) su Upp! {{url}}"
+    "shareMessage": "Guarda \"{{title}}\" ({{grade}}) su Upp! {{url}}",
+    "draft": "Bozza",
+    "draftBanner": "Questa via è una bozza. Solo tu puoi vederla."
   },
   "routeForm": {
     "title": "Titolo",
@@ -58,12 +60,16 @@
     "holdsListTitle": "Prese (tieni premuto per riordinare):",
     "noNote": "(nessuna nota)",
     "feetListTitle": "Piedi:",
+    "saveDraft": "Salva Bozza",
+    "publish": "Pubblica",
     "saveChanges": "Salva Modifiche",
     "createRoute": "Crea Via",
     "deleteRoute": "Elimina Via",
     "deleteConfirm": "Sei sicuro di voler eliminare \"{{title}}\"? Non può essere annullato.",
     "routeUpdated": "Via aggiornata con successo",
     "routeCreated": "Via creata con successo",
+    "routeSavedAsDraft": "Via salvata come bozza",
+    "routePublished": "Via pubblicata con successo",
     "routeDeleted": "Via eliminata",
     "deleted": "Eliminata",
     "errorLogin": "Devi accedere per salvare una via",

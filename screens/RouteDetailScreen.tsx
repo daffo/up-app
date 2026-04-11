@@ -9,6 +9,7 @@ import {
   Keyboard,
   Platform,
   Share,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,7 @@ import { useRequireAuth } from '../hooks/useRequireAuth';
 import { useThemeColors } from '../lib/theme-context';
 import { formatDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
+import DraftBanner from '../components/DraftBanner';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { ScreenProps } from '../navigation/types';
 
@@ -103,20 +105,37 @@ export default function RouteDetailScreen({ route, navigation }: ScreenProps<'Ro
     await Share.share({ message });
   };
 
+  const [publishing, setPublishing] = useState(false);
+
+  const handlePublish = async () => {
+    try {
+      setPublishing(true);
+      await routesApi.update(routeId, { is_draft: false });
+      Alert.alert(t('common.success'), t('routeForm.routePublished'));
+    } catch (err) {
+      console.error('Error publishing route:', err);
+      Alert.alert(t('common.error'), t('routeForm.errorSave'));
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ marginRight: 10 }}>
-          <SendButton
-            routeId={routeId}
-            userId={user?.id}
-            onLoginRequired={() => requireAuth(() => {}, 'RouteDetail')}
-            compact
-          />
-        </View>
+        routeData && !routeData.is_draft ? (
+          <View style={{ marginRight: 10 }}>
+            <SendButton
+              routeId={routeId}
+              userId={user?.id}
+              onLoginRequired={() => requireAuth(() => {}, 'RouteDetail')}
+              compact
+            />
+          </View>
+        ) : null
       ),
     });
-  }, [user, navigation, routeId, requireAuth]);
+  }, [user, navigation, routeId, requireAuth, routeData]);
 
   if (loading) {
     return (
@@ -144,6 +163,10 @@ export default function RouteDetailScreen({ route, navigation }: ScreenProps<'Ro
         contentContainerStyle={{ paddingBottom: keyboardHeight }}
         keyboardShouldPersistTaps="handled"
       >
+      {routeData.is_draft && user && routeData.user_id === user.id && (
+        <DraftBanner onPublish={handlePublish} publishing={publishing} />
+      )}
+
       <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{routeData.title}</Text>
         <View style={styles.headerMeta}>
@@ -181,36 +204,40 @@ export default function RouteDetailScreen({ route, navigation }: ScreenProps<'Ro
             {formatDate(routeData.created_at)}
           </Text>
         </View>
-        <TouchableOpacity
-          style={[styles.detailRow, { borderBottomColor: colors.separator }]}
-          onPress={() => navigation.navigate('RouteSends', { routeId })}
-        >
-          <Text style={[styles.detailLabel, { color: colors.textPrimary }]}>{t('route.rating')}</Text>
-          <View style={styles.ratingValue}>
-            {(() => {
-              const ratings = sends.map(s => s.quality_rating).filter((r): r is number => r !== null);
-              const avg = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : null;
-              return avg !== null ? (
-                <>
-                  <Ionicons name="star" size={16} color={colors.star} />
-                  <Text style={[styles.ratingText, { color: colors.star }]}>{avg.toFixed(1)}</Text>
-                  <Text style={[styles.sendCountText, { color: colors.textTertiary }]}>({sends.length})</Text>
-                </>
-              ) : (
-                <Text style={[styles.detailValue, { color: colors.textSecondary }]}>{t('route.noRatingsYet')}</Text>
-              );
-            })()}
-            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} style={styles.chevron} />
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.detailRow, !(user && routeData.user_id === user.id) && styles.detailRowLast, { borderBottomColor: colors.separator }]}
-          onPress={handleShare}
-          accessibilityLabel={t('route.share')}
-        >
-          <Text style={[styles.editRouteLabel, { color: colors.primary }]}>{t('route.share')}</Text>
-          <Ionicons name="share-outline" size={20} color={colors.primary} />
-        </TouchableOpacity>
+        {!routeData.is_draft && (
+          <TouchableOpacity
+            style={[styles.detailRow, { borderBottomColor: colors.separator }]}
+            onPress={() => navigation.navigate('RouteSends', { routeId })}
+          >
+            <Text style={[styles.detailLabel, { color: colors.textPrimary }]}>{t('route.rating')}</Text>
+            <View style={styles.ratingValue}>
+              {(() => {
+                const ratings = sends.map(s => s.quality_rating).filter((r): r is number => r !== null);
+                const avg = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : null;
+                return avg !== null ? (
+                  <>
+                    <Ionicons name="star" size={16} color={colors.star} />
+                    <Text style={[styles.ratingText, { color: colors.star }]}>{avg.toFixed(1)}</Text>
+                    <Text style={[styles.sendCountText, { color: colors.textTertiary }]}>({sends.length})</Text>
+                  </>
+                ) : (
+                  <Text style={[styles.detailValue, { color: colors.textSecondary }]}>{t('route.noRatingsYet')}</Text>
+                );
+              })()}
+              <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} style={styles.chevron} />
+            </View>
+          </TouchableOpacity>
+        )}
+        {!routeData.is_draft && (
+          <TouchableOpacity
+            style={[styles.detailRow, !(user && routeData.user_id === user.id) && styles.detailRowLast, { borderBottomColor: colors.separator }]}
+            onPress={handleShare}
+            accessibilityLabel={t('route.share')}
+          >
+            <Text style={[styles.editRouteLabel, { color: colors.primary }]}>{t('route.share')}</Text>
+            <Ionicons name="share-outline" size={20} color={colors.primary} />
+          </TouchableOpacity>
+        )}
         {user && routeData.user_id === user.id && (
           <TouchableOpacity
             style={[styles.detailRow, styles.detailRowLast, { borderBottomColor: colors.separator }]}
@@ -222,16 +249,18 @@ export default function RouteDetailScreen({ route, navigation }: ScreenProps<'Ro
         )}
       </View>
 
-      <CommentsSection
-        routeId={routeId}
-        userId={user?.id}
-        onLoginRequired={() => requireAuth(() => {}, 'RouteDetail')}
-        onInputFocus={() => {
-          setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-          }, 300);
-        }}
-      />
+      {!routeData.is_draft && (
+        <CommentsSection
+          routeId={routeId}
+          userId={user?.id}
+          onLoginRequired={() => requireAuth(() => {}, 'RouteDetail')}
+          onInputFocus={() => {
+            setTimeout(() => {
+              scrollViewRef.current?.scrollToEnd({ animated: true });
+            }, 300);
+          }}
+        />
+      )}
       </ScrollView>
     </SafeScreen>
   );

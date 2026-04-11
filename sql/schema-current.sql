@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-009-app-config-activity
+-- Last updated: After migration-010-route-drafts
 
 -- ============================================================================
 -- TABLES
@@ -44,7 +44,8 @@ CREATE TABLE routes (
   grade TEXT NOT NULL,
   photo_id UUID REFERENCES photos(id) ON DELETE CASCADE NOT NULL,
   holds JSONB NOT NULL DEFAULT '{"hand_holds":[],"foot_holds":[]}'::jsonb,  -- {hand_holds: [...], foot_holds: [...]}
-  user_id UUID REFERENCES auth.users NOT NULL
+  user_id UUID REFERENCES auth.users NOT NULL,
+  is_draft BOOLEAN NOT NULL DEFAULT true
 );
 
 -- User profiles table (display names and account settings)
@@ -190,9 +191,12 @@ CREATE POLICY "Only admins can delete detected holds"
 -- RLS POLICIES: routes
 -- ============================================================================
 
-CREATE POLICY "Routes are viewable by everyone"
+CREATE POLICY "Published routes viewable by everyone, drafts by owner"
   ON routes FOR SELECT
-  USING (true);
+  USING (
+    is_draft = false
+    OR auth.uid() = user_id
+  );
 
 CREATE POLICY "Users can insert routes"
   ON routes FOR INSERT

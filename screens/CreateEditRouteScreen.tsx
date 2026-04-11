@@ -24,6 +24,7 @@ import { useThemeColors } from '../lib/theme-context';
 import RouteOverlay from '../components/RouteOverlay';
 import { formatDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
+import DraftBanner from '../components/DraftBanner';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { ScreenProps } from '../navigation/types';
 
@@ -194,31 +195,32 @@ export default function CreateEditRouteScreen({ navigation, route }: ScreenProps
     </ScaleDecorator>
   ), [handHolds, t, colors]);
 
-  const handleSave = async () => {
+  const validateForm = (): boolean => {
     if (!user) {
       Alert.alert(t('common.error'), t('routeForm.errorLogin'));
-      return;
+      return false;
     }
-
     if (!title.trim()) {
       Alert.alert(t('common.error'), t('routeForm.errorTitle'));
-      return;
+      return false;
     }
-
     if (!grade.trim()) {
       Alert.alert(t('common.error'), t('routeForm.errorGrade'));
-      return;
+      return false;
     }
-
     if (!selectedPhotoId) {
       Alert.alert(t('common.error'), t('routeForm.errorPhoto'));
-      return;
+      return false;
     }
-
     if (handHolds.length === 0) {
       Alert.alert(t('common.error'), t('routeForm.errorHolds'));
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleSave = async (action: 'draft' | 'publish' | 'update') => {
+    if (!validateForm()) return;
 
     try {
       setSaving(true);
@@ -226,29 +228,37 @@ export default function CreateEditRouteScreen({ navigation, route }: ScreenProps
       const routeHolds = { hand_holds: handHolds, foot_holds: footHolds };
 
       if (isEditMode && routeId) {
-        // Update existing route (automatically invalidates cache)
-        await routesApi.update(routeId, {
+        const updates: Parameters<typeof routesApi.update>[1] = {
           title: title.trim(),
           description: description.trim() || null,
           grade: grade.trim(),
-          photo_id: selectedPhotoId,
+          photo_id: selectedPhotoId!,
           holds: routeHolds,
-        });
+        };
+        if (action === 'publish') updates.is_draft = false;
 
-        Alert.alert(t('common.success'), t('routeForm.routeUpdated'));
+        await routesApi.update(routeId, updates);
+
+        const message = action === 'publish'
+          ? t('routeForm.routePublished')
+          : t('routeForm.routeUpdated');
+        Alert.alert(t('common.success'), message);
         navigation.goBack();
       } else {
-        // Create new route (automatically invalidates cache)
         const data = await routesApi.create({
           title: title.trim(),
           description: description.trim() || null,
           grade: grade.trim(),
-          photo_id: selectedPhotoId,
+          photo_id: selectedPhotoId!,
           holds: routeHolds,
-          user_id: user.id,
+          user_id: user!.id,
+          is_draft: action === 'draft',
         });
 
-        Alert.alert(t('common.success'), t('routeForm.routeCreated'));
+        const message = action === 'draft'
+          ? t('routeForm.routeSavedAsDraft')
+          : t('routeForm.routePublished');
+        Alert.alert(t('common.success'), message);
         navigation.replace('RouteDetail', { routeId: data.id });
       }
     } catch (err) {
@@ -298,6 +308,10 @@ export default function CreateEditRouteScreen({ navigation, route }: ScreenProps
   return (
     <SafeScreen>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {isEditMode && existingRoute?.is_draft && (
+          <DraftBanner onPublish={() => handleSave('publish')} publishing={saving} />
+        )}
+
         <View style={styles.form}>
         {/* Title */}
         <View style={styles.field}>
@@ -449,18 +463,39 @@ export default function CreateEditRouteScreen({ navigation, route }: ScreenProps
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={[styles.footerButton, { backgroundColor: colors.primary }, saving && styles.buttonDisabled]}
-            onPress={handleSave}
+            style={[
+              styles.footerButton,
+              !isEditMode
+                ? [styles.footerButtonSecondary, { borderColor: colors.primary }]
+                : { backgroundColor: colors.primary },
+              saving && styles.buttonDisabled,
+            ]}
+            onPress={() => handleSave(existingRoute?.is_draft === false ? 'update' : 'draft')}
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={!isEditMode ? colors.primary : '#fff'} />
             ) : (
-              <Text style={styles.footerButtonText}>
-                {isEditMode ? t('routeForm.saveChanges') : t('routeForm.createRoute')}
+              <Text style={[styles.footerButtonText, !isEditMode && { color: colors.primary }]}>
+                {isEditMode
+                  ? existingRoute?.is_draft ? t('routeForm.saveDraft') : t('routeForm.saveChanges')
+                  : t('routeForm.saveDraft')}
               </Text>
             )}
           </TouchableOpacity>
+          {!isEditMode && (
+            <TouchableOpacity
+              style={[styles.footerButton, { backgroundColor: colors.primary }, saving && styles.buttonDisabled]}
+              onPress={() => handleSave('publish')}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.footerButtonText}>{t('routeForm.publish')}</Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -605,6 +640,10 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  footerButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
   },
   footerButtonText: {
     color: '#fff',

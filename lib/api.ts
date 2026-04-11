@@ -180,10 +180,10 @@ export const routesApi = {
         photo:photos(*)
       `)
       .eq('id', routeId)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
-    return data as Route & { photo?: Photo };
+    return data as (Route & { photo?: Photo }) | null;
   },
 
   async create(route: {
@@ -193,6 +193,7 @@ export const routesApi = {
     photo_id: string;
     holds: RouteHolds;
     user_id: string;
+    is_draft?: boolean;
   }) {
     const { data, error } = await supabase
       .from('routes')
@@ -213,6 +214,7 @@ export const routesApi = {
     grade?: string;
     photo_id?: string;
     holds?: RouteHolds;
+    is_draft?: boolean;
   }) {
     const { error } = await supabase
       .from('routes')

@@ -59,6 +59,7 @@ export const RouteSchema = z.object({
   photo_id: z.string().uuid(),
   holds: RouteHoldsSchema,
   user_id: z.string().uuid(),
+  is_draft: z.boolean(),
 });
 
 export const UserProfileSchema = z.object({

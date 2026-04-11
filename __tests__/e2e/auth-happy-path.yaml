@@ -35,13 +35,15 @@ name: Auth User - Login Flow
 - tapOn: "Grade"
 - inputText: "V3"
 
-# Scroll down to make the image fully visible
-- swipe:
-    direction: UP
-    duration: 500
-
-# Hide keyboard and tap on the image to open hold editor
+# Hide keyboard and scroll to the image preview
 - hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "open-hold-editor"
+    direction: DOWN
+    timeout: 5000
+
+# Tap on the image to open hold editor
 - tapOn:
     id: "open-hold-editor"
 - extendedWaitUntil:
@@ -119,9 +121,8 @@ name: Auth User - Login Flow
 # Wait for UI to settle after modal close
 - waitForAnimationToEnd
 
-# Create the route (tap at bottom where button is, not header)
-- tapOn:
-    point: "50%,95%"
+# Save as draft (tap at bottom where button is, not header)
+- tapOn: "Save Draft"
 
 # Handle success alert
 - extendedWaitUntil:
@@ -137,6 +138,45 @@ name: Auth User - Login Flow
 # Verify our route details
 - assertVisible: "E2E Test Route"
 - assertVisible: "V3"
+
+# ============================================
+# VERIFY DRAFT STATE
+# ============================================
+
+# Draft banner should be visible
+- assertVisible:
+    text: ".*draft.*"
+
+# Publish button should be visible
+- assertVisible: "Publish"
+
+# Send button should NOT be visible (draft routes have no sends)
+- assertNotVisible: "Send"
+
+# Comments section should NOT be visible
+- assertNotVisible: "Add a comment..."
+
+# Share button should NOT be visible
+- assertNotVisible: "Share"
+
+# ============================================
+# PUBLISH THE ROUTE
+# ============================================
+
+# Tap publish on the draft banner
+- tapOn: "Publish"
+
+# Handle success alert
+- extendedWaitUntil:
+    visible: "Success"
+    timeout: 10000
+- tapOn: "OK"
+
+# Draft banner should be gone
+- assertNotVisible: "Publish"
+
+# Send button should now be visible
+- assertVisible: "Send"
 
 # ============================================
 # ADD A COMMENT

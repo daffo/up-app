@@ -43,7 +43,9 @@
     "noRatingsYet": "No ratings yet",
     "editRoute": "Edit Route",
     "share": "Share",
-    "shareMessage": "Check out \"{{title}}\" ({{grade}}) on Upp! {{url}}"
+    "shareMessage": "Check out \"{{title}}\" ({{grade}}) on Upp! {{url}}",
+    "draft": "Draft",
+    "draftBanner": "This route is a draft. Only you can see it."
   },
   "routeForm": {
     "title": "Title",
@@ -58,12 +60,16 @@
     "holdsListTitle": "Holds (long press to drag):",
     "noNote": "(no note)",
     "feetListTitle": "Feet:",
+    "saveDraft": "Save Draft",
+    "publish": "Publish",
     "saveChanges": "Save Changes",
     "createRoute": "Create Route",
     "deleteRoute": "Delete Route",
     "deleteConfirm": "Are you sure you want to delete \"{{title}}\"? This cannot be undone.",
     "routeUpdated": "Route updated successfully",
     "routeCreated": "Route created successfully",
+    "routeSavedAsDraft": "Route saved as draft",
+    "routePublished": "Route published successfully",
     "routeDeleted": "Route has been deleted",
     "deleted": "Deleted",
     "errorLogin": "You must be logged in to save a route",
