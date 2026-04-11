@@ -401,7 +401,7 @@ export default function FullScreenImageBase({
                 webContainerPosRef.current = { left: rect.left, top: rect.top };
               }
             }}
-            // @ts-expect-error - web-only mouse event props
+            // @ts-expect-error - web-only mouse/click event props
             onMouseDown={(e: any) => {
               if (webScale > 1) {
                 webDragRef.current = { dragging: true, lastX: e.clientX, lastY: e.clientY };
@@ -432,8 +432,7 @@ export default function FullScreenImageBase({
               styles.webZoomContainer,
               {
                 flex: 1,
-                // @ts-expect-error - web-only CSS cursor property
-                cursor: webScale > 1 ? 'grab' : 'default',
+                cursor: (webScale > 1 ? 'grab' : 'default') as any,
               },
             ]}
           >

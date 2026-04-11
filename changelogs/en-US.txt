@@ -1,5 +1,4 @@
-What's new in 1.0.3:
-- Fixed send form losing your edits during background refresh
-- Added rating validation with clear error messages
-- Improved app performance: fewer unnecessary re-renders and network requests
-- Activity tracking now waits 30s before logging, saving battery on quick glances
+What's new in 1.0.4:
+- Save routes as drafts and publish when ready — drafts are private, only you can see them
+- Draft routes have no comments, sends, or sharing until published
+- Full web platform support for image overlay and fullscreen viewer

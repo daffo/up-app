@@ -1,5 +1,4 @@
-Novità nella versione 1.0.3:
-- Corretto il modulo di invio che perdeva le modifiche durante l'aggiornamento in background
-- Aggiunta validazione delle valutazioni con messaggi di errore chiari
-- Migliorate le prestazioni dell'app: meno re-render e richieste di rete non necessarie
-- Il tracciamento attività ora attende 30s prima di registrare, risparmiando batteria
+Novità nella versione 1.0.4:
+- Salva le vie come bozze e pubblicale quando sei pronto — le bozze sono private, solo tu puoi vederle
+- Le vie in bozza non hanno commenti, chiusure o condivisione fino alla pubblicazione
+- Supporto completo della piattaforma web per overlay immagini e visualizzatore a schermo intero
