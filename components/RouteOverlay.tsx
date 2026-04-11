@@ -8,7 +8,6 @@ import Svg, {
   G,
   Path,
   Rect,
-  Mask,
 } from "react-native-svg";
 import {
   Hold,
@@ -375,33 +374,18 @@ export default function RouteOverlay({
         </Marker>
       </Defs>
 
-      {/* Dark overlay with holes for holds using mask */}
-      {/* Mask: white = show overlay, black = transparent hole */}
-      <Defs>
-        <Mask id="holdsMask">
-          <Rect x="0" y="0" width={width} height={height} fill="white" />
-          {allHolds.map(({ hold, key }) => {
-            const smoothedPixels = smoothedPolygonsMap.get(
-              hold.detected_hold_id,
-            );
-            if (!smoothedPixels || smoothedPixels.length === 0) return null;
-            return (
-              <Path
-                key={`mask-${key}`}
-                d={polygonToPath(smoothedPixels)}
-                fill="black"
-              />
-            );
-          })}
-        </Mask>
-      </Defs>
-      <Rect
-        x="0"
-        y="0"
-        width={width}
-        height={height}
+      {/* Dark overlay with holes for holds using evenodd compound path */}
+      {/* Outer rectangle drawn clockwise, hold holes drawn as sub-paths — evenodd cuts them out */}
+      <Path
+        d={`M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z ${allHolds
+          .map(({ hold }) => {
+            const smoothedPixels = smoothedPolygonsMap.get(hold.detected_hold_id);
+            if (!smoothedPixels || smoothedPixels.length < 3) return "";
+            return polygonToPath(smoothedPixels);
+          })
+          .join(" ")}`}
         fill="rgba(0, 0, 0, 0.6)"
-        mask="url(#holdsMask)"
+        fillRule="evenodd"
       />
 
       {/* Draw connecting lines between hand holds (sequence arrows) */}

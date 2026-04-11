@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { getLocalImageUri } from './image-file-cache';
@@ -55,10 +56,25 @@ export async function getImageDimensions(url: string): Promise<Dimensions> {
   const cached = memoryCache.get(url);
   if (cached) return cached;
 
-  // 2. Resolve to local file URI (downloads once if needed)
+  // 2. Web: use HTML Image API (no file system access)
+  if (Platform.OS === 'web') {
+    return new Promise<Dimensions>((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const dims = { width: img.naturalWidth, height: img.naturalHeight };
+        memoryCache.set(url, dims);
+        schedulePersist();
+        resolve(dims);
+      };
+      img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+      img.src = url;
+    });
+  }
+
+  // 3. Native: resolve to local file URI (downloads once if needed)
   const localUri = await getLocalImageUri(url);
 
-  // 3. Measure from local file
+  // 4. Measure from local file
   return new Promise<Dimensions>((resolve, reject) => {
     const { Image: RNImage } = require('react-native');
     RNImage.getSize(

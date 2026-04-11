@@ -210,18 +210,19 @@ describe("RouteOverlay — PERF-11: polygon memoization", () => {
     expect(updatedPaths).not.toEqual(originalPaths);
   });
 
-  it("renders no SVG paths when handHolds array is empty", () => {
+  it("renders only the dark overlay path when handHolds array is empty", () => {
     const renderer = renderOverlay({
       handHolds: [],
       detectedHolds: [detectedHold],
     });
 
-    // With no holds, there should be no hold-border Path elements with a `d` prop.
+    // With no holds, only the evenodd dark overlay path (outer rectangle) should exist.
     const paths = collectPathStrings(renderer);
-    expect(paths).toHaveLength(0);
+    // The dark overlay path is the outer rectangle with no hold holes
+    expect(paths.every(p => p.startsWith("M 0 0 L"))).toBe(true);
   });
 
-  it("renders no SVG paths when detectedHolds does not contain the referenced hold", () => {
+  it("renders only the dark overlay path when detectedHolds does not contain the referenced hold", () => {
     // handHold references 'dh-1' but detectedHolds has 'dh-99' → no polygon data.
     const renderer = renderOverlay({
       handHolds: [handHold],
@@ -229,6 +230,7 @@ describe("RouteOverlay — PERF-11: polygon memoization", () => {
     });
 
     const paths = collectPathStrings(renderer);
-    expect(paths).toHaveLength(0);
+    // Only the dark overlay rectangle, no hold border paths
+    expect(paths.every(p => p.startsWith("M 0 0 L"))).toBe(true);
   });
 });

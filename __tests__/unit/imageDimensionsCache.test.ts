@@ -27,10 +27,13 @@ jest.mock('../../lib/cache/image-file-cache', () => ({
   }),
 }));
 
-// Mock react-native Image.getSize
+// Mock react-native Image.getSize and Platform
 jest.mock('react-native', () => ({
   Image: {
     getSize: jest.fn(),
+  },
+  Platform: {
+    OS: 'android',
   },
 }));
 
