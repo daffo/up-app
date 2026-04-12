@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-010-route-drafts
+-- Last updated: After migration-011-route-stats-functions
 
 -- ============================================================================
 -- TABLES
@@ -297,6 +297,27 @@ CREATE POLICY "Admins can view all activity"
   USING (
     EXISTS (SELECT 1 FROM admins WHERE user_id = auth.uid())
   );
+
+-- ============================================================================
+-- COMPUTED COLUMN FUNCTIONS (PostgREST virtual columns)
+-- ============================================================================
+
+-- Average quality rating for a route (computed from sends)
+CREATE OR REPLACE FUNCTION avg_rating(route routes)
+RETURNS NUMERIC AS $$
+  SELECT AVG(s.quality_rating)::NUMERIC
+  FROM sends s
+  WHERE s.route_id = route.id
+    AND s.quality_rating IS NOT NULL;
+$$ LANGUAGE sql STABLE;
+
+-- Number of sends for a route
+CREATE OR REPLACE FUNCTION send_count(route routes)
+RETURNS BIGINT AS $$
+  SELECT COUNT(*)
+  FROM sends s
+  WHERE s.route_id = route.id;
+$$ LANGUAGE sql STABLE;
 
 -- ============================================================================
 -- FUNCTIONS & TRIGGERS

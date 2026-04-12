@@ -160,16 +160,18 @@ describe('Database Contract Tests', () => {
       }
     });
 
-    it('routes with sends aggregation returns expected shape', async () => {
+    it('routes with computed avg_rating and send_count returns expected shape', async () => {
       const { data, error } = await supabase
         .from('routes')
-        .select('*, sends(quality_rating)')
+        .select('*, avg_rating, send_count')
         .limit(1);
 
       expect(error).toBeNull();
 
       if (data && data.length > 0) {
-        expect(Array.isArray(data[0].sends)).toBe(true);
+        // avg_rating is null when no sends with ratings, or a number
+        expect(data[0].avg_rating === null || typeof data[0].avg_rating === 'number').toBe(true);
+        expect(typeof data[0].send_count).toBe('number');
       }
     });
 

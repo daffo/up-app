@@ -96,7 +96,7 @@ export const routesApi = {
 
     let query = supabase
       .from('routes')
-      .select('*, sends(quality_rating), photo:photos!inner(setup_date, teardown_date)')
+      .select('*, avg_rating, send_count, photo:photos!inner(setup_date, teardown_date)')
       .order('created_at', { ascending: false })
       .order('id', { ascending: false });
 
@@ -143,19 +143,13 @@ export const routesApi = {
     const hasMore = rows.length > pageSize;
     const pageRows = hasMore ? rows.slice(0, pageSize) : rows;
 
-    // Compute average rating from sends
-    const mapped = pageRows.map((route: Route & { sends: { quality_rating: number | null }[]; photo: unknown }) => {
-      const ratings = route.sends
-        .map(s => s.quality_rating)
-        .filter((r): r is number => r !== null);
-      const avgRating = ratings.length > 0
-        ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
-        : null;
-      const { sends, photo, ...routeData } = route;
+    // Use server-computed avg_rating and send_count (PostgREST computed columns)
+    const mapped = pageRows.map((route: Route & { avg_rating: number | null; send_count: number; photo: unknown }) => {
+      const { avg_rating, send_count, photo, ...routeData } = route;
       return {
         ...routeData,
-        avgRating,
-        sendCount: route.sends.length,
+        avgRating: avg_rating,
+        sendCount: send_count,
       };
     });
 

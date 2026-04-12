@@ -221,13 +221,10 @@ describe('cacheEvents', () => {
 describe('routesApi', () => {
   // -- list --
   describe('list', () => {
-    it('computes avgRating and sendCount from sends array', async () => {
+    it('maps server-computed avg_rating and send_count', async () => {
       const builder = createBuilder({
         data: [{
-          id: 'r1', title: 'Route 1', sends: [
-            { quality_rating: 4 },
-            { quality_rating: 2 },
-          ], photo: {},
+          id: 'r1', title: 'Route 1', avg_rating: 3, send_count: 2, photo: {},
         }],
         error: null,
       });
@@ -239,10 +236,10 @@ describe('routesApi', () => {
       expect(result.data[0].sendCount).toBe(2);
     });
 
-    it('returns null avgRating when no ratings', async () => {
+    it('returns null avgRating when server returns null', async () => {
       const builder = createBuilder({
         data: [{
-          id: 'r1', sends: [{ quality_rating: null }], photo: {},
+          id: 'r1', avg_rating: null, send_count: 1, photo: {},
         }],
         error: null,
       });
@@ -326,7 +323,7 @@ describe('routesApi', () => {
       // 21 items returned for default pageSize of 20 → hasMore = true
       const items = Array.from({ length: 21 }, (_, i) => ({
         id: `r${i}`, created_at: `2024-01-${String(i + 1).padStart(2, '0')}`,
-        sends: [], photo: {},
+        avg_rating: null, send_count: 0, photo: {},
       }));
       const builder = createBuilder({ data: items, error: null });
       mockFrom.mockReturnValue(builder);
@@ -338,7 +335,7 @@ describe('routesApi', () => {
 
     it('sets hasMore false when results fit in page', async () => {
       const items = Array.from({ length: 5 }, (_, i) => ({
-        id: `r${i}`, sends: [], photo: {},
+        id: `r${i}`, avg_rating: null, send_count: 0, photo: {},
       }));
       const builder = createBuilder({ data: items, error: null });
       mockFrom.mockReturnValue(builder);
@@ -1601,7 +1598,7 @@ describe('routesApi.list - pagination edge cases', () => {
 
   it('returns hasMore=false when results exactly equal pageSize', async () => {
     const items = Array.from({ length: 5 }, (_, i) => ({
-      id: `r${i}`, sends: [], photo: {},
+      id: `r${i}`, avg_rating: null, send_count: 0, photo: {},
     }));
     const builder = createBuilder({ data: items, error: null });
     mockFrom.mockReturnValue(builder);
@@ -1613,7 +1610,7 @@ describe('routesApi.list - pagination edge cases', () => {
 
   it('returns hasMore=true with custom pageSize when results exceed it', async () => {
     const items = Array.from({ length: 4 }, (_, i) => ({
-      id: `r${i}`, sends: [], photo: {},
+      id: `r${i}`, avg_rating: null, send_count: 0, photo: {},
     }));
     const builder = createBuilder({ data: items, error: null });
     mockFrom.mockReturnValue(builder);

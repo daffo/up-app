@@ -286,7 +286,14 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      avg_rating: {
+        Args: { "": unknown }
+        Returns: number | null
+      }
+      send_count: {
+        Args: { "": unknown }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
