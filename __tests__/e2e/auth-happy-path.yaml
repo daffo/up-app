@@ -14,7 +14,7 @@ name: Auth User - Login Flow
 
 # Verify routes load
 - extendedWaitUntil:
-    visible: "[0-9]+/[0-9]+/[0-9]+"
+    visible: ".*[0-9]+/[0-9]+/[0-9]+.*"
     timeout: 15000
 
 # ============================================
@@ -151,10 +151,10 @@ name: Auth User - Login Flow
 - assertVisible: "Publish"
 
 # Send button should NOT be visible (draft routes have no sends)
-- assertNotVisible: "Send"
+- assertNotVisible: ".*Send"
 
 # Comments section should NOT be visible
-- assertNotVisible: "Add a comment..."
+- assertNotVisible: "Add a comment.*"
 
 # Share button should NOT be visible
 - assertNotVisible: "Share"
@@ -176,7 +176,7 @@ name: Auth User - Login Flow
 - assertNotVisible: "Publish"
 
 # Send button should now be visible
-- assertVisible: "Send"
+- assertVisible: ".*Send"
 
 # ============================================
 # ADD A COMMENT
@@ -190,12 +190,28 @@ name: Auth User - Login Flow
     timeout: 5000
 
 # Type a comment
-- tapOn: "Add a comment..."
+- tapOn: "Add a comment.*"
 - inputText: "E2E test comment"
 
-# Tap send button (blue circle at bottom right)
-- tapOn:
-    point: "90%, 95%"
+# Tap send button
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: "90%, 95%"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - hideKeyboard
+      - scrollUntilVisible:
+          element:
+            text: "E2E test comment"
+          direction: DOWN
+          timeout: 5000
+      - tapOn:
+          point: "92%, 92%"
 
 # Wait for comment to appear and verify Anonymous name
 - extendedWaitUntil:
@@ -216,10 +232,26 @@ name: Auth User - Login Flow
     timeout: 5000
 
 # Re-add the comment (needed for later sections)
-- tapOn: "Add a comment..."
+- tapOn: "Add a comment.*"
 - inputText: "E2E test comment"
-- tapOn:
-    point: "90%, 95%"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: "90%, 95%"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - hideKeyboard
+      - scrollUntilVisible:
+          element:
+            text: "E2E test comment"
+          direction: DOWN
+          timeout: 5000
+      - tapOn:
+          point: "92%, 92%"
 - extendedWaitUntil:
     visible: "E2E test comment"
     timeout: 5000
@@ -229,7 +261,7 @@ name: Auth User - Login Flow
 # ============================================
 
 # Tap Send button (in header)
-- tapOn: "Send"
+- tapOn: ".*Send"
 
 # Wait for send modal
 - extendedWaitUntil:
@@ -248,15 +280,15 @@ name: Auth User - Login Flow
 
 # Wait for modal to close and verify send was logged
 - waitForAnimationToEnd
-- assertVisible: "Sent"
+- assertVisible: ".*Sent"
 
 # Scroll to Rating row and tap to see sends list
 - scrollUntilVisible:
     element:
-      text: "Rating"
+      text: "Rating.*"
     direction: DOWN
     timeout: 5000
-- tapOn: "Rating"
+- tapOn: "Rating.*"
 
 # Wait for sends screen and check Anonymous is shown
 - extendedWaitUntil:
@@ -265,14 +297,14 @@ name: Auth User - Login Flow
 - assertVisible: "Anonymous"
 
 # Go back to route detail
-- pressKey: back
+- runFlow: shared/press-back.yaml
 
 # ============================================
 # EDIT THE SEND
 # ============================================
 
 # Tap Sent button to reopen modal (now shows Edit Send)
-- tapOn: "Sent"
+- tapOn: ".*Sent"
 - extendedWaitUntil:
     visible: "Edit Send"
     timeout: 5000
@@ -288,14 +320,14 @@ name: Auth User - Login Flow
 - waitForAnimationToEnd
 
 # Verify still shows Sent
-- assertVisible: "Sent"
+- assertVisible: ".*Sent"
 
 # ============================================
 # REMOVE THE SEND
 # ============================================
 
 # Tap Sent button again
-- tapOn: "Sent"
+- tapOn: ".*Sent"
 - extendedWaitUntil:
     visible: "Edit Send"
     timeout: 5000
@@ -305,14 +337,14 @@ name: Auth User - Login Flow
 - waitForAnimationToEnd
 
 # Button should revert (no longer shows "Sent")
-- assertNotVisible: "Sent"
+- assertNotVisible: ".*Sent"
 
 # ============================================
 # RE-LOG THE SEND (needed for later sections)
 # ============================================
 
 # Tap Send button to log fresh send
-- tapOn: "Send"
+- tapOn: ".*Send"
 - extendedWaitUntil:
     visible: "Log Send"
     timeout: 5000
@@ -327,7 +359,7 @@ name: Auth User - Login Flow
 - tapOn:
     point: "50%,92%"
 - waitForAnimationToEnd
-- assertVisible: "Sent"
+- assertVisible: ".*Sent"
 
 # ============================================
 # EDIT THE ROUTE
@@ -336,12 +368,12 @@ name: Auth User - Login Flow
 # Scroll to Edit Route
 - scrollUntilVisible:
     element:
-      text: "Edit Route"
+      text: "Edit Route.*"
     direction: DOWN
     timeout: 5000
 
 # Tap Edit Route
-- tapOn: "Edit Route"
+- tapOn: "Edit Route.*"
 
 # Wait for edit screen
 - extendedWaitUntil:
@@ -370,13 +402,13 @@ name: Auth User - Login Flow
 - tapOn: "OK"
 
 # Verify we're back on route detail with updated info
-- assertVisible: "E2E Test Route Updated"
+- assertVisible: ".*E2E Test Route Updated.*"
 
 # ============================================
 # BACK TO MAIN ROUTE LIST
 # ============================================
 
-- pressKey: back
+- runFlow: shared/press-back.yaml
 
 # Verify we're on home screen
 - assertVisible: "Upp"
@@ -386,14 +418,11 @@ name: Auth User - Login Flow
 # SET DISPLAY NAME IN MY ACCOUNT
 # ============================================
 
-# Open profile menu
-- tapOn: "Open menu"
-- extendedWaitUntil:
-    visible: "Settings"
-    timeout: 3000
+# Wait for navigation to settle after swipe back
+- waitForAnimationToEnd
 
-# Go to Settings
-- tapOn: "Settings"
+# Open profile menu and tap Settings
+- runFlow: shared/menu-tap-settings.yaml
 - extendedWaitUntil:
     visible: "Display Name"
     timeout: 5000
@@ -405,6 +434,26 @@ name: Auth User - Login Flow
 - assertVisible:
     text: ".*Italiano.*"
 
+# Enter display name — tap placeholder to target the TextInput, not the label
+- tapOn:
+    text: "Enter your display name"
+    optional: true
+- runFlow:
+    when:
+      notVisible: "Enter your display name"
+    commands:
+      - tapOn: "Display Name"
+- eraseText: 50
+- inputText: "E2E Tester"
+- hideKeyboard
+
+# Save
+- tapOn: "Save"
+- extendedWaitUntil:
+    visible: "Success"
+    timeout: 5000
+- tapOn: "OK"
+
 # Verify version is displayed
 - scrollUntilVisible:
     element: "Version ${APP_VERSION}"
@@ -413,56 +462,42 @@ name: Auth User - Login Flow
     timeout: 5000
 - assertVisible: "Version ${APP_VERSION}"
 
-# Enter display name
-- tapOn: "Display Name"
-- inputText: "E2E Tester"
-
-# Save
-- hideKeyboard
-- tapOn: "Save"
-- extendedWaitUntil:
-    visible: "Success"
-    timeout: 5000
-- tapOn: "OK"
-
 # Go back to home
-- pressKey: back
+- runFlow: shared/press-back.yaml
 
 # ============================================
 # CHECK MY COMMENTS
 # ============================================
 
 # Open profile menu
-- tapOn: "Open menu"
-- tapOn: "My Comments"
+- runFlow: shared/menu-tap-my-comments.yaml
 - extendedWaitUntil:
-    visible: "E2E test comment"
+    visible: ".*E2E test comment.*"
     timeout: 5000
 
 # Tap comment to go to route
-- tapOn: "E2E test comment"
+- tapOn: ".*E2E test comment.*"
 - extendedWaitUntil:
     visible: "Route Details"
     timeout: 5000
-- assertVisible: "E2E Test Route Updated"
+- assertVisible: ".*E2E Test Route Updated.*"
 
 # Go back twice (to My Comments, then to Home)
-- pressKey: back
-- pressKey: back
+- runFlow: shared/press-back.yaml
+- runFlow: shared/press-back.yaml
 
 # ============================================
 # CHECK MY SENDS
 # ============================================
 
 # Open profile menu
-- tapOn: "Open menu"
-- tapOn: "My Sends"
+- runFlow: shared/menu-tap-my-sends.yaml
 - extendedWaitUntil:
-    visible: "E2E Test Route Updated"
+    visible: ".*E2E Test Route Updated.*"
     timeout: 5000
 
 # Tap send to go to route
-- tapOn: "E2E Test Route Updated"
+- tapOn: ".*E2E Test Route Updated.*"
 - extendedWaitUntil:
     visible: "Route Details"
     timeout: 5000
@@ -470,24 +505,24 @@ name: Auth User - Login Flow
 # Scroll down to see comment with new display name
 - scrollUntilVisible:
     element:
-      text: "E2E test comment"
+      text: ".*E2E test comment.*"
     direction: DOWN
     timeout: 5000
 
 # Verify display name changed from Anonymous to E2E Tester
-- assertVisible: "E2E Tester"
-- assertVisible: "E2E test comment"
+- assertVisible: ".*E2E Tester.*"
+- assertVisible: ".*E2E test comment.*"
 
 # Tap username to see user's sends
-- tapOn: "E2E Tester"
+- tapOn: ".*E2E Tester.*"
 - extendedWaitUntil:
-    visible: "E2E Test Route Updated"
+    visible: ".*E2E Test Route Updated.*"
     timeout: 5000
 
 # Go back to home (User Profile → Route Details → My Sends → Home)
-- pressKey: back
-- pressKey: back
-- pressKey: back
+- runFlow: shared/press-back.yaml
+- runFlow: shared/press-back.yaml
+- runFlow: shared/press-back.yaml
 - assertVisible: "Upp"
 
 # ============================================
@@ -495,14 +530,13 @@ name: Auth User - Login Flow
 # ============================================
 
 # Open profile menu
-- tapOn: "Open menu"
-- tapOn: "Settings"
+- runFlow: shared/menu-tap-settings.yaml
 - extendedWaitUntil:
     visible: "Display Name"
     timeout: 5000
 
-# Clear display name
-- tapOn: "Display Name"
+# Clear display name — tap the input value directly
+- tapOn: "E2E Tester"
 - eraseText: 20
 - hideKeyboard
 
@@ -512,6 +546,9 @@ name: Auth User - Login Flow
     visible: "Success"
     timeout: 5000
 - tapOn: "OK"
+
+# Verify name was cleared — placeholder should be back
+- assertVisible: "Enter your display name"
 
 # ============================================
 # TEST DELETE ACCOUNT (double confirmation)
@@ -548,7 +585,7 @@ name: Auth User - Login Flow
 - tapOn: "Cancel"
 
 # Go back to home
-- pressKey: back
+- runFlow: shared/press-back.yaml
 - assertVisible: "Upp"
 
 # ============================================
@@ -570,12 +607,12 @@ name: Auth User - Login Flow
 - tapOn: "Search by name or description"
 - inputText: "xyznonexistent"
 
-# Close filters (hideKeyboard dismisses modal)
+# Close filters
 - hideKeyboard
 - waitForAnimationToEnd
 
 # Verify no routes shown (empty state or no matches)
-- assertNotVisible: "E2E Test Route Updated"
+- assertNotVisible: ".*E2E Test Route Updated.*"
 
 # Tap on the search filter chip to remove it (keep My Routes filter)
 - tapOn: "Clear search filter"
@@ -583,7 +620,7 @@ name: Auth User - Login Flow
 
 # Verify route is now visible
 - extendedWaitUntil:
-    visible: "E2E Test Route Updated"
+    visible: ".*E2E Test Route Updated.*"
     timeout: 5000
 
 # ============================================
@@ -600,13 +637,13 @@ name: Auth User - Login Flow
 - tapOn: "Grade"
 - inputText: "V3"
 
-# Close filters (hideKeyboard dismisses modal)
+# Close filters
 - hideKeyboard
 - waitForAnimationToEnd
 
 # Route should still be visible (it's V3)
 - extendedWaitUntil:
-    visible: "E2E Test Route Updated"
+    visible: ".*E2E Test Route Updated.*"
     timeout: 5000
 
 # Reopen filters and change to non-matching grade
@@ -621,7 +658,7 @@ name: Auth User - Login Flow
 - waitForAnimationToEnd
 
 # Route should NOT be visible
-- assertNotVisible: "E2E Test Route Updated"
+- assertNotVisible: ".*E2E Test Route Updated.*"
 
 # Clear grade filter via chip
 - tapOn: "Clear grade filter"
@@ -629,7 +666,7 @@ name: Auth User - Login Flow
 
 # Route should be visible again
 - extendedWaitUntil:
-    visible: "E2E Test Route Updated"
+    visible: ".*E2E Test Route Updated.*"
     timeout: 5000
 
 # ============================================
@@ -644,9 +681,9 @@ name: Auth User - Login Flow
 
 # Tap Past — route is on active wall, should not be visible
 - tapOn: "Past"
-- hideKeyboard
+- tapOn: "Done"
 - waitForAnimationToEnd
-- assertNotVisible: "E2E Test Route Updated"
+- assertNotVisible: ".*E2E Test Route Updated.*"
 
 # Open filters and tap All — route should be visible again
 - tapOn: "Open filters"
@@ -654,10 +691,10 @@ name: Auth User - Login Flow
     visible: "Filters"
     timeout: 5000
 - tapOn: "All"
-- hideKeyboard
+- tapOn: "Done"
 - waitForAnimationToEnd
 - extendedWaitUntil:
-    visible: "E2E Test Route Updated"
+    visible: ".*E2E Test Route Updated.*"
     timeout: 5000
 
 # Leave wall status on "All" — will verify it persists across logout later
@@ -667,7 +704,7 @@ name: Auth User - Login Flow
 # ============================================
 
 # Tap on the route to go to details
-- tapOn: "E2E Test Route Updated"
+- tapOn: ".*E2E Test Route Updated.*"
 - extendedWaitUntil:
     visible: "Route Details"
     timeout: 5000
@@ -675,10 +712,10 @@ name: Auth User - Login Flow
 # Scroll to and tap Edit Route
 - scrollUntilVisible:
     element:
-      text: "Edit Route"
+      text: "Edit Route.*"
     direction: DOWN
     timeout: 5000
-- tapOn: "Edit Route"
+- tapOn: "Edit Route.*"
 - extendedWaitUntil:
     visible: "Edit Route"
     timeout: 5000
@@ -694,9 +731,19 @@ name: Auth User - Login Flow
 
 # Confirm deletion in alert
 - extendedWaitUntil:
-    visible: "Delete"
+    visible: "Delete Route"
     timeout: 3000
-- tapOn: "Delete"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Delete"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: "68%,58%"
 
 # Handle deleted alert
 - extendedWaitUntil:
@@ -710,7 +757,7 @@ name: Auth User - Login Flow
     timeout: 5000
 
 # My Routes filter should still be active, verify no routes
-- assertVisible: "My Routes"
+- assertVisible: "Clear my routes filter"
 - assertVisible: "No routes yet"
 
 # ============================================
@@ -721,11 +768,7 @@ name: Auth User - Login Flow
 # "My Routes" is active — logout should clear it (user-specific filter).
 
 # Logout via profile menu
-- tapOn: "Open menu"
-- extendedWaitUntil:
-    visible: "Logout"
-    timeout: 3000
-- tapOn: "Logout"
+- runFlow: shared/menu-tap-logout.yaml
 
 # Verify we're in guest state (Login button appears)
 - extendedWaitUntil:
@@ -733,7 +776,7 @@ name: Auth User - Login Flow
     timeout: 5000
 
 # Verify wall filter survived logout — "All" chip should still be visible
-- assertVisible: "All"
+- assertVisible: "Clear wall filter"
 
 # Verify "My Routes" was cleared (user-specific filter)
 - assertNotVisible: "My Routes"
@@ -744,7 +787,7 @@ name: Auth User - Login Flow
     visible: "Log In"
     timeout: 5000
 - assertVisible: "Email"
-- pressKey: back
+- runFlow: shared/press-back.yaml
 
 # Log back in (inline — cannot use auth-login.yaml because it runs clearState)
 - tapOn: "Login"
@@ -756,13 +799,21 @@ name: Auth User - Login Flow
 - tapOn: "Password"
 - inputText: ${E2E_TEST_PASSWORD}
 - tapOn: "Log In"
+
+# iOS may show "Save Password?" dialog — dismiss it
+- runFlow:
+    when:
+      visible: "Save Password?"
+    commands:
+      - tapOn: "Not Now"
+
 - extendedWaitUntil:
     visible: "Upp"
     timeout: 10000
 - assertNotVisible: "Login"
 
 # Verify wall filter still persisted after re-login
-- assertVisible: "All"
+- assertVisible: "Clear wall filter"
 
 # ============================================
 # TEST COMPLETE

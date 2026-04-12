@@ -5,24 +5,26 @@ name: Test Setup
 - clearState
 - launchApp
 
-# Dev client launcher - tap the dev server
-- extendedWaitUntil:
-    visible: "http://10.0.2.2:8081"
-    timeout: 10000
-- tapOn: "http://10.0.2.2:8081"
+# Dev client launcher - tap the dev server entry
+- tapOn: ".*8081"
 
-# Wait for welcome modal, then dismiss it
-- extendedWaitUntil:
-    visible: "Continue"
-    timeout: 30000
-- tapOn: "Continue"
+# Welcome modal — only appears on first launch with dev client
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
 
-# Dev tools sheet opens automatically — disable floating button and dismiss
-- extendedWaitUntil:
-    visible: "Tools button"
-    timeout: 10000
-- tapOn: "Tools button"
-- pressKey: back
+# Dev tools sheet opens automatically on Android — disable floating button and dismiss
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: "Tools button"
+          timeout: 10000
+      - tapOn: "Tools button"
+      - pressKey: back
 
 # Wait for app Home screen
 - extendedWaitUntil:

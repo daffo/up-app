@@ -1,0 +1,16 @@
+appId: com.daffo.upapp
+name: Open menu and tap My Sends
+---
+- tapOn: "Open menu"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "My Sends"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: "75%,18%"

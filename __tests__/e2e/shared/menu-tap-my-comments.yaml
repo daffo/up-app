@@ -1,0 +1,16 @@
+appId: com.daffo.upapp
+name: Open menu and tap My Comments
+---
+- tapOn: "Open menu"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "My Comments"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: "75%,22%"

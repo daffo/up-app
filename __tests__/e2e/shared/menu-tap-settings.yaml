@@ -1,0 +1,16 @@
+appId: com.daffo.upapp
+name: Open menu and tap Settings
+---
+- tapOn: "Open menu"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Settings"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: "75%,27%"

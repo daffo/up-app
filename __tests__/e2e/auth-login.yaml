@@ -21,8 +21,16 @@ name: Auth - Login Flow
 # Submit
 - tapOn: "Log In"
 
+# iOS may show "Save Password?" dialog — dismiss it
+- runFlow:
+    when:
+      visible: "Save Password?"
+    commands:
+      - tapOn: "Not Now"
+
 # Should be back on Home, logged in
 - extendedWaitUntil:
     visible: "Upp"
     timeout: 10000
+
 - assertNotVisible: "Login"
