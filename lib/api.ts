@@ -516,21 +516,6 @@ export const userProfilesApi = {
   },
 };
 
-/**
- * Enrich an array of items that have a user_id field with display names.
- * Uses batch profile fetch (single DB query) instead of N individual queries.
- */
-export async function enrichWithDisplayNames<T extends { user_id: string }>(
-  items: T[],
-): Promise<(T & { displayName?: string })[]> {
-  const userIds = items.map(item => item.user_id);
-  const profileMap = await userProfilesApi.getMany(userIds);
-  return items.map(item => ({
-    ...item,
-    displayName: profileMap.get(item.user_id)?.display_name || undefined,
-  }));
-}
-
 // Sends API
 export const sendsApi = {
   async listByRoute(routeId: string): Promise<Send[]> {

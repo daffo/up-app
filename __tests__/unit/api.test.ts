@@ -5,7 +5,6 @@ import {
   photosApi,
   detectedHoldsApi,
   userProfilesApi,
-  enrichWithDisplayNames,
   sendsApi,
   commentsApi,
   accountApi,
@@ -1115,81 +1114,6 @@ describe('userProfilesApi', () => {
 
       await expect(userProfilesApi.getMany(['u1'])).rejects.toEqual({ message: 'fail' });
     });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// enrichWithDisplayNames
-// ---------------------------------------------------------------------------
-describe('enrichWithDisplayNames', () => {
-  beforeEach(() => {
-    userProfilesApi._clearCache();
-  });
-
-  it('adds displayName to items from profiles', async () => {
-    const builder = createBuilder({
-      data: [{ user_id: 'u1', display_name: 'Alice' }],
-      error: null,
-    });
-    mockFrom.mockReturnValue(builder);
-
-    const result = await enrichWithDisplayNames([
-      { user_id: 'u1', id: 'item1' } as any,
-    ]);
-    expect(result).toEqual([
-      { user_id: 'u1', id: 'item1', displayName: 'Alice' },
-    ]);
-  });
-
-  it('fetches 3 unique users in a single bulk query for 5 items', async () => {
-    const builder = createBuilder({
-      data: [
-        { user_id: 'u1', display_name: 'Alice' },
-        { user_id: 'u2', display_name: 'Bob' },
-        { user_id: 'u3', display_name: 'Carol' },
-      ],
-      error: null,
-    });
-    mockFrom.mockReturnValue(builder);
-
-    mockFrom.mockClear();
-
-    const items = [
-      { user_id: 'u1', id: 'c1' },
-      { user_id: 'u2', id: 'c2' },
-      { user_id: 'u1', id: 'c3' },
-      { user_id: 'u3', id: 'c4' },
-      { user_id: 'u2', id: 'c5' },
-    ] as any[];
-
-    const result = await enrichWithDisplayNames(items);
-
-    // Single DB call for 3 unique users, not 5 individual calls
-    expect(mockFrom).toHaveBeenCalledTimes(1);
-    expect(builder.in).toHaveBeenCalledWith('user_id', ['u1', 'u2', 'u3']);
-
-    // All 5 items enriched correctly
-    expect(result).toHaveLength(5);
-    expect(result[0].displayName).toBe('Alice');
-    expect(result[1].displayName).toBe('Bob');
-    expect(result[2].displayName).toBe('Alice');
-    expect(result[3].displayName).toBe('Carol');
-    expect(result[4].displayName).toBe('Bob');
-  });
-
-  it('sets displayName to undefined when profile not found', async () => {
-    const builder = createBuilder({ data: [], error: null });
-    mockFrom.mockReturnValue(builder);
-
-    const result = await enrichWithDisplayNames([
-      { user_id: 'u1', id: 'item1' } as any,
-    ]);
-    expect(result[0].displayName).toBeUndefined();
-  });
-
-  it('handles empty array', async () => {
-    const result = await enrichWithDisplayNames([]);
-    expect(result).toEqual([]);
   });
 });
 
