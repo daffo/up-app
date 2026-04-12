@@ -9,16 +9,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Comment } from '../types/database.types';
-import { commentsApi, enrichWithDisplayNames } from '../lib/api';
+import { commentsApi } from '../lib/api';
 import { useThemeColors } from '../lib/theme-context';
 import TrimmedTextInput from './TrimmedTextInput';
 import UserNameLink from './UserNameLink';
 import { formatRelativeDate } from '../utils/date';
 import { useApiQuery } from '../hooks/useApiQuery';
-
-interface CommentWithProfile extends Comment {
-  displayName?: string;
-}
+import { useUserProfiles } from '../hooks/useUserProfiles';
 
 interface CommentsSectionProps {
   routeId: string;
@@ -31,13 +28,12 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { data: comments, loading } = useApiQuery(
-    async () => {
-      const data = await commentsApi.listByRoute(routeId);
-      return enrichWithDisplayNames(data);
-    },
+    () => commentsApi.listByRoute(routeId),
     [routeId],
-    { cacheKey: 'comments', initialData: [] as CommentWithProfile[] },
+    { cacheKey: 'comments', initialData: [] as Comment[] },
   );
+
+  const { profileMap } = useUserProfiles(comments.map(c => c.user_id));
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -90,7 +86,7 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
                   <View style={styles.commentHeader}>
                     <UserNameLink
                       userId={comment.user_id}
-                      displayName={comment.displayName}
+                      displayName={profileMap[comment.user_id]}
                       style={[styles.commentAuthor, { color: colors.textPrimary }]}
                     />
                     <Text style={[styles.commentDate, { color: colors.textTertiary }]}>

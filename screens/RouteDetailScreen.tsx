@@ -14,7 +14,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Database, DetectedHold, Send } from '../types/database.types';
-import { routesApi, detectedHoldsApi, userProfilesApi, sendsApi } from '../lib/api';
+import { routesApi, detectedHoldsApi, sendsApi } from '../lib/api';
+import { useUserProfiles } from '../hooks/useUserProfiles';
 import RouteVisualization from '../components/RouteVisualization';
 import SendButton from '../components/SendButton';
 import CommentsSection from '../components/CommentsSection';
@@ -32,7 +33,6 @@ type Photo = Database['public']['Tables']['photos']['Row'];
 
 interface RouteWithPhoto extends Route {
   photo?: Photo;
-  creatorDisplayName?: string;
 }
 
 export default function RouteDetailScreen({ route, navigation }: ScreenProps<'RouteDetail'>) {
@@ -46,31 +46,23 @@ export default function RouteDetailScreen({ route, navigation }: ScreenProps<'Ro
   const { data: routeDetail, loading, error } = useApiQuery(
     async () => {
       const fetchedRoute = await routesApi.get(routeId);
-      const [creatorDisplayName, detectedHoldsData] = await Promise.all([
-        (async () => {
-          if (!fetchedRoute?.user_id) return undefined;
-          try {
-            const profile = await userProfilesApi.get(fetchedRoute.user_id);
-            return profile?.display_name || undefined;
-          } catch { return undefined; }
-        })(),
-        (async () => {
-          if (!fetchedRoute?.photo_id) return { detectedHolds: [] as DetectedHold[] };
-          try {
-            const holdsVersion = (fetchedRoute as any).photo?.holds_version;
-            const holds = await detectedHoldsApi.listByPhoto(fetchedRoute.photo_id, holdsVersion);
-            return { detectedHolds: holds };
-          } catch { return { detectedHolds: [] as DetectedHold[] }; }
-        })(),
-      ]);
+      let detectedHoldsData: DetectedHold[] = [];
+      if (fetchedRoute?.photo_id) {
+        try {
+          const holdsVersion = (fetchedRoute as any).photo?.holds_version;
+          detectedHoldsData = await detectedHoldsApi.listByPhoto(fetchedRoute.photo_id, holdsVersion);
+        } catch { /* fallback to empty */ }
+      }
       return {
-        route: { ...fetchedRoute, creatorDisplayName } as RouteWithPhoto,
-        detectedHolds: detectedHoldsData.detectedHolds,
+        route: fetchedRoute as RouteWithPhoto,
+        detectedHolds: detectedHoldsData,
       };
     },
     [routeId],
     { cacheKey: 'route' },
   );
+
+  const { profileMap } = useUserProfiles([routeDetail?.route?.user_id]);
 
   const { data: sends } = useApiQuery(
     () => sendsApi.listByRoute(routeId),
@@ -194,7 +186,7 @@ export default function RouteDetailScreen({ route, navigation }: ScreenProps<'Ro
           <Text style={[styles.detailLabel, { color: colors.textPrimary }]}>{t('route.createdBy')}</Text>
           <UserNameLink
             userId={routeData.user_id}
-            displayName={routeData.creatorDisplayName}
+            displayName={profileMap[routeData.user_id]}
             style={[styles.detailValue, { color: colors.textSecondary }]}
           />
         </View>

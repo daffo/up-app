@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { sendsApi, enrichWithDisplayNames } from '../lib/api';
+import { sendsApi } from '../lib/api';
 import { Send } from '../types/database.types';
 import { useThemeColors } from '../lib/theme-context';
 import UserNameLink from '../components/UserNameLink';
@@ -16,9 +16,8 @@ import SafeScreen from '../components/SafeScreen';
 import ListItemWithRoute from '../components/ListItemWithRoute';
 import DataListView from '../components/DataListView';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { useUserProfiles } from '../hooks/useUserProfiles';
 import { ScreenProps } from '../navigation/types';
-
-type SendWithProfile = Send & { displayName?: string };
 
 export default function RouteSendsScreen({ route }: ScreenProps<'RouteSends'>) {
   const { t } = useTranslation();
@@ -26,22 +25,21 @@ export default function RouteSendsScreen({ route }: ScreenProps<'RouteSends'>) {
   const { routeId } = route.params;
 
   const { data: sends, loading, refreshing, refresh } = useApiQuery(
-    async () => {
-      const data = await sendsApi.listByRoute(routeId);
-      return enrichWithDisplayNames(data);
-    },
+    () => sendsApi.listByRoute(routeId),
     [routeId],
-    { cacheKey: 'sends', initialData: [] as SendWithProfile[] },
+    { cacheKey: 'sends', initialData: [] as Send[] },
   );
 
-  const renderSend = ({ item: send }: { item: SendWithProfile }) => (
+  const { profileMap } = useUserProfiles(sends.map(s => s.user_id));
+
+  const renderSend = ({ item: send }: { item: Send }) => (
     <ListItemWithRoute
       title=""
       header={
         <View style={styles.sendHeader}>
           <UserNameLink
             userId={send.user_id}
-            displayName={send.displayName}
+            displayName={profileMap[send.user_id]}
             style={[styles.sendUser, { color: colors.textPrimary }]}
           />
           <Text style={[styles.sendDate, { color: colors.textTertiary }]}>{formatRelativeDate(send.sent_at)}</Text>

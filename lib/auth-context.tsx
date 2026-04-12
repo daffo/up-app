@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { accountApi } from './api';
+import { clearProfileSessionCache } from '../hooks/useUserProfiles';
 
 const PASSWORD_RECOVERY_KEY = '@password_recovery_pending';
 
@@ -208,6 +209,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore errors - just clear local state
     }
+
+    clearProfileSessionCache();
 
     // Force update local state — signOut() already clears its own storage
     setSession(null);
