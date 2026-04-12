@@ -1552,3 +1552,84 @@ describe('routesApi.list - pagination edge cases', () => {
     expect(builder.limit).toHaveBeenCalledWith(11);
   });
 });
+
+// ---------------------------------------------------------------------------
+// routesApi.getWithDetails
+// ---------------------------------------------------------------------------
+describe('routesApi.getWithDetails', () => {
+  it('returns route and detected holds for a valid route', async () => {
+    const mockRoute = {
+      id: 'route-1',
+      photo_id: 'photo-1',
+      title: 'Test Route',
+      photo: { id: 'photo-1', holds_version: 2 },
+    };
+    const mockHolds = [
+      { id: 'hold-1', photo_id: 'photo-1', polygon: [] },
+      { id: 'hold-2', photo_id: 'photo-1', polygon: [] },
+    ];
+
+    // First call: routesApi.get (routes table)
+    const routeBuilder = createBuilder({ data: mockRoute, error: null });
+    // Second call: detectedHoldsApi.listByPhoto (detected_holds table)
+    const holdsBuilder = createBuilder({ data: mockHolds, error: null });
+
+    mockFrom
+      .mockReturnValueOnce(routeBuilder)
+      .mockReturnValueOnce(holdsBuilder);
+
+    const result = await routesApi.getWithDetails('route-1');
+
+    expect(result.route).toEqual(mockRoute);
+    expect(result.detectedHolds).toEqual(mockHolds);
+  });
+
+  it('returns null route and empty detected holds for non-existent route', async () => {
+    const routeBuilder = createBuilder({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(routeBuilder);
+
+    const result = await routesApi.getWithDetails('non-existent');
+
+    expect(result.route).toBeNull();
+    expect(result.detectedHolds).toEqual([]);
+  });
+
+  it('returns route with empty detected holds when route has no photo_id', async () => {
+    const mockRoute = {
+      id: 'route-1',
+      photo_id: null,
+      title: 'No Photo Route',
+    };
+    const routeBuilder = createBuilder({ data: mockRoute, error: null });
+    mockFrom.mockReturnValueOnce(routeBuilder);
+
+    const result = await routesApi.getWithDetails('route-1');
+
+    expect(result.route).toEqual(mockRoute);
+    expect(result.detectedHolds).toEqual([]);
+    // Should only have called from('routes'), not from('detected_holds')
+    const fromCalls = mockFrom.mock.calls.map((c: any[]) => c[0]);
+    const callsInThisTest = fromCalls.slice(-1);
+    expect(callsInThisTest).toEqual(['routes']);
+  });
+
+  it('returns route with empty detected holds when detected holds fetch fails', async () => {
+    const mockRoute = {
+      id: 'route-1',
+      photo_id: 'photo-1',
+      title: 'Test Route',
+      photo: { id: 'photo-1', holds_version: 1 },
+    };
+    const routeBuilder = createBuilder({ data: mockRoute, error: null });
+    const holdsBuilder = createBuilder({ data: null, error: { message: 'fetch error' } });
+
+    mockFrom
+      .mockReturnValueOnce(routeBuilder)
+      .mockReturnValueOnce(holdsBuilder);
+
+    const result = await routesApi.getWithDetails('route-1');
+
+    expect(result.route).toEqual(mockRoute);
+    expect(result.detectedHolds).toEqual([]);
+  });
+});

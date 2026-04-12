@@ -232,6 +232,25 @@ export const routesApi = {
     invalidateRoutes();
     invalidateRoute();
   },
+
+  async getWithDetails(routeId: string): Promise<{ route: (Route & { photo?: Photo }) | null; detectedHolds: DetectedHold[] }> {
+    const fetchedRoute = await routesApi.get(routeId);
+    if (!fetchedRoute) {
+      return { route: null, detectedHolds: [] };
+    }
+
+    let detectedHolds: DetectedHold[] = [];
+    if (fetchedRoute.photo_id) {
+      try {
+        const holdsVersion = (fetchedRoute as any).photo?.holds_version;
+        detectedHolds = await detectedHoldsApi.listByPhoto(fetchedRoute.photo_id, holdsVersion);
+      } catch {
+        // Fallback to empty detected holds
+      }
+    }
+
+    return { route: fetchedRoute, detectedHolds };
+  },
 };
 
 // Photos API

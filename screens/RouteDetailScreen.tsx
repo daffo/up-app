@@ -13,8 +13,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Database, DetectedHold, Send } from '../types/database.types';
-import { routesApi, detectedHoldsApi, sendsApi } from '../lib/api';
+import { Database, Send } from '../types/database.types';
+import { routesApi, sendsApi } from '../lib/api';
 import { useUserProfiles } from '../hooks/useUserProfiles';
 import RouteVisualization from '../components/RouteVisualization';
 import SendButton from '../components/SendButton';
@@ -44,20 +44,7 @@ export default function RouteDetailScreen({ route, navigation }: ScreenProps<'Ro
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const { data: routeDetail, loading, error } = useApiQuery(
-    async () => {
-      const fetchedRoute = await routesApi.get(routeId);
-      let detectedHoldsData: DetectedHold[] = [];
-      if (fetchedRoute?.photo_id) {
-        try {
-          const holdsVersion = (fetchedRoute as any).photo?.holds_version;
-          detectedHoldsData = await detectedHoldsApi.listByPhoto(fetchedRoute.photo_id, holdsVersion);
-        } catch { /* fallback to empty */ }
-      }
-      return {
-        route: fetchedRoute as RouteWithPhoto,
-        detectedHolds: detectedHoldsData,
-      };
-    },
+    () => routesApi.getWithDetails(routeId),
     [routeId],
     { cacheKey: 'route' },
   );
