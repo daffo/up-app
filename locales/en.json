@@ -23,7 +23,6 @@
     "managePhotos": "Manage Photos",
     "photoDetails": "Photo Details",
     "settings": "Settings",
-    "mySends": "My Sends",
     "myLogs": "My Logs",
     "mySaved": "Saved",
     "myComments": "My Comments",
@@ -208,7 +207,6 @@
   "menu": {
     "openMenu": "Open menu",
     "settings": "Settings",
-    "mySends": "My Sends",
     "myLogs": "My Logs",
     "mySaved": "Saved",
     "myComments": "My Comments",
