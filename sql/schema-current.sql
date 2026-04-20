@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-012-logs-and-bookmarks
+-- Last updated: After migration-013-stats-on-logs
 
 -- ============================================================================
 -- TABLES
@@ -376,21 +376,31 @@ CREATE POLICY "Admins can view all activity"
 -- COMPUTED COLUMN FUNCTIONS (PostgREST virtual columns)
 -- ============================================================================
 
--- Average quality rating for a route (computed from sends)
+-- Average quality rating for a route (any log status — attempts can rate too)
 CREATE OR REPLACE FUNCTION avg_rating(route routes)
 RETURNS NUMERIC AS $$
-  SELECT AVG(s.quality_rating)::NUMERIC
-  FROM sends s
-  WHERE s.route_id = route.id
-    AND s.quality_rating IS NOT NULL;
+  SELECT AVG(l.quality_rating)::NUMERIC
+  FROM logs l
+  WHERE l.route_id = route.id
+    AND l.quality_rating IS NOT NULL;
 $$ LANGUAGE sql STABLE;
 
--- Number of sends for a route
+-- Number of sends for a route (status='sent')
 CREATE OR REPLACE FUNCTION send_count(route routes)
 RETURNS BIGINT AS $$
   SELECT COUNT(*)
-  FROM sends s
-  WHERE s.route_id = route.id;
+  FROM logs l
+  WHERE l.route_id = route.id
+    AND l.status = 'sent';
+$$ LANGUAGE sql STABLE;
+
+-- Number of attempts for a route (status='attempted')
+CREATE OR REPLACE FUNCTION attempt_count(route routes)
+RETURNS BIGINT AS $$
+  SELECT COUNT(*)
+  FROM logs l
+  WHERE l.route_id = route.id
+    AND l.status = 'attempted';
 $$ LANGUAGE sql STABLE;
 
 -- ============================================================================
