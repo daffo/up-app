@@ -39,6 +39,12 @@ export interface RouteFilters {
   grade?: string;
   search?: string;
   wallStatus?: "active" | "past" | "all";
+  /**
+   * Restrict the list to these route ids. Used by FEAT-2 relationship chips
+   * (Saved / Attempted / Sent) where the caller resolves the id set from
+   * bookmarks / logs and feeds it here. Empty array = no matches.
+   */
+  routeIds?: string[];
 }
 
 export interface Send {

@@ -237,7 +237,10 @@
     "wallActive": "Active",
     "wallPast": "Past",
     "wallAll": "All",
-    "clearWall": "Clear wall filter"
+    "clearWall": "Clear wall filter",
+    "saved": "Saved",
+    "attempted": "Attempted",
+    "sent": "Sent"
   },
   "auth": {
     "subtitle": "The app for Up",

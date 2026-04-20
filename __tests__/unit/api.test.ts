@@ -315,6 +315,24 @@ describe("routesApi", () => {
       expect(builder.eq).toHaveBeenCalledWith("user_id", "u1");
     });
 
+    it("applies routeIds filter via .in when non-empty", async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list({ routeIds: ["r1", "r2"] });
+      expect(builder.in).toHaveBeenCalledWith("id", ["r1", "r2"]);
+    });
+
+    it("short-circuits to empty result when routeIds is []", async () => {
+      const builder = createBuilder({ data: [{ id: "r1" }], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      const result = await routesApi.list({ routeIds: [] });
+      expect(result).toEqual({ data: [], hasMore: false });
+      // Query should not fire — no .in call, no await on builder
+      expect(builder.in).not.toHaveBeenCalled();
+    });
+
     it("applies grade filter", async () => {
       const builder = createBuilder({ data: [], error: null });
       mockFrom.mockReturnValue(builder);

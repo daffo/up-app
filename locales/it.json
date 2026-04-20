@@ -237,7 +237,10 @@
     "wallActive": "Attive",
     "wallPast": "Passate",
     "wallAll": "Tutte",
-    "clearWall": "Rimuovi filtro parete"
+    "clearWall": "Rimuovi filtro parete",
+    "saved": "Salvate",
+    "attempted": "Tentate",
+    "sent": "Chiuse"
   },
   "auth": {
     "subtitle": "L'app per la Up",

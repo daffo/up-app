@@ -147,6 +147,14 @@ export const routesApi = {
       query = query.eq("user_id", filters.creatorId);
     }
 
+    if (filters?.routeIds) {
+      if (filters.routeIds.length === 0) {
+        // Empty set means no matches — skip the query entirely.
+        return { data: [], hasMore: false };
+      }
+      query = query.in("id", filters.routeIds);
+    }
+
     if (filters?.grade) {
       const safeGrade = filters.grade.replace(/[%_]/g, (ch) => `\\${ch}`);
       query = query.ilike("grade", `%${safeGrade}%`);

@@ -9,8 +9,11 @@ import { RouteFilters } from "../types/database.types";
 import RouteList from "../components/RouteList";
 import ProfileDropdown from "../components/ProfileDropdown";
 import FilterModal from "../components/FilterModal";
+import { bookmarksApi, logsApi } from "../lib/api";
 import { useThemeColors } from "../lib/theme-context";
 import { ScreenProps } from "../navigation/types";
+
+type RelationshipKind = "saved" | "attempted" | "sent";
 
 const FILTERS_STORAGE_KEY = "route_filters";
 
@@ -24,6 +27,9 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
   const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const prevUserIdRef = useRef<string | undefined>(undefined);
+  const [relationshipKinds, setRelationshipKinds] = useState<
+    Set<RelationshipKind>
+  >(new Set());
 
   const wallStatus = filters.wallStatus ?? "active";
   const hasActiveFilters =
@@ -60,10 +66,63 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
     }
   }, [user?.id, filtersLoaded]);
 
-  // Save filters to storage when they change
+  // Save filters to storage when they change. routeIds is session-only.
   const handleApplyFilters = (newFilters: RouteFilters) => {
     setFilters(newFilters);
-    AsyncStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(newFilters));
+    const { routeIds, ...persistable } = newFilters;
+    AsyncStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(persistable));
+  };
+
+  // Resolve route ids from selected relationship chips (saved/attempted/sent).
+  // Session-only — not persisted across restarts (per spec default).
+  useEffect(() => {
+    if (!user || relationshipKinds.size === 0) {
+      setFilters((f) => {
+        if (f.routeIds === undefined) return f;
+        const { routeIds, ...rest } = f;
+        return rest;
+      });
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const ids = new Set<string>();
+        if (relationshipKinds.has("saved")) {
+          const bms = await bookmarksApi.list(user.id);
+          bms.forEach((b) => ids.add(b.route.id));
+        }
+        if (relationshipKinds.has("sent")) {
+          const logs = await logsApi.listByUser(user.id, "sent");
+          logs.forEach((l) => ids.add(l.route.id));
+        }
+        if (relationshipKinds.has("attempted")) {
+          const logs = await logsApi.listByUser(user.id, "attempted");
+          logs.forEach((l) => ids.add(l.route.id));
+        }
+        if (!cancelled) {
+          setFilters((f) => ({ ...f, routeIds: Array.from(ids) }));
+        }
+      } catch (err) {
+        console.error("Error resolving relationship filter:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, relationshipKinds]);
+
+  const toggleRelationship = (kind: RelationshipKind) => {
+    if (!user) {
+      requireAuth(() => {}, "Home");
+      return;
+    }
+    setRelationshipKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(kind)) next.delete(kind);
+      else next.add(kind);
+      return next;
+    });
   };
 
   const handleAddRoute = () => {
@@ -147,6 +206,44 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
         </View>
 
         <View style={styles.activeFiltersBar}>
+          {(["saved", "attempted", "sent"] as RelationshipKind[]).map(
+            (kind) => {
+              const active = relationshipKinds.has(kind);
+              return (
+                <TouchableOpacity
+                  key={kind}
+                  style={[
+                    styles.filterChip,
+                    {
+                      backgroundColor: active
+                        ? colors.primaryLight
+                        : colors.borderLight,
+                    },
+                  ]}
+                  onPress={() => toggleRelationship(kind)}
+                  accessibilityLabel={t(`filters.${kind}`)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      {
+                        color: active ? colors.primary : colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    {t(`filters.${kind}`)}
+                  </Text>
+                  {active && (
+                    <Ionicons
+                      name="close-circle"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            },
+          )}
           <TouchableOpacity
             style={[
               styles.filterChip,
