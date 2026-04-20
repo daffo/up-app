@@ -18,6 +18,7 @@ import { routesApi, logsApi } from "../lib/api";
 import { useUserProfiles } from "../hooks/useUserProfiles";
 import RouteVisualization from "../components/RouteVisualization";
 import LogButton from "../components/LogButton";
+import BookmarkButton from "../components/BookmarkButton";
 import CommentsSection from "../components/CommentsSection";
 import UserNameLink from "../components/UserNameLink";
 import { useRequireAuth } from "../hooks/useRequireAuth";
@@ -115,7 +116,19 @@ export default function RouteDetailScreen({
     navigation.setOptions({
       headerRight: () =>
         routeData && !routeData.is_draft ? (
-          <View style={{ marginRight: 10 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginRight: 10,
+            }}
+          >
+            <BookmarkButton
+              routeId={routeId}
+              userId={user?.id}
+              onLoginRequired={() => requireAuth(() => {}, "RouteDetail")}
+              compact
+            />
             <LogButton
               routeId={routeId}
               userId={user?.id}

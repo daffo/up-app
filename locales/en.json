@@ -100,6 +100,11 @@
     "errorQualityRange": "Quality rating must be between 1 and 5",
     "errorDifficultyRange": "Difficulty rating must be soft, accurate, or hard"
   },
+  "bookmark": {
+    "add": "Save route",
+    "remove": "Remove from saved",
+    "empty": "No saved routes yet"
+  },
   "log": {
     "log": "Log",
     "edit": "Edit log",
