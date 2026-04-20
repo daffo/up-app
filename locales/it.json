@@ -100,6 +100,22 @@
     "errorQualityRange": "La valutazione della qualità deve essere tra 1 e 5",
     "errorDifficultyRange": "La difficoltà deve essere soft, accurata o hard"
   },
+  "log": {
+    "log": "Logga",
+    "edit": "Modifica log",
+    "remove": "Rimuovi log",
+    "statusLabel": "Stato",
+    "status": {
+      "sent": "Chiusa",
+      "attempted": "Tentata"
+    },
+    "badgeSent": "Chiusa",
+    "badgeAttempted": "Tentata",
+    "fallHoldLabel": "Presa dove sei caduto (opzionale)",
+    "fallHoldPick": "Scegli presa",
+    "fallHoldPicked": "Presa selezionata",
+    "fallHoldSkip": "Rimuovi presa"
+  },
   "comments": {
     "title": "Commenti",
     "titleWithCount": "Commenti ({{count}})",
