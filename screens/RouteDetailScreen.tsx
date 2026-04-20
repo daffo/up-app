@@ -27,6 +27,7 @@ import SafeScreen from "../components/SafeScreen";
 import DraftBanner from "../components/DraftBanner";
 import { useApiQuery } from "../hooks/useApiQuery";
 import { ScreenProps } from "../navigation/types";
+import { setPendingFallHoldCallback } from "../lib/fall-hold-picker-bus";
 
 type Route = Database["public"]["Tables"]["routes"]["Row"];
 type Photo = Database["public"]["Tables"]["photos"]["Row"];
@@ -120,6 +121,13 @@ export default function RouteDetailScreen({
               userId={user?.id}
               onLoginRequired={() => requireAuth(() => {}, "RouteDetail")}
               compact
+              onPickFallHold={(current, onPicked) => {
+                setPendingFallHoldCallback(onPicked);
+                navigation.navigate("FallHoldPicker", {
+                  routeId,
+                  currentFallHoldId: current,
+                });
+              }}
             />
           </View>
         ) : null,

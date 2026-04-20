@@ -114,7 +114,9 @@
     "fallHoldLabel": "Fall hold (optional)",
     "fallHoldPick": "Pick fall hold",
     "fallHoldPicked": "Fall hold selected",
-    "fallHoldSkip": "Clear fall hold"
+    "fallHoldSkip": "Clear fall hold",
+    "fallHoldHelper": "Tap the hold where you fell",
+    "fallHoldConfirm": "Confirm"
   },
   "comments": {
     "title": "Comments",

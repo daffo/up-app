@@ -114,7 +114,9 @@
     "fallHoldLabel": "Presa dove sei caduto (opzionale)",
     "fallHoldPick": "Scegli presa",
     "fallHoldPicked": "Presa selezionata",
-    "fallHoldSkip": "Rimuovi presa"
+    "fallHoldSkip": "Rimuovi presa",
+    "fallHoldHelper": "Tocca la presa dove sei caduto",
+    "fallHoldConfirm": "Conferma"
   },
   "comments": {
     "title": "Commenti",
