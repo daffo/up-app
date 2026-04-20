@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -6,14 +6,14 @@ import {
   Modal,
   StyleSheet,
   Dimensions,
-} from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '../lib/auth-context';
-import { useThemeColors } from '../lib/theme-context';
+} from "react-native";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../lib/auth-context";
+import { useThemeColors } from "../lib/theme-context";
 
 interface ProfileDropdownProps {
   onSettings: () => void;
-  onMySends: () => void;
+  onMyLogs: () => void;
   onMyComments: () => void;
   onAdmin?: () => void;
   onLogout: () => void;
@@ -21,7 +21,7 @@ interface ProfileDropdownProps {
 
 export default function ProfileDropdown({
   onSettings,
-  onMySends,
+  onMyLogs,
   onMyComments,
   onAdmin,
   onLogout,
@@ -30,12 +30,15 @@ export default function ProfileDropdown({
   const { user, isAdmin } = useAuth();
   const colors = useThemeColors();
   const [visible, setVisible] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    right: 0,
+  });
   const buttonRef = useRef<View>(null);
 
   const handleOpen = () => {
     buttonRef.current?.measureInWindow((x, y, width, height) => {
-      const screenWidth = Dimensions.get('window').width;
+      const screenWidth = Dimensions.get("window").width;
       setDropdownPosition({
         top: y + height + 4,
         right: screenWidth - x - width,
@@ -53,9 +56,9 @@ export default function ProfileDropdown({
     onSettings();
   };
 
-  const handleMySends = () => {
+  const handleMyLogs = () => {
     handleClose();
-    onMySends();
+    onMyLogs();
   };
 
   const handleMyComments = () => {
@@ -75,8 +78,8 @@ export default function ProfileDropdown({
 
   // Get initials from email
   const getInitials = () => {
-    if (!user?.email) return '?';
-    const parts = user.email.split('@')[0].split(/[._-]/);
+    if (!user?.email) return "?";
+    const parts = user.email.split("@")[0].split(/[._-]/);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
@@ -85,8 +88,14 @@ export default function ProfileDropdown({
 
   return (
     <>
-      <TouchableOpacity onPress={handleOpen} accessibilityLabel={t('menu.openMenu')}>
-        <View ref={buttonRef} style={[styles.avatar, { backgroundColor: colors.primary }]}>
+      <TouchableOpacity
+        onPress={handleOpen}
+        accessibilityLabel={t("menu.openMenu")}
+      >
+        <View
+          ref={buttonRef}
+          style={[styles.avatar, { backgroundColor: colors.primary }]}
+        >
           <Text style={styles.avatarText}>{getInitials()}</Text>
         </View>
       </TouchableOpacity>
@@ -105,31 +114,62 @@ export default function ProfileDropdown({
           <View
             style={[
               styles.dropdown,
-              { top: dropdownPosition.top, right: dropdownPosition.right, backgroundColor: colors.cardBackground, shadowColor: colors.shadowColor },
+              {
+                top: dropdownPosition.top,
+                right: dropdownPosition.right,
+                backgroundColor: colors.cardBackground,
+                shadowColor: colors.shadowColor,
+              },
             ]}
           >
-            <TouchableOpacity style={styles.menuItem} onPress={handleMySends}>
-              <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.mySends')}</Text>
+            <TouchableOpacity style={styles.menuItem} onPress={handleMyLogs}>
+              <Text
+                style={[styles.menuItemText, { color: colors.textPrimary }]}
+              >
+                {t("menu.myLogs")}
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={handleMyComments}>
-              <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.myComments')}</Text>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleMyComments}
+            >
+              <Text
+                style={[styles.menuItemText, { color: colors.textPrimary }]}
+              >
+                {t("menu.myComments")}
+              </Text>
             </TouchableOpacity>
 
             {isAdmin && onAdmin && (
               <TouchableOpacity style={styles.menuItem} onPress={handleAdmin}>
-                <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.admin')}</Text>
+                <Text
+                  style={[styles.menuItemText, { color: colors.textPrimary }]}
+                >
+                  {t("menu.admin")}
+                </Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity style={styles.menuItem} onPress={handleSettings}>
-              <Text style={[styles.menuItemText, { color: colors.textPrimary }]}>{t('menu.settings')}</Text>
+              <Text
+                style={[styles.menuItemText, { color: colors.textPrimary }]}
+              >
+                {t("menu.settings")}
+              </Text>
             </TouchableOpacity>
 
-            <View style={[styles.separator, { backgroundColor: colors.borderLight }]} />
+            <View
+              style={[
+                styles.separator,
+                { backgroundColor: colors.borderLight },
+              ]}
+            />
 
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <Text style={[styles.menuItemText, { color: colors.danger }]}>{t('menu.logout')}</Text>
+              <Text style={[styles.menuItemText, { color: colors.danger }]}>
+                {t("menu.logout")}
+              </Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -143,19 +183,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatarText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   overlay: {
     flex: 1,
   },
   dropdown: {
-    position: 'absolute',
+    position: "absolute",
     borderRadius: 8,
     paddingVertical: 4,
     minWidth: 160,

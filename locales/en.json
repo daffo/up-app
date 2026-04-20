@@ -24,6 +24,7 @@
     "photoDetails": "Photo Details",
     "settings": "Settings",
     "mySends": "My Sends",
+    "myLogs": "My Logs",
     "myComments": "My Comments",
     "sends": "Sends",
     "profile": "Profile",
@@ -121,7 +122,16 @@
     "fallHoldPicked": "Fall hold selected",
     "fallHoldSkip": "Clear fall hold",
     "fallHoldHelper": "Tap the hold where you fell",
-    "fallHoldConfirm": "Confirm"
+    "fallHoldConfirm": "Confirm",
+    "emptyList": "No logs yet",
+    "empty": {
+      "sent": "No sends yet. Start climbing!",
+      "attempted": "No attempts yet"
+    },
+    "tab": {
+      "sent": "Sent",
+      "attempted": "Attempted"
+    }
   },
   "comments": {
     "title": "Comments",
@@ -198,6 +208,7 @@
     "openMenu": "Open menu",
     "settings": "Settings",
     "mySends": "My Sends",
+    "myLogs": "My Logs",
     "myComments": "My Comments",
     "admin": "Admin",
     "logout": "Logout"

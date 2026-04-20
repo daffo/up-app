@@ -24,6 +24,7 @@
     "photoDetails": "Dettagli Foto",
     "settings": "Impostazioni",
     "mySends": "Le Mie Chiusure",
+    "myLogs": "I Miei Log",
     "myComments": "I Miei Commenti",
     "sends": "Chiusure",
     "profile": "Profilo",
@@ -121,7 +122,16 @@
     "fallHoldPicked": "Presa selezionata",
     "fallHoldSkip": "Rimuovi presa",
     "fallHoldHelper": "Tocca la presa dove sei caduto",
-    "fallHoldConfirm": "Conferma"
+    "fallHoldConfirm": "Conferma",
+    "emptyList": "Nessun log",
+    "empty": {
+      "sent": "Nessuna chiusura. Inizia a scalare!",
+      "attempted": "Nessun tentativo"
+    },
+    "tab": {
+      "sent": "Chiuse",
+      "attempted": "Tentate"
+    }
   },
   "comments": {
     "title": "Commenti",
@@ -198,6 +208,7 @@
     "openMenu": "Apri menu",
     "settings": "Impostazioni",
     "mySends": "Le Mie Chiusure",
+    "myLogs": "I Miei Log",
     "myComments": "I Miei Commenti",
     "admin": "Admin",
     "logout": "Esci"
