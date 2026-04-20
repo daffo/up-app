@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Reusable schemas
 const PointSchema = z.object({
@@ -79,6 +79,34 @@ export const SendSchema = z.object({
   created_at: z.string(),
 });
 
+export const LogStatusSchema = z.enum(["sent", "attempted"]);
+
+export const LogSchema = z
+  .object({
+    id: z.string().uuid(),
+    user_id: z.string().uuid(),
+    route_id: z.string().uuid(),
+    status: LogStatusSchema,
+    quality_rating: z.number().nullable(),
+    difficulty_rating: z.number().nullable(),
+    fall_hold_id: z.string().uuid().nullable(),
+    logged_at: z.string(),
+    created_at: z.string(),
+  })
+  .refine((l) => l.status === "sent" || l.difficulty_rating === null, {
+    message: "difficulty_rating only allowed when status=sent",
+  })
+  .refine((l) => l.status === "attempted" || l.fall_hold_id === null, {
+    message: "fall_hold_id only allowed when status=attempted",
+  });
+
+export const BookmarkSchema = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  route_id: z.string().uuid(),
+  created_at: z.string(),
+});
+
 export const CommentSchema = z.object({
   id: z.string().uuid(),
   user_id: z.string().uuid(),
@@ -95,6 +123,8 @@ export const schemas = {
   routes: RouteSchema,
   user_profiles: UserProfileSchema,
   sends: SendSchema,
+  logs: LogSchema,
+  bookmarks: BookmarkSchema,
   comments: CommentSchema,
 } as const;
 
