@@ -34,15 +34,27 @@ export interface RouteHolds {
   foot_holds: FootHold[];
 }
 
+export type UserRelation = "created" | "saved" | "tried" | "sent";
+
 export interface RouteFilters {
-  creatorId?: string;
   grade?: string;
   search?: string;
-  wallStatus?: "active" | "past" | "all";
   /**
-   * Restrict the list to these route ids. Used by FEAT-2 relationship chips
-   * (Saved / Attempted / Sent) where the caller resolves the id set from
-   * bookmarks / logs and feeds it here. Empty array = no matches.
+   * Walls pill selection. Both false (or undefined) = show all walls with a
+   * setup_date. Only active = current live walls. Only past = walls with a
+   * teardown_date. Both true = same as both false (no constraint).
+   */
+  wallActive?: boolean;
+  wallPast?: boolean;
+  /**
+   * User-relationship pill selection (FEAT-2). OR semantics: show routes
+   * matching ANY selected relation. Caller resolves these to a union of route
+   * ids via bookmarks / logs / own routes, then feeds them in via routeIds.
+   */
+  userRelations?: UserRelation[];
+  /**
+   * Restrict the list to these route ids. Caller-resolved. Empty array = no
+   * matches (routesApi.list short-circuits).
    */
   routeIds?: string[];
 }

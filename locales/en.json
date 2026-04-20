@@ -24,7 +24,6 @@
     "photoDetails": "Photo Details",
     "settings": "Settings",
     "myLogs": "My Logs",
-    "mySaved": "Saved",
     "myComments": "My Comments",
     "sends": "Sends",
     "profile": "Profile",
@@ -113,10 +112,10 @@
     "statusLabel": "Status",
     "status": {
       "sent": "Sent",
-      "attempted": "Attempted"
+      "attempted": "Tried"
     },
     "badgeSent": "Sent",
-    "badgeAttempted": "Attempted",
+    "badgeAttempted": "Tried",
     "fallHoldLabel": "Fall hold (optional)",
     "fallHoldPick": "Pick fall hold",
     "fallHoldPicked": "Fall hold selected",
@@ -130,7 +129,7 @@
     },
     "tab": {
       "sent": "Sent",
-      "attempted": "Attempted"
+      "attempted": "Tried"
     }
   },
   "comments": {
@@ -208,7 +207,6 @@
     "openMenu": "Open menu",
     "settings": "Settings",
     "myLogs": "My Logs",
-    "mySaved": "Saved",
     "myComments": "My Comments",
     "admin": "Admin",
     "logout": "Logout"
@@ -236,8 +234,11 @@
     "wallPast": "Past",
     "wallAll": "All",
     "clearWall": "Clear wall filter",
+    "mine": "Mine",
+    "created": "Created",
     "saved": "Saved",
-    "attempted": "Attempted",
+    "tried": "Tried",
+    "attempted": "Tried",
     "sent": "Sent"
   },
   "auth": {

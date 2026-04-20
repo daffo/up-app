@@ -97,7 +97,7 @@ export default function FallHoldPickerScreen({
       footHolds={footHolds}
       detectedHolds={detectedHolds}
       onClose={cancel}
-      showLabels={false}
+      showLabels
       selectedHoldId={selectedHoldId}
       overlayPointerEvents="box-none"
       onHandHoldPress={(idx) => {

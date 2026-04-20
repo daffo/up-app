@@ -120,7 +120,6 @@ export const routesApi = {
     filters?: RouteFilters,
     pagination?: PaginationOptions,
   ): Promise<{ data: RouteWithStats[]; hasMore: boolean }> {
-    const wallStatus = filters?.wallStatus ?? "active";
     const pageSize = pagination?.pageSize ?? 20;
 
     let query = supabase
@@ -131,20 +130,21 @@ export const routesApi = {
       .order("created_at", { ascending: false })
       .order("id", { ascending: false });
 
-    // Wall status filter
-    if (wallStatus === "active") {
+    // Walls filter. Both off / both on = no wall status constraint (all walls
+    // with a setup_date). Only active = current live walls. Only past = walls
+    // with a teardown_date.
+    const wallActive = !!filters?.wallActive;
+    const wallPast = !!filters?.wallPast;
+    if (wallActive && !wallPast) {
       query = query
         .not("photo.setup_date", "is", null)
         .is("photo.teardown_date", null);
-    } else if (wallStatus === "past") {
+    } else if (wallPast && !wallActive) {
       query = query.not("photo.teardown_date", "is", null);
     } else {
-      // 'all' — still exclude photos with null setup_date (not yet live)
+      // Neither or both — still require setup_date so we don't surface
+      // walls that never went live.
       query = query.not("photo.setup_date", "is", null);
-    }
-
-    if (filters?.creatorId) {
-      query = query.eq("user_id", filters.creatorId);
     }
 
     if (filters?.routeIds) {
@@ -216,6 +216,16 @@ export const routesApi = {
 
     if (error) throw error;
     return (data || []) as Route[];
+  },
+
+  async listIdsByCreator(userId: string): Promise<string[]> {
+    const { data, error } = await supabase
+      .from("routes")
+      .select("id")
+      .eq("user_id", userId);
+
+    if (error) throw error;
+    return (data || []).map((r: { id: string }) => r.id);
   },
 
   async get(routeId: string) {

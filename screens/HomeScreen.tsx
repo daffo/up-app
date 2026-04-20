@@ -5,46 +5,45 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useRequireAuth } from "../hooks/useRequireAuth";
-import { RouteFilters } from "../types/database.types";
+import { RouteFilters, UserRelation } from "../types/database.types";
 import RouteList from "../components/RouteList";
 import ProfileDropdown from "../components/ProfileDropdown";
 import FilterModal from "../components/FilterModal";
-import { bookmarksApi, logsApi } from "../lib/api";
+import { bookmarksApi, logsApi, routesApi } from "../lib/api";
 import { useThemeColors } from "../lib/theme-context";
 import { ScreenProps } from "../navigation/types";
 
-type RelationshipKind = "saved" | "attempted" | "sent";
-
 const FILTERS_STORAGE_KEY = "route_filters";
+
+const DEFAULT_FILTERS: RouteFilters = { wallActive: true };
 
 export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { user, signOut, requireAuth } = useRequireAuth();
-  const [filters, setFilters] = useState<RouteFilters>({
-    wallStatus: "active",
-  });
+  const [filters, setFilters] = useState<RouteFilters>(DEFAULT_FILTERS);
   const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const prevUserIdRef = useRef<string | undefined>(undefined);
-  const [relationshipKinds, setRelationshipKinds] = useState<
-    Set<RelationshipKind>
-  >(new Set());
 
-  const wallStatus = filters.wallStatus ?? "active";
+  const wallActive = !!filters.wallActive;
+  const wallPast = !!filters.wallPast;
+  const relations = filters.userRelations ?? [];
+
   const hasActiveFilters =
-    !!filters.creatorId ||
     !!filters.grade ||
     !!filters.search ||
-    wallStatus !== "active";
+    wallPast ||
+    !wallActive ||
+    relations.length > 0;
 
-  // Load filters from storage on mount
+  // Load persisted filters on mount
   useEffect(() => {
     AsyncStorage.getItem(FILTERS_STORAGE_KEY).then((stored) => {
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          setFilters({ wallStatus: "active", ...parsed });
+          setFilters({ ...DEFAULT_FILTERS, ...parsed });
         } catch (e) {
           console.error("Failed to parse stored filters:", e);
         }
@@ -57,26 +56,23 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
   useEffect(() => {
     if (filtersLoaded && prevUserIdRef.current !== user?.id) {
       if (prevUserIdRef.current !== undefined) {
-        // User changed - clear creatorId filter
-        const newFilters = { ...filters, creatorId: undefined };
-        setFilters(newFilters);
-        AsyncStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(newFilters));
+        setFilters((f) => {
+          const next = { ...f, userRelations: undefined };
+          const { routeIds, ...persistable } = next;
+          AsyncStorage.setItem(
+            FILTERS_STORAGE_KEY,
+            JSON.stringify(persistable),
+          );
+          return next;
+        });
       }
       prevUserIdRef.current = user?.id;
     }
   }, [user?.id, filtersLoaded]);
 
-  // Save filters to storage when they change. routeIds is session-only.
-  const handleApplyFilters = (newFilters: RouteFilters) => {
-    setFilters(newFilters);
-    const { routeIds, ...persistable } = newFilters;
-    AsyncStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(persistable));
-  };
-
-  // Resolve route ids from selected relationship chips (saved/attempted/sent).
-  // Session-only — not persisted across restarts (per spec default).
+  // Resolve userRelations → routeIds union. Session-only, not persisted.
   useEffect(() => {
-    if (!user || relationshipKinds.size === 0) {
+    if (!user || relations.length === 0) {
       setFilters((f) => {
         if (f.routeIds === undefined) return f;
         const { routeIds, ...rest } = f;
@@ -88,15 +84,19 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
     (async () => {
       try {
         const ids = new Set<string>();
-        if (relationshipKinds.has("saved")) {
+        if (relations.includes("created")) {
+          const createdIds = await routesApi.listIdsByCreator(user.id);
+          createdIds.forEach((id) => ids.add(id));
+        }
+        if (relations.includes("saved")) {
           const bms = await bookmarksApi.list(user.id);
           bms.forEach((b) => ids.add(b.route.id));
         }
-        if (relationshipKinds.has("sent")) {
+        if (relations.includes("sent")) {
           const logs = await logsApi.listByUser(user.id, "sent");
           logs.forEach((l) => ids.add(l.route.id));
         }
-        if (relationshipKinds.has("attempted")) {
+        if (relations.includes("tried")) {
           const logs = await logsApi.listByUser(user.id, "attempted");
           logs.forEach((l) => ids.add(l.route.id));
         }
@@ -110,18 +110,19 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
     return () => {
       cancelled = true;
     };
-  }, [user, relationshipKinds]);
+  }, [user, JSON.stringify(relations)]);
 
-  const toggleRelationship = (kind: RelationshipKind) => {
-    if (!user) {
-      requireAuth(() => {}, "Home");
-      return;
-    }
-    setRelationshipKinds((prev) => {
-      const next = new Set(prev);
-      if (next.has(kind)) next.delete(kind);
-      else next.add(kind);
-      return next;
+  // Persist filter changes (minus session-only routeIds)
+  const handleApplyFilters = (newFilters: RouteFilters) => {
+    setFilters(newFilters);
+    const { routeIds, ...persistable } = newFilters;
+    AsyncStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(persistable));
+  };
+
+  const clearRelation = (relation: UserRelation) => {
+    handleApplyFilters({
+      ...filters,
+      userRelations: relations.filter((r) => r !== relation),
     });
   };
 
@@ -139,6 +140,48 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
   const handleLogout = async () => {
     await signOut();
   };
+
+  // Build active-chip list for the bar. Each chip has close-x → clears only
+  // that filter. Default state (Active walls only, nothing else) renders no
+  // chips.
+  const chipRow: Array<{ key: string; label: string; onClear: () => void }> =
+    [];
+
+  if (filters.search) {
+    chipRow.push({
+      key: "search",
+      label: `"${filters.search}"`,
+      onClear: () => handleApplyFilters({ ...filters, search: undefined }),
+    });
+  }
+  if (filters.grade) {
+    chipRow.push({
+      key: "grade",
+      label: `${t("filters.grade")}: ${filters.grade}`,
+      onClear: () => handleApplyFilters({ ...filters, grade: undefined }),
+    });
+  }
+  if (wallActive) {
+    chipRow.push({
+      key: "wall-active",
+      label: t("filters.wallActive"),
+      onClear: () => handleApplyFilters({ ...filters, wallActive: false }),
+    });
+  }
+  if (wallPast) {
+    chipRow.push({
+      key: "wall-past",
+      label: t("filters.wallPast"),
+      onClear: () => handleApplyFilters({ ...filters, wallPast: false }),
+    });
+  }
+  for (const relation of relations) {
+    chipRow.push({
+      key: `relation-${relation}`,
+      label: t(`filters.${relation}`),
+      onClear: () => clearRelation(relation),
+    });
+  }
 
   return (
     <SafeScreen hasHeader={false}>
@@ -159,7 +202,6 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
           <ProfileDropdown
             onSettings={() => navigation.navigate("Settings")}
             onMyLogs={() => navigation.navigate("MyLogs")}
-            onMySaved={() => navigation.navigate("MySaved")}
             onMyComments={() => navigation.navigate("MyComments")}
             onAdmin={() => navigation.navigate("AdminPhotos")}
             onLogout={handleLogout}
@@ -205,155 +247,32 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
           </View>
         </View>
 
-        <View style={styles.activeFiltersBar}>
-          {(["saved", "attempted", "sent"] as RelationshipKind[]).map(
-            (kind) => {
-              const active = relationshipKinds.has(kind);
-              return (
-                <TouchableOpacity
-                  key={kind}
-                  style={[
-                    styles.filterChip,
-                    {
-                      backgroundColor: active
-                        ? colors.primaryLight
-                        : colors.borderLight,
-                    },
-                  ]}
-                  onPress={() => toggleRelationship(kind)}
-                  accessibilityLabel={t(`filters.${kind}`)}
+        {chipRow.length > 0 && (
+          <View style={styles.activeFiltersBar}>
+            {chipRow.map((chip) => (
+              <TouchableOpacity
+                key={chip.key}
+                style={[
+                  styles.filterChip,
+                  { backgroundColor: colors.primaryLight },
+                ]}
+                onPress={chip.onClear}
+                accessibilityLabel={`Clear ${chip.label}`}
+              >
+                <Text
+                  style={[styles.filterChipText, { color: colors.primary }]}
                 >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      {
-                        color: active ? colors.primary : colors.textSecondary,
-                      },
-                    ]}
-                  >
-                    {t(`filters.${kind}`)}
-                  </Text>
-                  {active && (
-                    <Ionicons
-                      name="close-circle"
-                      size={16}
-                      color={colors.textSecondary}
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            },
-          )}
-          <TouchableOpacity
-            style={[
-              styles.filterChip,
-              {
-                backgroundColor:
-                  wallStatus === "active"
-                    ? colors.borderLight
-                    : colors.primaryLight,
-              },
-            ]}
-            onPress={() =>
-              wallStatus !== "active"
-                ? handleApplyFilters({ ...filters, wallStatus: "active" })
-                : setFilterModalVisible(true)
-            }
-            accessibilityLabel={
-              wallStatus !== "active"
-                ? t("filters.clearWall")
-                : t("filters.wall")
-            }
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                {
-                  color:
-                    wallStatus === "active"
-                      ? colors.textSecondary
-                      : colors.primary,
-                },
-              ]}
-            >
-              {t(
-                `filters.wall${
-                  wallStatus.charAt(0).toUpperCase() + wallStatus.slice(1)
-                }`,
-              )}
-            </Text>
-            {wallStatus !== "active" && (
-              <Ionicons
-                name="close-circle"
-                size={16}
-                color={colors.textSecondary}
-              />
-            )}
-          </TouchableOpacity>
-          {filters.search && (
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                { backgroundColor: colors.primaryLight },
-              ]}
-              onPress={() =>
-                handleApplyFilters({ ...filters, search: undefined })
-              }
-              accessibilityLabel={t("filters.clearSearch")}
-            >
-              <Text style={[styles.filterChipText, { color: colors.primary }]}>
-                "{filters.search}"
-              </Text>
-              <Ionicons
-                name="close-circle"
-                size={16}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-          )}
-          {filters.grade && (
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                { backgroundColor: colors.primaryLight },
-              ]}
-              onPress={() =>
-                handleApplyFilters({ ...filters, grade: undefined })
-              }
-              accessibilityLabel={t("filters.clearGrade")}
-            >
-              <Text style={[styles.filterChipText, { color: colors.primary }]}>
-                {t("filters.grade")}: {filters.grade}
-              </Text>
-              <Ionicons
-                name="close-circle"
-                size={16}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-          )}
-          {filters.creatorId && (
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                { backgroundColor: colors.primaryLight },
-              ]}
-              onPress={() =>
-                handleApplyFilters({ ...filters, creatorId: undefined })
-              }
-              accessibilityLabel={t("filters.clearMyRoutes")}
-            >
-              <Text style={[styles.filterChipText, { color: colors.primary }]}>
-                {t("home.myRoutes")}
-              </Text>
-              <Ionicons
-                name="close-circle"
-                size={16}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+                  {chip.label}
+                </Text>
+                <Ionicons
+                  name="close-circle"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {filtersLoaded && (
           <RouteList onRoutePress={handleRoutePress} filters={filters} />

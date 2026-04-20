@@ -24,7 +24,6 @@
     "photoDetails": "Dettagli Foto",
     "settings": "Impostazioni",
     "myLogs": "I Miei Log",
-    "mySaved": "Salvate",
     "myComments": "I Miei Commenti",
     "sends": "Chiusure",
     "profile": "Profilo",
@@ -208,7 +207,6 @@
     "openMenu": "Apri menu",
     "settings": "Impostazioni",
     "myLogs": "I Miei Log",
-    "mySaved": "Salvate",
     "myComments": "I Miei Commenti",
     "admin": "Admin",
     "logout": "Esci"
@@ -236,7 +234,10 @@
     "wallPast": "Passate",
     "wallAll": "Tutte",
     "clearWall": "Rimuovi filtro parete",
+    "mine": "Mie",
+    "created": "Create",
     "saved": "Salvate",
+    "tried": "Tentate",
     "attempted": "Tentate",
     "sent": "Chiuse"
   },

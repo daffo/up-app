@@ -276,20 +276,30 @@ describe("routesApi", () => {
       expect(result.data[0].sendCount).toBe(1);
     });
 
-    it("defaults to active wall filter", async () => {
+    it("with no filters shows all walls that went live", async () => {
       const builder = createBuilder({ data: [], error: null });
       mockFrom.mockReturnValue(builder);
 
       await routesApi.list();
+      // Default (neither pill) — setup_date required, no teardown constraint
+      expect(builder.not).toHaveBeenCalledWith("photo.setup_date", "is", null);
+      expect(builder.is).not.toHaveBeenCalled();
+    });
+
+    it("wallActive pill filters to current live walls", async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list({ wallActive: true });
       expect(builder.not).toHaveBeenCalledWith("photo.setup_date", "is", null);
       expect(builder.is).toHaveBeenCalledWith("photo.teardown_date", null);
     });
 
-    it("applies past wall filter", async () => {
+    it("wallPast pill filters to walls with a teardown", async () => {
       const builder = createBuilder({ data: [], error: null });
       mockFrom.mockReturnValue(builder);
 
-      await routesApi.list({ wallStatus: "past" });
+      await routesApi.list({ wallPast: true });
       expect(builder.not).toHaveBeenCalledWith(
         "photo.teardown_date",
         "is",
@@ -297,22 +307,13 @@ describe("routesApi", () => {
       );
     });
 
-    it("applies all wall filter", async () => {
+    it("both wall pills selected shows all walls that went live", async () => {
       const builder = createBuilder({ data: [], error: null });
       mockFrom.mockReturnValue(builder);
 
-      await routesApi.list({ wallStatus: "all" });
+      await routesApi.list({ wallActive: true, wallPast: true });
       expect(builder.not).toHaveBeenCalledWith("photo.setup_date", "is", null);
-      // Should NOT call .is for teardown_date
       expect(builder.is).not.toHaveBeenCalled();
-    });
-
-    it("applies creatorId filter", async () => {
-      const builder = createBuilder({ data: [], error: null });
-      mockFrom.mockReturnValue(builder);
-
-      await routesApi.list({ creatorId: "u1" });
-      expect(builder.eq).toHaveBeenCalledWith("user_id", "u1");
     });
 
     it("applies routeIds filter via .in when non-empty", async () => {

@@ -1,16 +1,10 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Switch,
-} from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { RouteFilters } from '../types/database.types';
-import { useThemeColors } from '../lib/theme-context';
-import TrimmedTextInput from './TrimmedTextInput';
-import BottomSheet from './BottomSheet';
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
+import { RouteFilters, UserRelation } from "../types/database.types";
+import { useThemeColors } from "../lib/theme-context";
+import TrimmedTextInput from "./TrimmedTextInput";
+import BottomSheet from "./BottomSheet";
 
 interface FilterModalProps {
   visible: boolean;
@@ -20,6 +14,8 @@ interface FilterModalProps {
   onApply: (filters: RouteFilters) => void;
   onLoginRequired: () => void;
 }
+
+const RELATIONS: UserRelation[] = ["created", "saved", "tried", "sent"];
 
 export default function FilterModal({
   visible,
@@ -32,15 +28,6 @@ export default function FilterModal({
   const { t } = useTranslation();
   const colors = useThemeColors();
 
-  const handleMyRoutesToggle = (value: boolean) => {
-    if (value && !userId) {
-      onClose();
-      onLoginRequired();
-      return;
-    }
-    onApply({ ...filters, creatorId: value ? userId : undefined });
-  };
-
   const handleSearchChange = (text: string) => {
     onApply({ ...filters, search: text || undefined });
   };
@@ -49,100 +36,159 @@ export default function FilterModal({
     onApply({ ...filters, grade: text || undefined });
   };
 
-  const handleWallStatusChange = (status: 'active' | 'past' | 'all') => {
-    onApply({ ...filters, wallStatus: status });
+  const toggleWall = (kind: "active" | "past") => {
+    const key = kind === "active" ? "wallActive" : "wallPast";
+    onApply({ ...filters, [key]: !filters[key] });
+  };
+
+  const toggleRelation = (relation: UserRelation) => {
+    if (!userId) {
+      onClose();
+      onLoginRequired();
+      return;
+    }
+    const current = filters.userRelations ?? [];
+    const next = current.includes(relation)
+      ? current.filter((r) => r !== relation)
+      : [...current, relation];
+    onApply({
+      ...filters,
+      userRelations: next.length > 0 ? next : undefined,
+    });
   };
 
   const handleReset = () => {
-    onApply({ wallStatus: 'active' });
+    onApply({ wallActive: true });
   };
 
-  const isMyRoutesEnabled = filters.creatorId === userId && !!userId;
-  const wallStatus = filters.wallStatus ?? 'active';
-  const hasActiveFilters = !!filters.creatorId || !!filters.grade || !!filters.search || (wallStatus !== 'active');
+  const wallActive = !!filters.wallActive;
+  const wallPast = !!filters.wallPast;
+  const relations = new Set<UserRelation>(filters.userRelations ?? []);
+
+  const hasActiveFilters =
+    !!filters.grade ||
+    !!filters.search ||
+    wallPast ||
+    !wallActive ||
+    relations.size > 0;
+
+  const pillStyle = (active: boolean) => [
+    styles.pill,
+    { borderColor: active ? colors.primary : colors.border },
+    active && { backgroundColor: colors.primaryLight },
+  ];
+  const pillTextStyle = (active: boolean) => [
+    styles.pillText,
+    { color: active ? colors.primary : colors.textSecondary },
+    active && styles.pillTextActive,
+  ];
 
   return (
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      title={t('filters.title')}
-      closeLabel={t('common.done')}
+      title={t("filters.title")}
+      closeLabel={t("common.done")}
       sheetStyle={filterSheetStyle}
       footer={
         hasActiveFilters ? (
           <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-            <Text style={[styles.resetButtonText, { color: colors.danger }]}>{t('filters.resetFilters')}</Text>
+            <Text style={[styles.resetButtonText, { color: colors.danger }]}>
+              {t("filters.resetFilters")}
+            </Text>
           </TouchableOpacity>
         ) : undefined
       }
     >
       <View style={styles.searchRow}>
         <TrimmedTextInput
-          style={[styles.searchInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
-          value={filters.search || ''}
+          style={[
+            styles.searchInput,
+            {
+              borderColor: colors.border,
+              color: colors.textPrimary,
+              backgroundColor: colors.inputBackground,
+            },
+          ]}
+          value={filters.search || ""}
           onChangeText={handleSearchChange}
-          placeholder={t('filters.searchPlaceholder')}
+          placeholder={t("filters.searchPlaceholder")}
           placeholderTextColor={colors.placeholderText}
           autoCorrect={false}
-          accessibilityLabel={t('filters.searchPlaceholder')}
+          accessibilityLabel={t("filters.searchPlaceholder")}
         />
       </View>
 
       <View style={styles.filterRow}>
-        <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.grade')}</Text>
+        <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>
+          {t("filters.grade")}
+        </Text>
         <TrimmedTextInput
-          style={[styles.gradeInput, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
-          value={filters.grade || ''}
+          style={[
+            styles.gradeInput,
+            {
+              borderColor: colors.border,
+              color: colors.textPrimary,
+              backgroundColor: colors.inputBackground,
+            },
+          ]}
+          value={filters.grade || ""}
           onChangeText={handleGradeChange}
-          placeholder={t('filters.gradePlaceholder')}
+          placeholder={t("filters.gradePlaceholder")}
           placeholderTextColor={colors.placeholderText}
           autoCapitalize="none"
           autoCorrect={false}
-          accessibilityLabel={t('filters.grade')}
+          accessibilityLabel={t("filters.grade")}
         />
       </View>
 
-      <View style={styles.filterRow}>
-        <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.myRoutes')}</Text>
-        <Switch
-          value={isMyRoutesEnabled}
-          onValueChange={handleMyRoutesToggle}
-          trackColor={{ false: colors.border, true: colors.primary }}
-          accessibilityLabel={t('filters.toggleMyRoutes')}
-        />
+      <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>
+        {t("filters.wall")}
+      </Text>
+      <View style={styles.pillRow}>
+        <TouchableOpacity
+          style={pillStyle(wallActive)}
+          onPress={() => toggleWall("active")}
+          accessibilityLabel={t("filters.wallActive")}
+        >
+          <Text style={pillTextStyle(wallActive)}>
+            {t("filters.wallActive")}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={pillStyle(wallPast)}
+          onPress={() => toggleWall("past")}
+          accessibilityLabel={t("filters.wallPast")}
+        >
+          <Text style={pillTextStyle(wallPast)}>{t("filters.wallPast")}</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.filterRow}>
-        <Text style={[styles.filterLabel, { color: colors.textPrimary }]}>{t('filters.wall')}</Text>
-        <View style={[styles.segmentedControl, { borderColor: colors.border }]}>
-          {(['active', 'past', 'all'] as const).map((status) => (
+      <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>
+        {t("filters.mine")}
+      </Text>
+      <View style={styles.pillRow}>
+        {RELATIONS.map((relation) => {
+          const active = relations.has(relation);
+          return (
             <TouchableOpacity
-              key={status}
-              style={[
-                styles.segmentButton,
-                wallStatus === status && { backgroundColor: colors.primary },
-              ]}
-              onPress={() => handleWallStatusChange(status)}
-              accessibilityLabel={t(`filters.wall${status.charAt(0).toUpperCase() + status.slice(1)}`)}
+              key={relation}
+              style={pillStyle(active)}
+              onPress={() => toggleRelation(relation)}
+              accessibilityLabel={t(`filters.${relation}`)}
             >
-              <Text
-                style={[
-                  styles.segmentText,
-                  { color: colors.textPrimary },
-                  wallStatus === status && { color: '#fff' },
-                ]}
-              >
-                {t(`filters.wall${status.charAt(0).toUpperCase() + status.slice(1)}`)}
+              <Text style={pillTextStyle(active)}>
+                {t(`filters.${relation}`)}
               </Text>
             </TouchableOpacity>
-          ))}
-        </View>
+          );
+        })}
       </View>
     </BottomSheet>
   );
 }
 
-const filterSheetStyle = { minHeight: 200 } as const;
+const filterSheetStyle = { minHeight: 320 } as const;
 
 const styles = StyleSheet.create({
   searchRow: {
@@ -156,9 +202,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   filterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 12,
   },
   filterLabel: {
@@ -171,25 +217,35 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 16,
     width: 120,
-    textAlign: 'right',
+    textAlign: "right",
   },
-  segmentedControl: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderRadius: 8,
-    overflow: 'hidden',
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 12,
+    marginBottom: 8,
   },
-  segmentButton: {
+  pillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingBottom: 4,
+  },
+  pill: {
     paddingHorizontal: 14,
     paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
   },
-  segmentText: {
+  pillText: {
     fontSize: 14,
-    fontWeight: '500',
+  },
+  pillTextActive: {
+    fontWeight: "600",
   },
   resetButton: {
     padding: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   resetButtonText: {
     fontSize: 16,
