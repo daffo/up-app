@@ -25,6 +25,7 @@
     "settings": "Settings",
     "mySends": "My Sends",
     "myLogs": "My Logs",
+    "mySaved": "Saved",
     "myComments": "My Comments",
     "sends": "Sends",
     "profile": "Profile",
@@ -209,6 +210,7 @@
     "settings": "Settings",
     "mySends": "My Sends",
     "myLogs": "My Logs",
+    "mySaved": "Saved",
     "myComments": "My Comments",
     "admin": "Admin",
     "logout": "Logout"

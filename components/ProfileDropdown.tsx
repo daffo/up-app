@@ -14,6 +14,7 @@ import { useThemeColors } from "../lib/theme-context";
 interface ProfileDropdownProps {
   onSettings: () => void;
   onMyLogs: () => void;
+  onMySaved: () => void;
   onMyComments: () => void;
   onAdmin?: () => void;
   onLogout: () => void;
@@ -22,6 +23,7 @@ interface ProfileDropdownProps {
 export default function ProfileDropdown({
   onSettings,
   onMyLogs,
+  onMySaved,
   onMyComments,
   onAdmin,
   onLogout,
@@ -59,6 +61,11 @@ export default function ProfileDropdown({
   const handleMyLogs = () => {
     handleClose();
     onMyLogs();
+  };
+
+  const handleMySaved = () => {
+    handleClose();
+    onMySaved();
   };
 
   const handleMyComments = () => {
@@ -127,6 +134,14 @@ export default function ProfileDropdown({
                 style={[styles.menuItemText, { color: colors.textPrimary }]}
               >
                 {t("menu.myLogs")}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={handleMySaved}>
+              <Text
+                style={[styles.menuItemText, { color: colors.textPrimary }]}
+              >
+                {t("menu.mySaved")}
               </Text>
             </TouchableOpacity>
 

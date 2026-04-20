@@ -100,6 +100,7 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
           <ProfileDropdown
             onSettings={() => navigation.navigate("Settings")}
             onMyLogs={() => navigation.navigate("MyLogs")}
+            onMySaved={() => navigation.navigate("MySaved")}
             onMyComments={() => navigation.navigate("MyComments")}
             onAdmin={() => navigation.navigate("AdminPhotos")}
             onLogout={handleLogout}

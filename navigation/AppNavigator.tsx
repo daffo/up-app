@@ -21,6 +21,7 @@ import AdminPhotosScreen from "../screens/AdminPhotosScreen";
 import AdminPhotoDetailScreen from "../screens/AdminPhotoDetailScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import MyLogsScreen from "../screens/MyLogsScreen";
+import MySavedScreen from "../screens/MySavedScreen";
 import MyCommentsScreen from "../screens/MyCommentsScreen";
 import RouteSendsScreen from "../screens/RouteSendsScreen";
 import FallHoldPickerScreen from "../screens/FallHoldPickerScreen";
@@ -51,6 +52,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       AdminPhotoDetail: "admin/photo/:photoId",
       Settings: "settings",
       MyLogs: "logs",
+      MySaved: "saved",
       MyComments: "comments",
       RouteSends: "route/:routeId/sends",
       UserProfile: "user/:userId",
@@ -173,6 +175,15 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: t("nav.myLogs"),
+            headerBackTitle: t("common.back"),
+          }}
+        />
+        <Stack.Screen
+          name="MySaved"
+          component={MySavedScreen}
+          options={{
+            headerShown: true,
+            title: t("nav.mySaved"),
             headerBackTitle: t("common.back"),
           }}
         />

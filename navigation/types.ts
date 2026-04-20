@@ -15,6 +15,7 @@ export type RootStackParamList = {
   AdminPhotoDetail: { photoId: string };
   Settings: undefined;
   MyLogs: undefined;
+  MySaved: undefined;
   MyComments: undefined;
   RouteSends: { routeId: string };
   FallHoldPicker: { routeId: string; currentFallHoldId: string | null };
