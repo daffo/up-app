@@ -144,13 +144,18 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
   // Build active-chip list for the bar. Each chip has close-x → clears only
   // that filter. Default state (Active walls only, nothing else) renders no
   // chips.
-  const chipRow: Array<{ key: string; label: string; onClear: () => void }> =
-    [];
+  const chipRow: Array<{
+    key: string;
+    label: string;
+    a11y: string;
+    onClear: () => void;
+  }> = [];
 
   if (filters.search) {
     chipRow.push({
       key: "search",
       label: `"${filters.search}"`,
+      a11y: t("filters.clearSearch"),
       onClear: () => handleApplyFilters({ ...filters, search: undefined }),
     });
   }
@@ -158,6 +163,7 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
     chipRow.push({
       key: "grade",
       label: `${t("filters.grade")}: ${filters.grade}`,
+      a11y: t("filters.clearGrade"),
       onClear: () => handleApplyFilters({ ...filters, grade: undefined }),
     });
   }
@@ -165,6 +171,7 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
     chipRow.push({
       key: "wall-active",
       label: t("filters.wallActive"),
+      a11y: t("filters.wallActive"),
       onClear: () => handleApplyFilters({ ...filters, wallActive: false }),
     });
   }
@@ -172,6 +179,7 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
     chipRow.push({
       key: "wall-past",
       label: t("filters.wallPast"),
+      a11y: t("filters.wallPast"),
       onClear: () => handleApplyFilters({ ...filters, wallPast: false }),
     });
   }
@@ -179,6 +187,7 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
     chipRow.push({
       key: `relation-${relation}`,
       label: t(`filters.${relation}`),
+      a11y: t(`filters.${relation}`),
       onClear: () => clearRelation(relation),
     });
   }
@@ -257,7 +266,7 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
                   { backgroundColor: colors.primaryLight },
                 ]}
                 onPress={chip.onClear}
-                accessibilityLabel={`Clear ${chip.label}`}
+                accessibilityLabel={chip.a11y}
               >
                 <Text
                   style={[styles.filterChipText, { color: colors.primary }]}

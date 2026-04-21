@@ -51,7 +51,7 @@ name: Guest User - Complete Happy Path
 - assertVisible: "Upp"
 
 # --------------------------------------------
-# 4. TAP ROUTE → TAP SEND → SEE LOGIN PAGE → BACK
+# 4. TAP ROUTE → TAP LOG → SEE LOGIN PAGE → BACK
 # --------------------------------------------
 # Tap on first route
 - tapOn:
@@ -60,8 +60,8 @@ name: Guest User - Complete Happy Path
 
 - assertVisible: "Route Details"
 
-# Tap Send button (iOS accessibility text includes icon prefix: ", Send")
-- tapOn: ".*Send"
+# Tap Log button in header
+- tapOn: "Log"
 
 # Should redirect to login
 - extendedWaitUntil:
@@ -77,6 +77,21 @@ name: Guest User - Complete Happy Path
 - extendedWaitUntil:
     visible: "Created by"
     timeout: 10000
+
+# --------------------------------------------
+# 4b. TAP BOOKMARK → SEE LOGIN PAGE → BACK
+# --------------------------------------------
+# Save route icon lives in the header, accessibilityLabel = "Save route"
+- tapOn: "Save route"
+
+- extendedWaitUntil:
+    visible: "Log In"
+    timeout: 5000
+- assertVisible: "Email"
+- runFlow: shared/press-back.yaml
+
+# Should be back on route detail
+- assertVisible: "Route Details"
 
 # --------------------------------------------
 # 5. WRITE COMMENT → TAP SEND → SEE LOGIN PAGE → BACK
@@ -140,7 +155,6 @@ name: Guest User - Complete Happy Path
 - assertVisible: "Upp"
 - assertVisible: "Spray Wall Routes"
 - assertVisible: "Login"
-
 # ============================================
 # GUEST HAPPY PATH COMPLETE
 # ============================================
