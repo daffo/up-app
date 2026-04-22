@@ -150,8 +150,8 @@ name: Auth User - Login Flow
 # Publish button should be visible
 - assertVisible: "Publish"
 
-# Send button should NOT be visible (draft routes have no sends)
-- assertNotVisible: ".*Send"
+# Log button should NOT be visible (draft routes have no logs)
+- assertNotVisible: "Log"
 
 # Comments section should NOT be visible
 - assertNotVisible: "Add a comment.*"
@@ -175,8 +175,8 @@ name: Auth User - Login Flow
 # Draft banner should be gone
 - assertNotVisible: "Publish"
 
-# Send button should now be visible
-- assertVisible: ".*Send"
+# Log button should now be visible
+- assertVisible: "Log"
 
 # ============================================
 # ADD A COMMENT
@@ -257,109 +257,154 @@ name: Auth User - Login Flow
     timeout: 5000
 
 # ============================================
-# LOG A SEND
+# BOOKMARK THE ROUTE
 # ============================================
 
-# Tap Send button (in header)
-- tapOn: ".*Send"
+# Tap Save route icon in header
+- tapOn: "Save route"
+- waitForAnimationToEnd
 
-# Wait for send modal
+# After toggling, accessibilityLabel flips to "Remove from saved"
+- assertVisible: "Remove from saved"
+
+# Unbookmark and verify it flips back
+- tapOn: "Remove from saved"
+- waitForAnimationToEnd
+- assertVisible: "Save route"
+
+# Re-bookmark for the Saved filter test later
+- tapOn: "Save route"
+- waitForAnimationToEnd
+- assertVisible: "Remove from saved"
+
+# ============================================
+# LOG AN ATTEMPT (no fall hold yet)
+# ============================================
+
+- tapOn: "Log"
 - extendedWaitUntil:
-    visible: "Log Send"
+    visible: "Status"
     timeout: 5000
 
-# Tap 5th star for quality rating
-- tapOn: "5 star"
+# Flip status to Tried
+- tapOn: "Tried"
+- extendedWaitUntil:
+    visible: "Fall hold.*"
+    timeout: 5000
 
-# Select "Accurate" for difficulty
-- tapOn: "Accurate"
+# Star rating is independent of status — set 4 stars
+- tapOn: "4 star"
 
-# Submit the send (tap button at bottom, not title)
+# Save without picking a fall hold (nullable field). Coord tap avoids
+# the text collision between the header CTA and the modal save label.
 - tapOn:
     point: "50%,92%"
-
-# Wait for modal to close and verify send was logged
 - waitForAnimationToEnd
-- assertVisible: ".*Sent"
+- assertVisible: "Tried"
 
-# Scroll to Rating row and tap to see sends list
+# ============================================
+# EDIT THE LOG — ADD A FALL HOLD
+# ============================================
+
+- tapOn: "Tried"
+- extendedWaitUntil:
+    visible: "Edit log"
+    timeout: 5000
+
+- tapOn: "Pick fall hold"
+- extendedWaitUntil:
+    visible: "Tap the hold where you fell"
+    timeout: 5000
+
+# Mirror the hold editor retry pattern — primary + fallback coords
+- tapOn:
+    point: "50%,50%"
+- runFlow:
+    when:
+      visible: "Tap the hold where you fell"
+    commands:
+      - tapOn:
+          point: "35%,48%"
+- runFlow:
+    when:
+      visible: "Tap the hold where you fell"
+    commands:
+      - tapOn:
+          point: "60%,49%"
+
+- tapOn: "Confirm"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Fall hold selected"
+    timeout: 5000
+
+- tapOn: "Update"
+- waitForAnimationToEnd
+- assertVisible: "Tried"
+
+# ============================================
+# EDIT THE LOG — CONVERT TO SENT
+# ============================================
+
+- tapOn: "Tried"
+- extendedWaitUntil:
+    visible: "Edit log"
+    timeout: 5000
+
+# Flip to Sent — fall hold section must disappear
+- tapOn: "Sent"
+- assertNotVisible: "Fall hold.*"
+- tapOn: "Accurate"
+
+- tapOn: "Update"
+- waitForAnimationToEnd
+- assertVisible: "Sent"
+
+# ============================================
+# SENDS LIST QUICK CHECK
+# ============================================
+
 - scrollUntilVisible:
     element:
       text: "Rating.*"
     direction: DOWN
     timeout: 5000
 - tapOn: "Rating.*"
-
-# Wait for sends screen and check Anonymous is shown
 - extendedWaitUntil:
     visible: "Sends"
     timeout: 5000
 - assertVisible: "Anonymous"
-
-# Go back to route detail
 - runFlow: shared/press-back.yaml
 
 # ============================================
-# EDIT THE SEND
+# REMOVE THE LOG
 # ============================================
 
-# Tap Sent button to reopen modal (now shows Edit Send)
-- tapOn: ".*Sent"
+- tapOn: "Sent"
 - extendedWaitUntil:
-    visible: "Edit Send"
+    visible: "Edit log"
     timeout: 5000
 
-# Change rating to 3 stars
-- tapOn: "3 star"
-
-# Change difficulty to Soft
-- tapOn: "Soft"
-
-# Tap Update button
-- tapOn: "Update"
+- tapOn: "Remove log"
 - waitForAnimationToEnd
-
-# Verify still shows Sent
-- assertVisible: ".*Sent"
+- assertNotVisible: "Sent"
+- assertVisible: "Log"
 
 # ============================================
-# REMOVE THE SEND
+# RE-LOG SEND (needed for later sections)
 # ============================================
 
-# Tap Sent button again
-- tapOn: ".*Sent"
+- tapOn: "Log"
 - extendedWaitUntil:
-    visible: "Edit Send"
+    visible: "Status"
     timeout: 5000
-
-# Tap Remove Send
-- tapOn: "Remove Send"
-- waitForAnimationToEnd
-
-# Button should revert (no longer shows "Sent")
-- assertNotVisible: ".*Sent"
-
-# ============================================
-# RE-LOG THE SEND (needed for later sections)
-# ============================================
-
-# Tap Send button to log fresh send
-- tapOn: ".*Send"
-- extendedWaitUntil:
-    visible: "Log Send"
-    timeout: 5000
-
-# Tap 5th star
 - tapOn: "5 star"
-
-# Select Accurate
 - tapOn: "Accurate"
-
-# Submit
 - tapOn:
     point: "50%,92%"
 - waitForAnimationToEnd
-- assertVisible: ".*Sent"
+- assertVisible: "Sent"
 
 # ============================================
 # EDIT THE ROUTE
@@ -487,16 +532,30 @@ name: Auth User - Login Flow
 - runFlow: shared/press-back.yaml
 
 # ============================================
-# CHECK MY SENDS
+# CHECK MY LOGS
 # ============================================
 
 # Open profile menu
-- runFlow: shared/menu-tap-my-sends.yaml
+- runFlow: shared/menu-tap-my-logs.yaml
+
+# Default: no pills selected → all logs → route visible
 - extendedWaitUntil:
     visible: ".*E2E Test Route Updated.*"
     timeout: 5000
 
-# Tap send to go to route
+# Tap Tried pill — only tried logs → route should disappear
+- tapOn: "Tried"
+- waitForAnimationToEnd
+- assertNotVisible: ".*E2E Test Route Updated.*"
+
+# Deselect Tried, tap Sent pill — only sent logs → route visible
+- tapOn: "Tried"
+- tapOn: "Sent"
+- extendedWaitUntil:
+    visible: ".*E2E Test Route Updated.*"
+    timeout: 5000
+
+# Tap log entry to go to route
 - tapOn: ".*E2E Test Route Updated.*"
 - extendedWaitUntil:
     visible: "Route Details"
@@ -519,11 +578,71 @@ name: Auth User - Login Flow
     visible: ".*E2E Test Route Updated.*"
     timeout: 5000
 
-# Go back to home (User Profile → Route Details → My Sends → Home)
+# Go back to home (User Profile → Route Details → My Logs → Home)
 - runFlow: shared/press-back.yaml
 - runFlow: shared/press-back.yaml
 - runFlow: shared/press-back.yaml
 - assertVisible: "Upp"
+
+# ============================================
+# TEST MINE PILLS (Saved / Sent / Tried via filter modal)
+# ============================================
+
+# Open filters and tap Saved pill in Mine section
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "Saved"
+- tapOn: "Done"
+- waitForAnimationToEnd
+
+# Chip on home should reflect active Saved pill
+- assertVisible: "Saved"
+- extendedWaitUntil:
+    visible: ".*E2E Test Route Updated.*"
+    timeout: 5000
+
+# Add Sent pill — multi-select OR, route still visible (we sent it)
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "Sent"
+- tapOn: "Done"
+- waitForAnimationToEnd
+- assertVisible: "Sent"
+- extendedWaitUntil:
+    visible: ".*E2E Test Route Updated.*"
+    timeout: 5000
+
+# Dismiss Saved chip via home bar; keep Sent
+- tapOn: "Saved"
+- waitForAnimationToEnd
+- assertNotVisible: "Saved"
+- assertVisible: "Sent"
+
+# Swap Sent for Tried — open modal, deselect Sent, select Tried
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "Sent"
+- tapOn: "Tried"
+- tapOn: "Done"
+- waitForAnimationToEnd
+
+# Tried alone — route should NOT appear (we have no attempt for this route)
+- assertVisible: "Tried"
+- assertNotVisible: ".*E2E Test Route Updated.*"
+
+# Clear Tried chip via home bar
+- tapOn: "Tried"
+- waitForAnimationToEnd
+- assertNotVisible: "Tried"
+- extendedWaitUntil:
+    visible: ".*E2E Test Route Updated.*"
+    timeout: 5000
 
 # ============================================
 # CLEAR DISPLAY NAME
@@ -589,39 +708,45 @@ name: Auth User - Login Flow
 - assertVisible: "Upp"
 
 # ============================================
-# TEST FILTERS
+# TEST FILTERS (Mine/Created + search combined)
 # ============================================
 
 # Open filters
 - tapOn: "Open filters"
-
-# Wait for filter modal
 - extendedWaitUntil:
     visible: "Filters"
     timeout: 5000
 
-# Toggle My Routes switch
-- tapOn: "Toggle my routes filter"
+# Tap Created pill under Mine (replaces former My Routes switch)
+- tapOn: "Created"
 
 # Search for something NOT in title/description
 - tapOn: "Search by name or description"
 - inputText: "xyznonexistent"
 
-# Close filters
+# Close filters. hideKeyboard sends BACK on Android, which closes both the
+# IME and the sheet (Modal.onRequestClose wired to onClose). No explicit
+# Done tap — with the keyboard still visible, Done would match the IME's
+# own Done key first.
 - hideKeyboard
 - waitForAnimationToEnd
 
-# Verify no routes shown (empty state or no matches)
+# Verify no routes shown — search string doesn't match
 - assertNotVisible: ".*E2E Test Route Updated.*"
 
-# Tap on the search filter chip to remove it (keep My Routes filter)
+# Clear search chip, keep Created filter
 - tapOn: "Clear search filter"
 - waitForAnimationToEnd
 
-# Verify route is now visible
+# Route should appear (matches Created filter)
 - extendedWaitUntil:
     visible: ".*E2E Test Route Updated.*"
     timeout: 5000
+
+# Clear Created chip
+- tapOn: "Created"
+- waitForAnimationToEnd
+- assertNotVisible: "Created"
 
 # ============================================
 # TEST GRADE FILTER
@@ -670,38 +795,72 @@ name: Auth User - Login Flow
     timeout: 5000
 
 # ============================================
-# TEST WALL STATUS FILTER
+# TEST WALL PILLS (Active + Past, no 3-way)
 # ============================================
 
-# Open filters
+# Default: Active chip visible on home bar
+- assertVisible: "Active"
+
+# Open filters, deselect Active → both pills off → no wall chip on home
 - tapOn: "Open filters"
 - extendedWaitUntil:
     visible: "Filters"
     timeout: 5000
-
-# Tap Past — route is on active wall, should not be visible
-- tapOn: "Past"
+- tapOn: "Active"
 - tapOn: "Done"
 - waitForAnimationToEnd
-- assertNotVisible: ".*E2E Test Route Updated.*"
+- assertNotVisible: "Active"
 
-# Open filters and tap All — route should be visible again
-- tapOn: "Open filters"
-- extendedWaitUntil:
-    visible: "Filters"
-    timeout: 5000
-- tapOn: "All"
-- tapOn: "Done"
-- waitForAnimationToEnd
+# Route still visible (route's wall has setup_date, still qualifies)
 - extendedWaitUntil:
     visible: ".*E2E Test Route Updated.*"
     timeout: 5000
 
-# Leave wall status on "All" — will verify it persists across logout later
+# Open filters, add Past only → route is on live wall, should hide
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "Past"
+- tapOn: "Done"
+- waitForAnimationToEnd
+- assertVisible: "Past"
+- assertNotVisible: ".*E2E Test Route Updated.*"
+
+# Turn Active back on alongside Past → both chips, route reappears
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "Active"
+- tapOn: "Done"
+- waitForAnimationToEnd
+- assertVisible: "Active"
+- assertVisible: "Past"
+- extendedWaitUntil:
+    visible: ".*E2E Test Route Updated.*"
+    timeout: 5000
+
+# Clear Past chip via home bar → only Active left (default state)
+- tapOn: "Past"
+- waitForAnimationToEnd
+- assertNotVisible: "Past"
+- assertVisible: "Active"
 
 # ============================================
 # DELETE THE TEST ROUTE
 # ============================================
+
+# Re-enable Created filter so the home list is only this user's routes —
+# deleting the only test route leaves a clean "No routes yet" state.
+- tapOn: "Open filters"
+- extendedWaitUntil:
+    visible: "Filters"
+    timeout: 5000
+- tapOn: "Created"
+- tapOn: "Done"
+- waitForAnimationToEnd
+- assertVisible: "Created"
 
 # Tap on the route to go to details
 - tapOn: ".*E2E Test Route Updated.*"
@@ -756,16 +915,16 @@ name: Auth User - Login Flow
     visible: "Upp"
     timeout: 5000
 
-# My Routes filter should still be active, verify no routes
-- assertVisible: "Clear my routes filter"
+# Created filter should still be active — deleted route leaves empty list
+- assertVisible: "Created"
 - assertVisible: "No routes yet"
 
 # ============================================
 # TEST LOGOUT PRESERVES PREFERENCES
 # ============================================
 
-# Wall status is already "All" from the filter test above.
-# "My Routes" is active — logout should clear it (user-specific filter).
+# Wall pill (Active) must survive logout. Created pill must clear since
+# it's user-specific (userRelations reset on auth change).
 
 # Logout via profile menu
 - runFlow: shared/menu-tap-logout.yaml
@@ -775,11 +934,11 @@ name: Auth User - Login Flow
     visible: "Login"
     timeout: 5000
 
-# Verify wall filter survived logout — "All" chip should still be visible
-- assertVisible: "Clear wall filter"
+# Wall filter (Active) should persist
+- assertVisible: "Active"
 
-# Verify "My Routes" was cleared (user-specific filter)
-- assertNotVisible: "My Routes"
+# Created filter should be cleared (user-specific)
+- assertNotVisible: "Created"
 
 # Verify session is actually cleared — tap + and expect login screen
 - tapOn: "+"
@@ -813,8 +972,7 @@ name: Auth User - Login Flow
 - assertNotVisible: "Login"
 
 # Verify wall filter still persisted after re-login
-- assertVisible: "Clear wall filter"
-
+- assertVisible: "Active"
 # ============================================
 # TEST COMPLETE
 # ============================================

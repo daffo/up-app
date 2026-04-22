@@ -1,5 +1,5 @@
 appId: com.daffo.upapp
-name: Open menu and tap My Sends
+name: Open menu and tap My Logs
 ---
 - tapOn: "Open menu"
 - waitForAnimationToEnd
@@ -7,7 +7,7 @@ name: Open menu and tap My Sends
     when:
       platform: Android
     commands:
-      - tapOn: "My Sends"
+      - tapOn: "My Logs"
 - runFlow:
     when:
       platform: iOS

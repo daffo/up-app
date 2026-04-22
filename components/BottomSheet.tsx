@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ViewStyle,
-} from 'react-native';
-import { useThemeColors } from '../lib/theme-context';
+} from "react-native";
+import { useThemeColors } from "../lib/theme-context";
 
 interface BottomSheetProps {
   visible: boolean;
@@ -47,14 +47,32 @@ export default function BottomSheet({
         <TouchableOpacity
           style={styles.backdrop}
           onPress={onClose}
-          accessibilityLabel={closeLabel}
-          accessibilityRole="button"
+          // No accessibilityLabel — the sheet's header button carries the
+          // close label. Advertising it here spawns a duplicate element with
+          // full-screen bounds, which steals tap-by-label targeting (E2E
+          // selectors match this 1080x2400 button and land inside the sheet
+          // body, never firing onClose).
         />
-        <View style={[styles.sheet, { backgroundColor: colors.cardBackground }, sheetStyle]}>
-          <View style={[styles.header, { borderBottomColor: colors.borderLight }]}>
-            <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+        <View
+          style={[
+            styles.sheet,
+            { backgroundColor: colors.cardBackground },
+            sheetStyle,
+          ]}
+        >
+          <View
+            style={[styles.header, { borderBottomColor: colors.borderLight }]}
+          >
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
+              {title}
+            </Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={[styles.closeButton, { color: closeLabelColor ?? colors.primary }]}>
+              <Text
+                style={[
+                  styles.closeButton,
+                  { color: closeLabelColor ?? colors.primary },
+                ]}
+              >
                 {closeLabel}
               </Text>
             </TouchableOpacity>
@@ -70,11 +88,11 @@ export default function BottomSheet({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   sheet: {
     borderTopLeftRadius: 16,
@@ -82,19 +100,19 @@ const styles = StyleSheet.create({
     paddingBottom: 34,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   closeButton: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   content: {
     padding: 16,
