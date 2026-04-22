@@ -9,13 +9,16 @@ import {
 import { useTranslation } from "react-i18next";
 import { routesApi } from "../lib/api";
 import { DetectedHold, HandHold, FootHold } from "../types/database.types";
-import FullScreenImageBase from "../components/FullScreenImageBase";
+import FullScreenImageBase, {
+  ImageDimensions,
+} from "../components/FullScreenImageBase";
 import { ScreenProps } from "../navigation/types";
 import {
   resolvePendingFallHoldCallback,
   clearPendingFallHoldCallback,
 } from "../lib/fall-hold-picker-bus";
 import { useThemeColors } from "../lib/theme-context";
+import { findSmallestPolygonAtPoint } from "../utils/polygon";
 
 export default function FallHoldPickerScreen({
   route,
@@ -33,6 +36,11 @@ export default function FallHoldPickerScreen({
   const [selectedHoldId, setSelectedHoldId] = useState<string | null>(
     currentFallHoldId,
   );
+  const [imageDimensions, setImageDimensions] = useState<ImageDimensions>({
+    width: 0,
+    height: 0,
+  });
+  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +80,33 @@ export default function FallHoldPickerScreen({
     navigation.goBack();
   };
 
+  const handleImageTap = (event: any) => {
+    if (imageDimensions.width === 0) return;
+    const { locationX, locationY } = event;
+    const imageX = locationX - imageOffset.x;
+    const imageY = locationY - imageOffset.y;
+    if (
+      imageX < 0 ||
+      imageX > imageDimensions.width ||
+      imageY < 0 ||
+      imageY > imageDimensions.height
+    ) {
+      return;
+    }
+    const xPercent = (imageX / imageDimensions.width) * 100;
+    const yPercent = (imageY / imageDimensions.height) * 100;
+
+    const routeHoldIds = new Set<string>([
+      ...handHolds.map((h) => h.detected_hold_id),
+      ...footHolds.map((f) => f.detected_hold_id),
+    ]);
+    const eligible = detectedHolds.filter((dh) => routeHoldIds.has(dh.id));
+    const tapped = findSmallestPolygonAtPoint(xPercent, yPercent, eligible);
+    if (tapped) {
+      setSelectedHoldId(tapped.id === selectedHoldId ? null : tapped.id);
+    }
+  };
+
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
@@ -99,14 +134,11 @@ export default function FallHoldPickerScreen({
       onClose={cancel}
       showLabels
       selectedHoldId={selectedHoldId}
-      overlayPointerEvents="box-none"
-      onHandHoldPress={(idx) => {
-        const id = handHolds[idx]?.detected_hold_id ?? null;
-        setSelectedHoldId(id);
-      }}
-      onFootHoldPress={(idx) => {
-        const id = footHolds[idx]?.detected_hold_id ?? null;
-        setSelectedHoldId(id);
+      overlayPointerEvents="none"
+      onImageTap={handleImageTap}
+      onDimensionsReady={(dim, off) => {
+        setImageDimensions(dim);
+        setImageOffset(off);
       }}
       helperBanner={
         <View style={styles.helperBanner}>

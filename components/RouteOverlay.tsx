@@ -538,27 +538,31 @@ export default function RouteOverlay({
 
       {/* Tries markers — filled dots on detected holds where users fell */}
       {triesByHoldId &&
-        Object.entries(triesByHoldId).map(([holdId, count]) => {
-          const dh = detectedHoldsMap.get(holdId);
-          if (!dh) return null;
-          const cx = (dh.center.x / 100) * width;
-          const cy = (dh.center.y / 100) * height;
+        (() => {
           const maxCount = Math.max(...Object.values(triesByHoldId));
-          const ratio = maxCount > 1 ? (count - 1) / (maxCount - 1) : 1;
-          const opacity = 0.4 + ratio * 0.45;
-          const radius = 5 + ratio * 7;
-          return (
-            <Circle
-              key={`tries-${holdId}`}
-              cx={cx}
-              cy={cy}
-              r={radius}
-              fill={`rgba(220, 53, 69, ${opacity})`}
-              stroke="#fff"
-              strokeWidth={1.5}
-            />
-          );
-        })}
+          const base = Math.max(3, width * 0.0075);
+          const strokeWidth = Math.max(0.75, width * 0.0015);
+          return Object.entries(triesByHoldId).map(([holdId, count]) => {
+            const dh = detectedHoldsMap.get(holdId);
+            if (!dh) return null;
+            const cx = (dh.center.x / 100) * width;
+            const cy = (dh.center.y / 100) * height;
+            const ratio = maxCount > 1 ? (count - 1) / (maxCount - 1) : 1;
+            const opacity = 0.4 + ratio * 0.45;
+            const radius = base + ratio * base * 1.4;
+            return (
+              <Circle
+                key={`tries-${holdId}`}
+                cx={cx}
+                cy={cy}
+                r={radius}
+                fill={`rgba(220, 53, 69, ${opacity})`}
+                stroke="#fff"
+                strokeWidth={strokeWidth}
+              />
+            );
+          });
+        })()}
 
       {/* Foot-only holds (not already rendered as hand holds) */}
       {sortByAreaDesc(footHolds.map((hold, index) => ({ hold, index }))).map(
