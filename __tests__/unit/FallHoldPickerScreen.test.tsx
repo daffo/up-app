@@ -42,6 +42,13 @@ import {
   clearPendingFallHoldCallback,
 } from "../../lib/fall-hold-picker-bus";
 
+const poly = (x: number, y: number, size = 10) => [
+  { x, y },
+  { x: x + size, y },
+  { x: x + size, y: y + size },
+  { x, y: y + size },
+];
+
 const routeWithHolds = {
   route: {
     id: "r1",
@@ -54,7 +61,21 @@ const routeWithHolds = {
     },
     photo: { id: "p1", image_url: "https://example.com/wall.jpg" },
   } as any,
-  detectedHolds: [{ id: "h1" }, { id: "h2" }, { id: "f1" }] as any,
+  detectedHolds: [
+    { id: "h1", polygon: poly(10, 10), center: { x: 15, y: 15 } },
+    { id: "h2", polygon: poly(40, 40), center: { x: 45, y: 45 } },
+    { id: "f1", polygon: poly(70, 70), center: { x: 75, y: 75 } },
+  ] as any,
+};
+
+// Set image dimensions so onImageTap locationX/Y maps 1:1 to percent coords.
+const primeDimensions = () => {
+  act(() => {
+    (global as any).__fsibProps.onDimensionsReady(
+      { width: 100, height: 100 },
+      { x: 0, y: 0 },
+    );
+  });
 };
 
 const flush = () =>
@@ -113,8 +134,12 @@ describe("FallHoldPickerScreen", () => {
     const fsibProps = (global as any).__fsibProps;
     expect(fsibProps).toBeTruthy();
 
+    primeDimensions();
     act(() => {
-      fsibProps.onHandHoldPress(1);
+      (global as any).__fsibProps.onImageTap({
+        locationX: 45,
+        locationY: 45,
+      });
     });
 
     const updated = (global as any).__fsibProps;
@@ -127,8 +152,12 @@ describe("FallHoldPickerScreen", () => {
     const renderer = renderScreen(nav);
     await flush();
 
+    primeDimensions();
     act(() => {
-      (global as any).__fsibProps.onFootHoldPress(0);
+      (global as any).__fsibProps.onImageTap({
+        locationX: 75,
+        locationY: 75,
+      });
     });
 
     expect((global as any).__fsibProps.selectedHoldId).toBe("f1");
@@ -143,8 +172,12 @@ describe("FallHoldPickerScreen", () => {
     const renderer = renderScreen(nav);
     await flush();
 
+    primeDimensions();
     act(() => {
-      (global as any).__fsibProps.onHandHoldPress(0);
+      (global as any).__fsibProps.onImageTap({
+        locationX: 15,
+        locationY: 15,
+      });
     });
 
     const confirm = findButtonByLabel(renderer, "log.fallHoldConfirm");
