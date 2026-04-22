@@ -1,12 +1,17 @@
-import { useState, useMemo } from 'react';
-import { View, StyleSheet, LayoutChangeEvent, TouchableOpacity } from 'react-native';
-import { HandHold, FootHold, DetectedHold } from '../types/database.types';
-import CachedImage from './CachedImage';
-import { getImageDimensions } from '../lib/cache/image-cache';
-import FullScreenRouteViewer from './FullScreenRouteViewer';
-import FullScreenHoldEditor from './FullScreenHoldEditor';
-import RouteOverlay from './RouteOverlay';
-import { useThemeColors } from '../lib/theme-context';
+import { useState, useMemo } from "react";
+import {
+  View,
+  StyleSheet,
+  LayoutChangeEvent,
+  TouchableOpacity,
+} from "react-native";
+import { HandHold, FootHold, DetectedHold } from "../types/database.types";
+import CachedImage from "./CachedImage";
+import { getImageDimensions } from "../lib/cache/image-cache";
+import FullScreenRouteViewer from "./FullScreenRouteViewer";
+import FullScreenHoldEditor from "./FullScreenHoldEditor";
+import RouteOverlay from "./RouteOverlay";
+import { useThemeColors } from "../lib/theme-context";
 
 interface RouteVisualizationProps {
   photoUrl: string;
@@ -18,8 +23,13 @@ interface RouteVisualizationProps {
   adminMode?: boolean;
   photoId?: string;
   onDeleteDetectedHold?: (holdId: string) => void;
-  onUpdateDetectedHold?: (holdId: string, updates: Partial<DetectedHold>) => void;
+  onUpdateDetectedHold?: (
+    holdId: string,
+    updates: Partial<DetectedHold>,
+  ) => void;
   onAddDetectedHold?: (hold: DetectedHold) => void;
+  /** Map of detected_hold_id → attempt count. Drives tries overlay + CTA. */
+  triesByHoldId?: Record<string, number>;
 }
 
 export default function RouteVisualization({
@@ -33,16 +43,25 @@ export default function RouteVisualization({
   onDeleteDetectedHold,
   onUpdateDetectedHold,
   onAddDetectedHold,
+  triesByHoldId,
 }: RouteVisualizationProps) {
   const colors = useThemeColors();
-  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
-  const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
+  const [containerDimensions, setContainerDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+  const [imageNaturalSize, setImageNaturalSize] = useState({
+    width: 0,
+    height: 0,
+  });
   const [fullScreenVisible, setFullScreenVisible] = useState(false);
 
   const handleImageLoad = () => {
-    getImageDimensions(photoUrl).then(({ width, height }) => {
-      setImageNaturalSize({ width, height });
-    }).catch(() => {});
+    getImageDimensions(photoUrl)
+      .then(({ width, height }) => {
+        setImageNaturalSize({ width, height });
+      })
+      .catch(() => {});
   };
 
   const handleLayout = (event: LayoutChangeEvent) => {
@@ -52,12 +71,17 @@ export default function RouteVisualization({
 
   // Calculate actual displayed image dimensions based on contain mode
   const displayedDimensions = useMemo(() => {
-    if (!imageNaturalSize.width || !imageNaturalSize.height || !containerDimensions.width) {
+    if (
+      !imageNaturalSize.width ||
+      !imageNaturalSize.height ||
+      !containerDimensions.width
+    ) {
       return { width: 0, height: 0 };
     }
 
     const imageAspect = imageNaturalSize.width / imageNaturalSize.height;
-    const containerAspect = containerDimensions.width / containerDimensions.height;
+    const containerAspect =
+      containerDimensions.width / containerDimensions.height;
 
     let displayWidth, displayHeight;
 
@@ -72,19 +96,33 @@ export default function RouteVisualization({
     }
 
     return { width: displayWidth, height: displayHeight };
-  }, [imageNaturalSize.width, imageNaturalSize.height, containerDimensions.width, containerDimensions.height]);
+  }, [
+    imageNaturalSize.width,
+    imageNaturalSize.height,
+    containerDimensions.width,
+    containerDimensions.height,
+  ]);
 
   // Calculate centering offsets for overlay
-  const offsetX = useMemo(() => (containerDimensions.width - displayedDimensions.width) / 2, [containerDimensions.width, displayedDimensions.width]);
-  const offsetY = useMemo(() => (containerDimensions.height - displayedDimensions.height) / 2, [containerDimensions.height, displayedDimensions.height]);
+  const offsetX = useMemo(
+    () => (containerDimensions.width - displayedDimensions.width) / 2,
+    [containerDimensions.width, displayedDimensions.width],
+  );
+  const offsetY = useMemo(
+    () => (containerDimensions.height - displayedDimensions.height) / 2,
+    [containerDimensions.height, displayedDimensions.height],
+  );
 
   return (
     <>
-      <View style={[styles.container, { backgroundColor: colors.screenBackground }]}>
+      <View
+        style={[styles.container, { backgroundColor: colors.screenBackground }]}
+      >
         <TouchableOpacity
           onPress={() => setFullScreenVisible(true)}
           activeOpacity={0.9}
           style={StyleSheet.absoluteFill}
+          testID="open-fullscreen-route"
         >
           <CachedImage
             source={{ uri: photoUrl }}
@@ -97,7 +135,7 @@ export default function RouteVisualization({
           {displayedDimensions.width > 0 && (
             <View
               style={{
-                position: 'absolute',
+                position: "absolute",
                 left: offsetX,
                 top: offsetY,
                 width: displayedDimensions.width,
@@ -140,6 +178,7 @@ export default function RouteVisualization({
           detectedHolds={detectedHolds}
           onClose={() => setFullScreenVisible(false)}
           showLabels={showLabels}
+          triesByHoldId={triesByHoldId}
         />
       )}
     </>
@@ -148,12 +187,12 @@ export default function RouteVisualization({
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    width: "100%",
     aspectRatio: 1,
-    position: 'relative',
+    position: "relative",
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 });

@@ -66,6 +66,12 @@ export default function RouteDetailScreen({
 
   const routeData = routeDetail?.route ?? null;
   const detectedHolds = routeDetail?.detectedHolds ?? [];
+  const triesByHoldId = logs.reduce<Record<string, number>>((acc, l) => {
+    if (l.status === "attempted" && l.fall_hold_id) {
+      acc[l.fall_hold_id] = (acc[l.fall_hold_id] ?? 0) + 1;
+    }
+    return acc;
+  }, {});
 
   useEffect(() => {
     const showEvent =
@@ -229,6 +235,7 @@ export default function RouteDetailScreen({
               handHolds={routeData.holds.hand_holds}
               footHolds={routeData.holds.foot_holds}
               detectedHolds={detectedHolds}
+              triesByHoldId={triesByHoldId}
             />
           </View>
         )}

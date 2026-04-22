@@ -8,6 +8,7 @@ import Svg, {
   G,
   Path,
   Rect,
+  Circle,
 } from "react-native-svg";
 import {
   Hold,
@@ -31,6 +32,8 @@ interface RouteOverlayProps {
   showLabels?: boolean; // Whether to show labels and arrows (default: true)
   selectedHoldId?: string | null; // ID of currently selected hold for highlighting
   zoomScale?: number; // Zoom level to adjust smoothing (default: 1)
+  /** Map of detected_hold_id → attempt count. Renders tries markers when set. */
+  triesByHoldId?: Record<string, number>;
 }
 
 // Helper function to convert polygon percentage coordinates to pixels
@@ -264,6 +267,7 @@ export default function RouteOverlay({
   showLabels = true,
   selectedHoldId = null,
   zoomScale = 1,
+  triesByHoldId,
 }: RouteOverlayProps) {
   // Memoize all expensive polygon calculations — only recompute when inputs change
   const {
@@ -379,7 +383,9 @@ export default function RouteOverlay({
       <Path
         d={`M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z ${allHolds
           .map(({ hold }) => {
-            const smoothedPixels = smoothedPolygonsMap.get(hold.detected_hold_id);
+            const smoothedPixels = smoothedPolygonsMap.get(
+              hold.detected_hold_id,
+            );
             if (!smoothedPixels || smoothedPixels.length < 3) return "";
             return polygonToPath(smoothedPixels);
           })
@@ -529,6 +535,30 @@ export default function RouteOverlay({
           );
         },
       )}
+
+      {/* Tries markers — filled dots on detected holds where users fell */}
+      {triesByHoldId &&
+        Object.entries(triesByHoldId).map(([holdId, count]) => {
+          const dh = detectedHoldsMap.get(holdId);
+          if (!dh) return null;
+          const cx = (dh.center.x / 100) * width;
+          const cy = (dh.center.y / 100) * height;
+          const maxCount = Math.max(...Object.values(triesByHoldId));
+          const ratio = maxCount > 1 ? (count - 1) / (maxCount - 1) : 1;
+          const opacity = 0.4 + ratio * 0.45;
+          const radius = 5 + ratio * 7;
+          return (
+            <Circle
+              key={`tries-${holdId}`}
+              cx={cx}
+              cy={cy}
+              r={radius}
+              fill={`rgba(220, 53, 69, ${opacity})`}
+              stroke="#fff"
+              strokeWidth={1.5}
+            />
+          );
+        })}
 
       {/* Foot-only holds (not already rendered as hand holds) */}
       {sortByAreaDesc(footHolds.map((hold, index) => ({ hold, index }))).map(

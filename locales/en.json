@@ -130,7 +130,9 @@
     "tab": {
       "sent": "Sent",
       "attempted": "Tried"
-    }
+    },
+    "showTries": "Show tries",
+    "hideTries": "Hide tries"
   },
   "comments": {
     "title": "Comments",

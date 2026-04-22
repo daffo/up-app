@@ -130,7 +130,9 @@
     "tab": {
       "sent": "Chiuse",
       "attempted": "Tentate"
-    }
+    },
+    "showTries": "Mostra tentativi",
+    "hideTries": "Nascondi tentativi"
   },
   "comments": {
     "title": "Commenti",

@@ -57,6 +57,10 @@ export interface FullScreenImageBaseProps {
   // Optional header configuration
   headerTitle?: string;
   headerRight?: ReactNode;
+  /** Optional action rendered left of the close X (no-header mode only). */
+  topRightAction?: ReactNode;
+  /** Map of detected_hold_id → attempt count. Renders tries markers on holds. */
+  triesByHoldId?: Record<string, number>;
   // Optional helper banner (shown below header)
   helperBanner?: ReactNode;
   // Selected hold for highlighting
@@ -85,6 +89,8 @@ export default function FullScreenImageBase({
   onDimensionsReady,
   headerTitle,
   headerRight,
+  topRightAction,
+  triesByHoldId,
   helperBanner,
   selectedHoldId = null,
   lockZoom = false,
@@ -437,6 +443,7 @@ export default function FullScreenImageBase({
             onHandHoldPress={onHandHoldPress}
             onFootHoldPress={onFootHoldPress}
             selectedHoldId={selectedHoldId}
+            triesByHoldId={triesByHoldId}
           />
         </View>
       )}
@@ -549,9 +556,12 @@ export default function FullScreenImageBase({
             )}
           </View>
         ) : (
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>{closeButtonText}</Text>
-          </TouchableOpacity>
+          <View style={styles.topRightRow}>
+            {topRightAction}
+            <TouchableOpacity style={styles.closeButtonInRow} onPress={onClose}>
+              <Text style={styles.closeButtonText}>{closeButtonText}</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Helper banner */}
@@ -661,6 +671,24 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  topRightRow: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  closeButtonInRow: {
+    minWidth: 44,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 22,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     position: "absolute",

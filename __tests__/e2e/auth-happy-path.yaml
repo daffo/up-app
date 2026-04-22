@@ -344,6 +344,29 @@ name: Auth User - Login Flow
 - assertVisible: "Tried"
 
 # ============================================
+# SHOW TRIES CTA — crux heatmap toggle
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "open-fullscreen-route"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "open-fullscreen-route"
+- extendedWaitUntil:
+    visible: "Show tries"
+    timeout: 5000
+- tapOn: "Show tries"
+- extendedWaitUntil:
+    visible: "Hide tries"
+    timeout: 5000
+- tapOn: "✕"
+- extendedWaitUntil:
+    visible: "Tried"
+    timeout: 5000
+
+# ============================================
 # EDIT THE LOG — CONVERT TO SENT
 # ============================================
 
