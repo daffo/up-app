@@ -1,4 +1,8 @@
-Novità nella versione 1.0.4:
-- Salva le vie come bozze e pubblicale quando sei pronto — le bozze sono private, solo tu puoi vederle
-- Le vie in bozza non hanno commenti, chiusure o condivisione fino alla pubblicazione
-- Supporto completo della piattaforma web per overlay immagini e visualizzatore a schermo intero
+Novità nella versione 1.1.0:
+- Registra tentativi e chiusure — tieni traccia di ogni prova, non solo delle chiusure, e segna la presa dove sei caduto
+- Salva le vie con il nuovo pulsante segnalibro sulla schermata della via
+- Filtra la home per Salvate, Tentate o Chiuse
+- "Mostra tentativi" sull'immagine a schermo intero della via — vedi dove sono caduti gli altri climber
+- Web: il tap ora funziona nel selettore della presa di caduta e nel visualizzatore a schermo intero
+- Android: icona dell'app ridimensionata correttamente
+Inoltre: rifiniture UI, medie dei voti più veloci e diverse correzioni di bug.

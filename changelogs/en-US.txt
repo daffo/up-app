@@ -1,4 +1,8 @@
-What's new in 1.0.4:
-- Save routes as drafts and publish when ready — drafts are private, only you can see them
-- Draft routes have no comments, sends, or sharing until published
-- Full web platform support for image overlay and fullscreen viewer
+What's new in 1.1.0:
+- Log attempts and sends — track every try, not just sends, and mark the hold where you fell
+- Bookmark routes for later with a new button on the route screen
+- Filter your home screen by Saved, Attempted, or Sent
+- "Show tries" on a route's fullscreen image — see where other climbers fell
+- Web: tap-to-select now works in the fall-hold picker and fullscreen viewer
+- Android: app icon resized to the right size
+Also: UI polish, faster rating averages, and several bug fixes.
