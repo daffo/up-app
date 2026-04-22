@@ -93,11 +93,11 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
           bms.forEach((b) => ids.add(b.route.id));
         }
         if (relations.includes("sent")) {
-          const logs = await logsApi.listByUser(user.id, "sent");
+          const logs = await logsApi.listByUser(user.id, ["sent"]);
           logs.forEach((l) => ids.add(l.route.id));
         }
         if (relations.includes("tried")) {
-          const logs = await logsApi.listByUser(user.id, "attempted");
+          const logs = await logsApi.listByUser(user.id, ["attempted"]);
           logs.forEach((l) => ids.add(l.route.id));
         }
         if (!cancelled) {

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../lib/auth-context";
 import UserLogsList from "../components/UserLogsList";
@@ -7,79 +8,105 @@ import SafeScreen from "../components/SafeScreen";
 import { LogStatus } from "../types/database.types";
 import { useThemeColors } from "../lib/theme-context";
 
-type Tab = LogStatus;
+const ALL_STATUSES: LogStatus[] = ["sent", "attempted"];
 
 export default function MyLogsScreen() {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>("sent");
+  const [selected, setSelected] = useState<Set<LogStatus>>(new Set());
 
   if (!user) {
     return <SafeScreen />;
   }
 
+  const toggle = (status: LogStatus) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  };
+
+  const statuses = Array.from(selected);
+  const emptyMessage =
+    selected.size === 1 ? t(`log.empty.${statuses[0]}`) : t("log.emptyList");
+
   return (
     <SafeScreen>
       <View
         style={[
-          styles.tabs,
+          styles.pillRow,
           {
             borderBottomColor: colors.separator,
             backgroundColor: colors.cardBackground,
           },
         ]}
       >
-        {(["sent", "attempted"] as Tab[]).map((key) => {
-          const active = tab === key;
+        {ALL_STATUSES.map((status) => {
+          const active = selected.has(status);
+          const labelKey = status === "sent" ? "sent" : "attempted";
           return (
             <TouchableOpacity
-              key={key}
+              key={status}
               style={[
-                styles.tab,
-                active && { borderBottomColor: colors.primary },
+                styles.pill,
+                {
+                  backgroundColor: active
+                    ? colors.primaryLight
+                    : colors.borderLight,
+                },
               ]}
-              onPress={() => setTab(key)}
-              accessibilityLabel={t(`log.tab.${key}`)}
+              onPress={() => toggle(status)}
+              accessibilityLabel={t(`log.tab.${labelKey}`)}
             >
               <Text
                 style={[
-                  styles.tabLabel,
+                  styles.pillText,
                   { color: active ? colors.primary : colors.textSecondary },
-                  active && styles.tabLabelActive,
                 ]}
               >
-                {t(`log.tab.${key}`)}
+                {t(`log.tab.${labelKey}`)}
               </Text>
+              {active && (
+                <Ionicons
+                  name="close-circle"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+              )}
             </TouchableOpacity>
           );
         })}
       </View>
       <UserLogsList
         userId={user.id}
-        status={tab}
-        emptyMessage={t(`log.empty.${tab}`)}
+        statuses={statuses}
+        emptyMessage={emptyMessage}
       />
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  tabs: {
+  pillRow: {
     flexDirection: "row",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
     borderBottomWidth: 1,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 14,
+  pill: {
+    flexDirection: "row",
     alignItems: "center",
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
+    paddingVertical: 6,
+    paddingLeft: 12,
+    paddingRight: 10,
+    borderRadius: 16,
+    gap: 6,
   },
-  tabLabel: {
-    fontSize: 15,
-  },
-  tabLabelActive: {
-    fontWeight: "600",
+  pillText: {
+    fontSize: 14,
   },
 });

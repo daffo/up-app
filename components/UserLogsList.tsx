@@ -19,27 +19,33 @@ type LogWithRoute = Log & {
 
 interface UserLogsListProps {
   userId: string;
-  status?: LogStatus;
+  /** Filter logs by status. Empty/undefined = no filter (all statuses). */
+  statuses?: LogStatus[];
   emptyMessage?: string;
 }
 
 export default function UserLogsList({
   userId,
-  status,
+  statuses,
   emptyMessage,
 }: UserLogsListProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const navigation = useNavigation<AppNavigationProp>();
+  const statusesKey = (statuses ?? []).slice().sort().join(",");
   const {
     data: logs,
     loading,
     refreshing,
     refresh,
-  } = useApiQuery(() => logsApi.listByUser(userId, status), [userId, status], {
-    cacheKey: "logs",
-    initialData: [] as LogWithRoute[],
-  });
+  } = useApiQuery(
+    () => logsApi.listByUser(userId, statuses),
+    [userId, statusesKey],
+    {
+      cacheKey: "logs",
+      initialData: [] as LogWithRoute[],
+    },
+  );
 
   const renderLog = ({ item: log }: { item: LogWithRoute }) => (
     <ListItemWithRoute
