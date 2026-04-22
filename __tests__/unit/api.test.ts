@@ -1073,7 +1073,7 @@ describe("detectedHoldsApi", () => {
 // ---------------------------------------------------------------------------
 describe("userProfilesApi", () => {
   beforeEach(() => {
-    userProfilesApi._clearCache();
+    userProfilesApi.clearCache();
   });
 
   describe("get", () => {
@@ -1616,12 +1616,28 @@ describe("logsApi", () => {
       expect(builder.eq).toHaveBeenCalledWith("user_id", "u1");
     });
 
-    it("applies status filter", async () => {
+    it("applies status filter when given a non-empty array", async () => {
       const builder = createBuilder({ data: [], error: null });
       mockFrom.mockReturnValue(builder);
 
-      await logsApi.listByUser("u1", "sent");
-      expect(builder.eq).toHaveBeenCalledWith("status", "sent");
+      await logsApi.listByUser("u1", ["sent"]);
+      expect(builder.in).toHaveBeenCalledWith("status", ["sent"]);
+    });
+
+    it("applies no status filter when array is empty", async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await logsApi.listByUser("u1", []);
+      expect(builder.in).not.toHaveBeenCalled();
+    });
+
+    it("accepts both statuses", async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await logsApi.listByUser("u1", ["sent", "attempted"]);
+      expect(builder.in).toHaveBeenCalledWith("status", ["sent", "attempted"]);
     });
   });
 

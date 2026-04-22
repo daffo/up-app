@@ -1,26 +1,27 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Session, User } from '@supabase/supabase-js';
-import { supabase } from './supabase';
-import { accountApi } from './api';
-import { clearProfileSessionCache } from '../hooks/useUserProfiles';
+import { createContext, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
+import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Session, User } from "@supabase/supabase-js";
+import { supabase } from "./supabase";
+import { accountApi, userProfilesApi } from "./api";
 
-const PASSWORD_RECOVERY_KEY = '@password_recovery_pending';
+const PASSWORD_RECOVERY_KEY = "@password_recovery_pending";
 
 // Required for proper browser session dismissal on mobile
 WebBrowser.maybeCompleteAuthSession();
 
-async function setSessionFromRedirectUrl(url: string): Promise<{ error: any; isRecovery: boolean } | null> {
-  const fragmentIndex = url.indexOf('#');
+async function setSessionFromRedirectUrl(
+  url: string,
+): Promise<{ error: any; isRecovery: boolean } | null> {
+  const fragmentIndex = url.indexOf("#");
   if (fragmentIndex === -1) return null;
 
   const params = new URLSearchParams(url.substring(fragmentIndex + 1));
-  const accessToken = params.get('access_token');
-  const refreshToken = params.get('refresh_token');
-  const type = params.get('type');
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+  const type = params.get("type");
 
   if (!accessToken || !refreshToken) return null;
 
@@ -28,7 +29,7 @@ async function setSessionFromRedirectUrl(url: string): Promise<{ error: any; isR
     access_token: accessToken,
     refresh_token: refreshToken,
   });
-  return { error, isRecovery: type === 'recovery' };
+  return { error, isRecovery: type === "recovery" };
 }
 
 type AuthContextType = {
@@ -63,9 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const { data } = await supabase
-        .from('admins')
-        .select('user_id')
-        .eq('user_id', user.id)
+        .from("admins")
+        .select("user_id")
+        .eq("user_id", user.id)
         .maybeSingle();
       setIsAdmin(!!data);
     };
@@ -78,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const pending = await AsyncStorage.getItem(PASSWORD_RECOVERY_KEY);
       if (pending) {
         await AsyncStorage.removeItem(PASSWORD_RECOVERY_KEY);
-        await supabase.auth.signOut({ scope: 'local' });
+        await supabase.auth.signOut({ scope: "local" });
         setSession(null);
         setUser(null);
         setLoading(false);
@@ -101,12 +102,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (event === 'PASSWORD_RECOVERY') {
-        AsyncStorage.setItem(PASSWORD_RECOVERY_KEY, 'true');
+      if (event === "PASSWORD_RECOVERY") {
+        AsyncStorage.setItem(PASSWORD_RECOVERY_KEY, "true");
         setIsPasswordRecovery(true);
       }
     });
@@ -115,13 +115,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleDeepLink = async (event: { url: string }) => {
       const result = await setSessionFromRedirectUrl(event.url);
       if (result?.isRecovery) {
-        AsyncStorage.setItem(PASSWORD_RECOVERY_KEY, 'true');
+        AsyncStorage.setItem(PASSWORD_RECOVERY_KEY, "true");
         setIsPasswordRecovery(true);
       }
     };
 
     // Listen for incoming deep links
-    const linkSubscription = Linking.addEventListener('url', handleDeepLink);
+    const linkSubscription = Linking.addEventListener("url", handleDeepLink);
 
     // Check if app was opened from a deep link
     Linking.getInitialURL().then((url) => {
@@ -152,12 +152,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signInWithOAuthProvider = async (provider: 'google' | 'facebook'): Promise<{ error: any }> => {
-    const redirectTo = Platform.OS === 'web'
-      ? window.location.origin
-      : Linking.createURL('/');
+  const signInWithOAuthProvider = async (
+    provider: "google" | "facebook",
+  ): Promise<{ error: any }> => {
+    const redirectTo =
+      Platform.OS === "web" ? window.location.origin : Linking.createURL("/");
 
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: { redirectTo },
@@ -177,9 +178,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) return { error };
 
     if (data?.url) {
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      const result = await WebBrowser.openAuthSessionAsync(
+        data.url,
+        redirectTo,
+      );
 
-      if (result.type === 'success' && result.url) {
+      if (result.type === "success" && result.url) {
         const sessionResult = await setSessionFromRedirectUrl(result.url);
         if (sessionResult) return sessionResult;
       }
@@ -188,11 +192,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null };
   };
 
-  const signInWithGoogle = () => signInWithOAuthProvider('google');
-  const signInWithFacebook = () => signInWithOAuthProvider('facebook');
+  const signInWithGoogle = () => signInWithOAuthProvider("google");
+  const signInWithFacebook = () => signInWithOAuthProvider("facebook");
 
   const deleteAccount = async () => {
-    if (!user) return { error: new Error('Not logged in') };
+    if (!user) return { error: new Error("Not logged in") };
 
     try {
       await accountApi.deleteAllUserData(user.id);
@@ -205,12 +209,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut({ scope: 'local' });
+      await supabase.auth.signOut({ scope: "local" });
     } catch {
       // Ignore errors - just clear local state
     }
 
-    clearProfileSessionCache();
+    userProfilesApi.clearCache();
 
     // Force update local state — signOut() already clears its own storage
     setSession(null);
@@ -246,7 +250,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

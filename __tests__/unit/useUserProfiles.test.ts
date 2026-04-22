@@ -1,7 +1,6 @@
 import React from "react";
 import { act, create, ReactTestRenderer } from "react-test-renderer";
 
-// Mock userProfilesApi.getMany
 const mockGetMany = jest.fn();
 
 jest.mock("../../lib/api", () => ({
@@ -10,13 +9,8 @@ jest.mock("../../lib/api", () => ({
   },
 }));
 
-import {
-  useUserProfiles,
-  clearProfileSessionCache,
-  _sessionCache,
-} from "../../hooks/useUserProfiles";
+import { useUserProfiles } from "../../hooks/useUserProfiles";
 
-// Minimal renderHook using react-test-renderer
 function renderHook<T>(hookFn: () => T) {
   let result: { current: T } = {} as any;
   let renderer: ReactTestRenderer;
@@ -38,7 +32,6 @@ function renderHook<T>(hookFn: () => T) {
   };
 }
 
-// Helper to flush promises
 const flushPromises = () =>
   act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -47,7 +40,6 @@ const flushPromises = () =>
 describe("useUserProfiles", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    clearProfileSessionCache();
   });
 
   it("fetches display names for given user IDs", async () => {
@@ -58,9 +50,7 @@ describe("useUserProfiles", () => {
       ]),
     );
 
-    const { result } = renderHook(() =>
-      useUserProfiles(["user-1", "user-2"]),
-    );
+    const { result } = renderHook(() => useUserProfiles(["user-1", "user-2"]));
 
     await flushPromises();
 
@@ -116,64 +106,34 @@ describe("useUserProfiles", () => {
     expect(result.current.profileMap).toEqual({ "user-1": "Alice" });
   });
 
-  it("uses session cache on re-render — no refetch for cached IDs", async () => {
+  it("re-renders with same IDs still call getMany (api layer handles caching)", async () => {
     mockGetMany.mockResolvedValue(
       new Map([["user-1", { user_id: "user-1", display_name: "Alice" }]]),
     );
 
-    // First render — fetches
-    const { result, rerender } = renderHook(() =>
-      useUserProfiles(["user-1"]),
-    );
+    const { result, rerender } = renderHook(() => useUserProfiles(["user-1"]));
     await flushPromises();
 
     expect(mockGetMany).toHaveBeenCalledTimes(1);
     expect(result.current.profileMap).toEqual({ "user-1": "Alice" });
 
-    // Reset mock and re-render with same IDs
     mockGetMany.mockClear();
     rerender();
     await flushPromises();
 
-    // Should NOT call getMany again — served from session cache
+    // Same idsKey — effect does not re-run, so no refetch happens
     expect(mockGetMany).not.toHaveBeenCalled();
     expect(result.current.profileMap).toEqual({ "user-1": "Alice" });
   });
 
-  it("fetches only missing IDs when some are already cached", async () => {
-    // Pre-populate session cache
-    _sessionCache.set("user-1", "Alice");
-
-    mockGetMany.mockResolvedValue(
-      new Map([["user-2", { user_id: "user-2", display_name: "Bob" }]]),
-    );
-
-    const { result } = renderHook(() =>
-      useUserProfiles(["user-1", "user-2"]),
-    );
-
-    await flushPromises();
-
-    // Should only fetch user-2
-    expect(mockGetMany).toHaveBeenCalledTimes(1);
-    expect(mockGetMany).toHaveBeenCalledWith(["user-2"]);
-    expect(result.current.profileMap).toEqual({
-      "user-1": "Alice",
-      "user-2": "Bob",
-    });
-  });
-
-  it("handles users with no profile (null display_name)", async () => {
+  it("handles users with no profile", async () => {
     mockGetMany.mockResolvedValue(new Map());
 
     const { result } = renderHook(() => useUserProfiles(["user-no-profile"]));
 
     await flushPromises();
 
-    // User has no profile — should not appear in map
     expect(result.current.profileMap).toEqual({});
-    // But should be cached (as undefined) to avoid refetch
-    expect(_sessionCache.has("user-no-profile")).toBe(true);
   });
 
   it("handles fetch errors gracefully", async () => {

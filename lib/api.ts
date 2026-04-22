@@ -634,7 +634,7 @@ export const userProfilesApi = {
     return result;
   },
 
-  _clearCache() {
+  clearCache() {
     profileCache.clear();
   },
 };
@@ -755,7 +755,7 @@ export const logsApi = {
 
   async listByUser(
     userId: string,
-    status?: LogStatus,
+    statuses?: LogStatus[],
   ): Promise<
     (Log & { route: { id: string; title: string; grade: string } })[]
   > {
@@ -765,7 +765,9 @@ export const logsApi = {
       .eq("user_id", userId)
       .order("logged_at", { ascending: false });
 
-    if (status) query = query.eq("status", status);
+    if (statuses && statuses.length > 0) {
+      query = query.in("status", statuses);
+    }
 
     const { data, error } = await query;
     if (error) throw error;
