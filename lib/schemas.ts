@@ -69,16 +69,6 @@ export const UserProfileSchema = z.object({
   updated_at: z.string(),
 });
 
-export const SendSchema = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  route_id: z.string().uuid(),
-  quality_rating: z.number().nullable(),
-  difficulty_rating: z.number().nullable(),
-  sent_at: z.string(),
-  created_at: z.string(),
-});
-
 export const LogStatusSchema = z.enum(["sent", "attempted"]);
 
 export const LogSchema = z
@@ -122,7 +112,6 @@ export const schemas = {
   photos: PhotoSchema,
   routes: RouteSchema,
   user_profiles: UserProfileSchema,
-  sends: SendSchema,
   logs: LogSchema,
   bookmarks: BookmarkSchema,
   comments: CommentSchema,

@@ -4,7 +4,6 @@ import {
   RouteHolds,
   DetectedHold,
   RouteFilters,
-  Send,
   Comment,
   Log,
   LogStatus,
@@ -62,7 +61,6 @@ export const CACHE_EVENTS = {
   ROUTE: "route",
   PHOTOS: "photos",
   DETECTED_HOLDS: "detected_holds",
-  SENDS: "sends",
   LOGS: "logs",
   BOOKMARKS: "bookmarks",
   COMMENTS: "comments",
@@ -97,7 +95,6 @@ const invalidateRoute = () => cacheEvents.invalidate(CACHE_EVENTS.ROUTE);
 const invalidatePhotos = () => cacheEvents.invalidate(CACHE_EVENTS.PHOTOS);
 const invalidateDetectedHolds = () =>
   cacheEvents.invalidate(CACHE_EVENTS.DETECTED_HOLDS);
-const invalidateSends = () => cacheEvents.invalidate(CACHE_EVENTS.SENDS);
 const invalidateLogs = () => cacheEvents.invalidate(CACHE_EVENTS.LOGS);
 const invalidateBookmarks = () =>
   cacheEvents.invalidate(CACHE_EVENTS.BOOKMARKS);
@@ -506,8 +503,6 @@ export const detectedHoldsApi = {
 // Account API
 export const accountApi = {
   async deleteAllUserData(userId: string): Promise<void> {
-    // Delete in order: bookmarks, logs, sends, comments, routes, profile.
-    // Bookmarks/logs first — sends kept during FEAT-2 bridge alongside logs.
     const { error: bookmarksError } = await supabase
       .from("bookmarks")
       .delete()
@@ -519,12 +514,6 @@ export const accountApi = {
       .delete()
       .eq("user_id", userId);
     if (logsError) throw logsError;
-
-    const { error: sendsError } = await supabase
-      .from("sends")
-      .delete()
-      .eq("user_id", userId);
-    if (sendsError) throw sendsError;
 
     const { error: commentsError } = await supabase
       .from("comments")
@@ -546,7 +535,6 @@ export const accountApi = {
 
     invalidateBookmarks();
     invalidateLogs();
-    invalidateSends();
     invalidateComments();
     invalidateRoutes();
   },
@@ -639,96 +627,7 @@ export const userProfilesApi = {
   },
 };
 
-// Sends API
-export const sendsApi = {
-  async listByRoute(routeId: string): Promise<Send[]> {
-    const { data, error } = await supabase
-      .from("sends")
-      .select("*")
-      .eq("route_id", routeId)
-      .order("sent_at", { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  },
-
-  async listByUser(
-    userId: string,
-  ): Promise<
-    (Send & { route: { id: string; title: string; grade: string } })[]
-  > {
-    const { data, error } = await supabase
-      .from("sends")
-      .select("*, route:routes(id, title, grade)")
-      .eq("user_id", userId)
-      .order("sent_at", { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  },
-
-  async getByUserAndRoute(
-    userId: string,
-    routeId: string,
-  ): Promise<Send | null> {
-    const { data, error } = await supabase
-      .from("sends")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("route_id", routeId)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async create(send: {
-    user_id: string;
-    route_id: string;
-    quality_rating?: number | null;
-    difficulty_rating?: number | null;
-    sent_at?: string;
-  }): Promise<Send> {
-    const { data, error } = await supabase
-      .from("sends")
-      .insert(send)
-      .select()
-      .single();
-
-    if (error) throw error;
-    invalidateSends();
-    invalidateRoutes();
-    return data as Send;
-  },
-
-  async update(
-    sendId: string,
-    updates: {
-      quality_rating?: number | null;
-      difficulty_rating?: number | null;
-      sent_at?: string;
-    },
-  ): Promise<void> {
-    const { error } = await supabase
-      .from("sends")
-      .update(updates)
-      .eq("id", sendId);
-
-    if (error) throw error;
-    invalidateSends();
-    invalidateRoutes();
-  },
-
-  async delete(sendId: string): Promise<void> {
-    const { error } = await supabase.from("sends").delete().eq("id", sendId);
-
-    if (error) throw error;
-    invalidateSends();
-    invalidateRoutes();
-  },
-};
-
-// Logs API (FEAT-2 — replaces sendsApi in new app; sendsApi kept during bridge)
+// Logs API
 export type LogUpsertInput = {
   user_id: string;
   route_id: string;

@@ -56,20 +56,6 @@ CREATE TABLE user_profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Sends table (LEGACY — kept during FEAT-2 bridge; old app still writes here.
--- Trigger `sends_to_logs_sync` mirrors every change into `logs`.
--- Will be dropped after new-app adoption threshold, see teardown migration.)
-CREATE TABLE sends (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  route_id UUID NOT NULL REFERENCES routes(id) ON DELETE CASCADE,
-  quality_rating SMALLINT CHECK (quality_rating >= 1 AND quality_rating <= 5),
-  difficulty_rating SMALLINT CHECK (difficulty_rating >= -1 AND difficulty_rating <= 1),
-  sent_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  UNIQUE(user_id, route_id)
-);
-
 -- Logs table (FEAT-2 — replaces sends. A log represents any interaction:
 -- sent or attempted. Quality rating is optional and independent of status.
 -- Difficulty rating only set when status='sent'. Fall hold only when
@@ -137,8 +123,6 @@ CREATE INDEX idx_detected_holds_photo_id ON detected_holds(photo_id);
 CREATE INDEX idx_routes_photo_id ON routes(photo_id);
 CREATE INDEX idx_routes_user_id ON routes(user_id);
 CREATE INDEX idx_user_profiles_user_id ON user_profiles(user_id);
-CREATE INDEX idx_sends_route_id ON sends(route_id);
-CREATE INDEX idx_sends_user_id ON sends(user_id);
 CREATE INDEX idx_logs_route_id ON logs(route_id);
 CREATE INDEX idx_logs_user_id ON logs(user_id);
 CREATE INDEX idx_logs_status ON logs(status);
@@ -158,7 +142,6 @@ ALTER TABLE photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE detected_holds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE routes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
@@ -262,26 +245,6 @@ CREATE POLICY "Users can insert their own profile"
 
 CREATE POLICY "Users can update their own profile"
   ON user_profiles FOR UPDATE
-  USING (auth.uid() = user_id);
-
--- ============================================================================
--- RLS POLICIES: sends
--- ============================================================================
-
-CREATE POLICY "Sends are viewable by everyone"
-  ON sends FOR SELECT
-  USING (true);
-
-CREATE POLICY "Users can insert their own sends"
-  ON sends FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own sends"
-  ON sends FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own sends"
-  ON sends FOR DELETE
   USING (auth.uid() = user_id);
 
 -- ============================================================================
@@ -437,35 +400,6 @@ CREATE TRIGGER update_user_profiles_updated_at
   BEFORE UPDATE ON user_profiles
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
--- FEAT-2 bridge: mirror sends into logs so old app stays consistent with new app
-CREATE OR REPLACE FUNCTION sync_send_to_log()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
-    INSERT INTO logs (id, user_id, route_id, status, quality_rating,
-                      difficulty_rating, fall_hold_id, logged_at, created_at)
-    VALUES (NEW.id, NEW.user_id, NEW.route_id, 'sent', NEW.quality_rating,
-            NEW.difficulty_rating, NULL, NEW.sent_at, NEW.created_at)
-    ON CONFLICT (user_id, route_id) DO UPDATE SET
-      status = 'sent',
-      quality_rating = EXCLUDED.quality_rating,
-      difficulty_rating = EXCLUDED.difficulty_rating,
-      fall_hold_id = NULL,
-      logged_at = EXCLUDED.logged_at;
-    RETURN NEW;
-  ELSIF TG_OP = 'DELETE' THEN
-    DELETE FROM logs
-    WHERE user_id = OLD.user_id AND route_id = OLD.route_id;
-    RETURN OLD;
-  END IF;
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER sends_to_logs_sync
-AFTER INSERT OR UPDATE OR DELETE ON sends
-FOR EACH ROW EXECUTE FUNCTION sync_send_to_log();
 
 -- ============================================================================
 -- POST-SETUP: Add yourself as admin

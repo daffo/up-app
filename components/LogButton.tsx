@@ -41,9 +41,9 @@ export default function LogButton({
   const [saving, setSaving] = useState(false);
 
   const DIFFICULTY_OPTIONS = [
-    { value: -1, label: t("sends.soft") },
-    { value: 0, label: t("sends.accurate") },
-    { value: 1, label: t("sends.hard") },
+    { value: -1, label: t("log.soft") },
+    { value: 0, label: t("log.accurate") },
+    { value: 1, label: t("log.hard") },
   ];
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function LogButton({
   const handleSave = async () => {
     if (!userId) return;
     if (qualityRating !== null && (qualityRating < 1 || qualityRating > 5)) {
-      Alert.alert(t("common.error"), t("sends.errorQualityRange"));
+      Alert.alert(t("common.error"), t("log.errorQualityRange"));
       return;
     }
     if (
@@ -86,7 +86,7 @@ export default function LogButton({
       difficultyRating !== null &&
       (difficultyRating < -1 || difficultyRating > 1)
     ) {
-      Alert.alert(t("common.error"), t("sends.errorDifficultyRange"));
+      Alert.alert(t("common.error"), t("log.errorDifficultyRange"));
       return;
     }
 
@@ -261,7 +261,7 @@ export default function LogButton({
         </View>
 
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-          {t("sends.qualityRating")}
+          {t("log.qualityRating")}
         </Text>
         <View style={styles.starsRow}>
           {[1, 2, 3, 4, 5].map((star) => (
@@ -270,7 +270,7 @@ export default function LogButton({
               onPress={() =>
                 setQualityRating(qualityRating === star ? null : star)
               }
-              accessibilityLabel={t("sends.rateStar", { count: star })}
+              accessibilityLabel={t("log.rateStar", { count: star })}
             >
               <Ionicons
                 name={
@@ -290,7 +290,7 @@ export default function LogButton({
             <Text
               style={[styles.sectionLabel, { color: colors.textSecondary }]}
             >
-              {t("sends.difficultyForGrade")}
+              {t("log.difficultyForGrade")}
             </Text>
             <View style={styles.difficultyRow}>
               {DIFFICULTY_OPTIONS.map((option) => (

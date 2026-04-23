@@ -177,7 +177,7 @@ describe("LogButton", () => {
 
     const textNodes = renderer.root.findAllByType(Text);
     const labels = textNodes.map((n) => n.props.children);
-    expect(labels).toContain("sends.difficultyForGrade");
+    expect(labels).toContain("log.difficultyForGrade");
     expect(labels).not.toContain("log.fallHoldLabel");
   });
 
@@ -193,7 +193,7 @@ describe("LogButton", () => {
     const textNodes = renderer.root.findAllByType(Text);
     const labels = textNodes.map((n) => n.props.children);
     expect(labels).toContain("log.fallHoldLabel");
-    expect(labels).not.toContain("sends.difficultyForGrade");
+    expect(labels).not.toContain("log.difficultyForGrade");
   });
 
   it("saves a sent log via logsApi.upsert", async () => {

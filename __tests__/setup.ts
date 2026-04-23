@@ -1,24 +1,25 @@
 // Jest setup file
 
 // Mock i18n for date utils tests
-jest.mock('../lib/i18n', () => ({
+jest.mock("../lib/i18n", () => ({
   __esModule: true,
   default: {
     t: (key: string, options?: { count?: number }) => {
       const translations: Record<string, string> = {
-        'date.justNow': 'Just now',
-        'date.minutesAgo': `${options?.count}m ago`,
-        'date.hoursAgo': `${options?.count}h ago`,
-        'date.yesterday': 'Yesterday',
-        'sends.soft': 'Soft',
-        'sends.accurate': 'Accurate',
-        'sends.hard': 'Hard',
-        'common.errorTitle': 'Something went wrong',
-        'common.errorMessage': 'An unexpected error occurred. Please try again.',
-        'common.retry': 'Try Again',
+        "date.justNow": "Just now",
+        "date.minutesAgo": `${options?.count}m ago`,
+        "date.hoursAgo": `${options?.count}h ago`,
+        "date.yesterday": "Yesterday",
+        "log.soft": "Soft",
+        "log.accurate": "Accurate",
+        "log.hard": "Hard",
+        "common.errorTitle": "Something went wrong",
+        "common.errorMessage":
+          "An unexpected error occurred. Please try again.",
+        "common.retry": "Try Again",
       };
       return translations[key] || key;
     },
-    language: 'en',
+    language: "en",
   },
 }));

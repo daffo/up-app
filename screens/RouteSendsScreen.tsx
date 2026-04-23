@@ -7,7 +7,7 @@ import { Log } from "../types/database.types";
 import { useThemeColors } from "../lib/theme-context";
 import UserNameLink from "../components/UserNameLink";
 import { formatRelativeDate } from "../utils/date";
-import { getDifficultyLabel } from "../utils/sends";
+import { getDifficultyLabel } from "../utils/logs";
 import SafeScreen from "../components/SafeScreen";
 import ListItemWithRoute from "../components/ListItemWithRoute";
 import DataListView from "../components/DataListView";
@@ -81,7 +81,7 @@ export default function RouteSendsScreen({ route }: ScreenProps<"RouteSends">) {
       <DataListView
         loading={loading}
         data={logs}
-        emptyMessage={t("sends.noSendsYet")}
+        emptyMessage={t("log.noSendsYet")}
         keyExtractor={(item) => item.id}
         renderItem={renderSend}
         loadingStyle={{ backgroundColor: colors.screenBackground }}

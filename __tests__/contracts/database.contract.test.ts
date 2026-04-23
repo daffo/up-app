@@ -5,7 +5,6 @@ import {
   RouteSchema,
   DetectedHoldSchema,
   PhotoSchema,
-  SendSchema,
   CommentSchema,
   UserProfileSchema,
   LogSchema,
@@ -108,22 +107,6 @@ describe("Database Contract Tests", () => {
     });
   });
 
-  describe("sends table", () => {
-    it("returns data matching SendSchema", async () => {
-      await testTableContract("sends");
-    });
-
-    it("allows nullable ratings", async () => {
-      const { data, error } = await supabase
-        .from("sends")
-        .select("quality_rating, difficulty_rating")
-        .limit(5);
-
-      expect(error).toBeNull();
-      // Just verify the query works - ratings can be null or number
-    });
-  });
-
   describe("logs table", () => {
     it("returns data matching LogSchema", async () => {
       await testTableContract("logs");
@@ -206,9 +189,9 @@ describe("Database Contract Tests", () => {
       }
     });
 
-    it("sends with route join returns expected shape", async () => {
+    it("logs with route join returns expected shape", async () => {
       const { data, error } = await supabase
-        .from("sends")
+        .from("logs")
         .select("*, route:routes(id, title, grade)")
         .limit(1);
 

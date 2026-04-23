@@ -43,12 +43,12 @@ export default function UserProfileScreen({
   return (
     <SafeScreen>
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-        {t("sends.title")}
+        {t("log.title")}
       </Text>
       <UserLogsList
         userId={userId}
         statuses={["sent"]}
-        emptyMessage={t("sends.noSendsYet")}
+        emptyMessage={t("log.noSendsYet")}
       />
     </SafeScreen>
   );

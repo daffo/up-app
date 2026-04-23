@@ -8,7 +8,7 @@ import { logsApi } from "../lib/api";
 import { Log, LogStatus } from "../types/database.types";
 import { useThemeColors } from "../lib/theme-context";
 import { formatRelativeDate } from "../utils/date";
-import { getDifficultyLabel } from "../utils/sends";
+import { getDifficultyLabel } from "../utils/logs";
 import ListItemWithRoute from "./ListItemWithRoute";
 import DataListView from "./DataListView";
 import { useApiQuery } from "../hooks/useApiQuery";

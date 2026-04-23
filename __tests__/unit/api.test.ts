@@ -5,7 +5,6 @@ import {
   photosApi,
   detectedHoldsApi,
   userProfilesApi,
-  sendsApi,
   logsApi,
   bookmarksApi,
   commentsApi,
@@ -207,13 +206,13 @@ describe("cacheEvents", () => {
 
   it("invalidate does not call listeners for other events", () => {
     const routesFn = jest.fn();
-    const sendsFn = jest.fn();
+    const logsFn = jest.fn();
     unsubs.push(cacheEvents.subscribe("routes", routesFn));
-    unsubs.push(cacheEvents.subscribe("sends", sendsFn));
+    unsubs.push(cacheEvents.subscribe("logs", logsFn));
 
     cacheEvents.invalidate("routes");
     expect(routesFn).toHaveBeenCalledTimes(1);
-    expect(sendsFn).not.toHaveBeenCalled();
+    expect(logsFn).not.toHaveBeenCalled();
   });
 
   it("unsubscribe removes the listener", () => {
@@ -1298,164 +1297,6 @@ describe("userProfilesApi", () => {
 });
 
 // ---------------------------------------------------------------------------
-// sendsApi
-// ---------------------------------------------------------------------------
-describe("sendsApi", () => {
-  describe("listByRoute", () => {
-    it("returns ordered sends", async () => {
-      const builder = createBuilder({ data: [{ id: "s1" }], error: null });
-      mockFrom.mockReturnValue(builder);
-
-      const result = await sendsApi.listByRoute("r1");
-      expect(result).toEqual([{ id: "s1" }]);
-      expect(builder.eq).toHaveBeenCalledWith("route_id", "r1");
-      expect(builder.order).toHaveBeenCalledWith("sent_at", {
-        ascending: false,
-      });
-    });
-
-    it("throws on error", async () => {
-      const builder = createBuilder({ data: null, error: { message: "fail" } });
-      mockFrom.mockReturnValue(builder);
-
-      await expect(sendsApi.listByRoute("r1")).rejects.toEqual({
-        message: "fail",
-      });
-    });
-  });
-
-  describe("listByUser", () => {
-    it("returns sends with route join", async () => {
-      const builder = createBuilder({
-        data: [{ id: "s1", route: { id: "r1", title: "T", grade: "V3" } }],
-        error: null,
-      });
-      mockFrom.mockReturnValue(builder);
-
-      const result = await sendsApi.listByUser("u1");
-      expect(result).toEqual([
-        { id: "s1", route: { id: "r1", title: "T", grade: "V3" } },
-      ]);
-      expect(builder.eq).toHaveBeenCalledWith("user_id", "u1");
-    });
-
-    it("throws on error", async () => {
-      const builder = createBuilder({ data: null, error: { message: "fail" } });
-      mockFrom.mockReturnValue(builder);
-
-      await expect(sendsApi.listByUser("u1")).rejects.toEqual({
-        message: "fail",
-      });
-    });
-  });
-
-  describe("getByUserAndRoute", () => {
-    it("returns send", async () => {
-      const builder = createBuilder({ data: { id: "s1" }, error: null });
-      mockFrom.mockReturnValue(builder);
-
-      const result = await sendsApi.getByUserAndRoute("u1", "r1");
-      expect(result).toEqual({ id: "s1" });
-    });
-
-    it("returns null when send not found", async () => {
-      const builder = createBuilder({ data: null, error: null });
-      mockFrom.mockReturnValue(builder);
-
-      const result = await sendsApi.getByUserAndRoute("u1", "r1");
-      expect(result).toBeNull();
-    });
-
-    it("throws on other errors", async () => {
-      const builder = createBuilder({
-        data: null,
-        error: { code: "OTHER", message: "fail" },
-      });
-      mockFrom.mockReturnValue(builder);
-
-      await expect(sendsApi.getByUserAndRoute("u1", "r1")).rejects.toEqual({
-        code: "OTHER",
-        message: "fail",
-      });
-    });
-  });
-
-  describe("create", () => {
-    it("inserts and invalidates sends", async () => {
-      const builder = createBuilder({ data: { id: "s1" }, error: null });
-      mockFrom.mockReturnValue(builder);
-
-      const listener = jest.fn();
-      unsubs.push(cacheEvents.subscribe("sends", listener));
-
-      const send = { user_id: "u1", route_id: "r1" };
-      const result = await sendsApi.create(send);
-
-      expect(result).toEqual({ id: "s1" });
-      expect(builder.insert).toHaveBeenCalledWith(send);
-      expect(listener).toHaveBeenCalledTimes(1);
-    });
-
-    it("throws on error", async () => {
-      const builder = createBuilder({ data: null, error: { message: "fail" } });
-      mockFrom.mockReturnValue(builder);
-
-      await expect(
-        sendsApi.create({ user_id: "u1", route_id: "r1" }),
-      ).rejects.toEqual({ message: "fail" });
-    });
-  });
-
-  describe("update", () => {
-    it("updates and invalidates sends", async () => {
-      const builder = createBuilder({ data: null, error: null });
-      mockFrom.mockReturnValue(builder);
-
-      const listener = jest.fn();
-      unsubs.push(cacheEvents.subscribe("sends", listener));
-
-      await sendsApi.update("s1", { quality_rating: 5 });
-
-      expect(builder.update).toHaveBeenCalledWith({ quality_rating: 5 });
-      expect(builder.eq).toHaveBeenCalledWith("id", "s1");
-      expect(listener).toHaveBeenCalledTimes(1);
-    });
-
-    it("throws on error", async () => {
-      const builder = createBuilder({ data: null, error: { message: "fail" } });
-      mockFrom.mockReturnValue(builder);
-
-      await expect(sendsApi.update("s1", {})).rejects.toEqual({
-        message: "fail",
-      });
-    });
-  });
-
-  describe("delete", () => {
-    it("deletes and invalidates sends", async () => {
-      const builder = createBuilder({ data: null, error: null });
-      mockFrom.mockReturnValue(builder);
-
-      const listener = jest.fn();
-      unsubs.push(cacheEvents.subscribe("sends", listener));
-
-      await sendsApi.delete("s1");
-
-      expect(builder.delete).toHaveBeenCalled();
-      expect(builder.eq).toHaveBeenCalledWith("id", "s1");
-      expect(listener).toHaveBeenCalledTimes(1);
-    });
-
-    it("throws on error", async () => {
-      const builder = createBuilder({ data: null, error: { message: "fail" } });
-      mockFrom.mockReturnValue(builder);
-
-      await expect(sendsApi.delete("s1")).rejects.toEqual({ message: "fail" });
-    });
-  });
-});
-
-// ---------------------------------------------------------------------------
 // commentsApi
 // ---------------------------------------------------------------------------
 describe("commentsApi", () => {
@@ -1921,18 +1762,16 @@ describe("bookmarksApi", () => {
 // ---------------------------------------------------------------------------
 describe("accountApi", () => {
   describe("deleteAllUserData", () => {
-    it("deletes all user data and invalidates caches (bookmarks, logs, sends, comments, routes)", async () => {
+    it("deletes all user data and invalidates caches (bookmarks, logs, comments, routes)", async () => {
       const builder = createBuilder({ data: null, error: null });
       mockFrom.mockReturnValue(builder);
 
       const bookmarksListener = jest.fn();
       const logsListener = jest.fn();
-      const sendsListener = jest.fn();
       const commentsListener = jest.fn();
       const routesListener = jest.fn();
       unsubs.push(cacheEvents.subscribe("bookmarks", bookmarksListener));
       unsubs.push(cacheEvents.subscribe("logs", logsListener));
-      unsubs.push(cacheEvents.subscribe("sends", sendsListener));
       unsubs.push(cacheEvents.subscribe("comments", commentsListener));
       unsubs.push(cacheEvents.subscribe("routes", routesListener));
 
@@ -1940,7 +1779,6 @@ describe("accountApi", () => {
 
       expect(bookmarksListener).toHaveBeenCalledTimes(1);
       expect(logsListener).toHaveBeenCalledTimes(1);
-      expect(sendsListener).toHaveBeenCalledTimes(1);
       expect(commentsListener).toHaveBeenCalledTimes(1);
       expect(routesListener).toHaveBeenCalledTimes(1);
     });
@@ -2027,40 +1865,6 @@ describe("error handling - cache invalidation on failure", () => {
     unsubs.push(cacheEvents.subscribe("routes", listener));
 
     await expect(routesApi.delete("r1")).rejects.toEqual({ message: "fail" });
-
-    expect(listener).not.toHaveBeenCalled();
-  });
-
-  it("sendsApi.create does not invalidate cache when insert fails", async () => {
-    const builder = createBuilder({
-      data: null,
-      error: { message: "duplicate send", code: "23505" },
-    });
-    mockFrom.mockReturnValue(builder);
-
-    const listener = jest.fn();
-    unsubs.push(cacheEvents.subscribe("sends", listener));
-
-    await expect(
-      sendsApi.create({ user_id: "u1", route_id: "r1" }),
-    ).rejects.toEqual({
-      message: "duplicate send",
-      code: "23505",
-    });
-
-    expect(listener).not.toHaveBeenCalled();
-  });
-
-  it("sendsApi.update does not invalidate cache when update fails", async () => {
-    const builder = createBuilder({ data: null, error: { message: "fail" } });
-    mockFrom.mockReturnValue(builder);
-
-    const listener = jest.fn();
-    unsubs.push(cacheEvents.subscribe("sends", listener));
-
-    await expect(sendsApi.update("s1", { quality_rating: 5 })).rejects.toEqual({
-      message: "fail",
-    });
 
     expect(listener).not.toHaveBeenCalled();
   });
