@@ -26,6 +26,7 @@ import { formatDate } from '../utils/date';
 import SafeScreen from '../components/SafeScreen';
 import DraftBanner from '../components/DraftBanner';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { useConfirm } from '../lib/confirm-context';
 import { ScreenProps } from '../navigation/types';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -35,6 +36,7 @@ export default function CreateEditRouteScreen({ navigation, route }: ScreenProps
   const { t } = useTranslation();
   const { user } = useAuth();
   const colors = useThemeColors();
+  const confirm = useConfirm();
   const { routeId } = route.params || {};
   const isEditMode = !!routeId;
 
@@ -269,32 +271,27 @@ export default function CreateEditRouteScreen({ navigation, route }: ScreenProps
     }
   };
 
-  const handleDelete = () => {
-    Alert.alert(
-      t('routeForm.deleteRoute'),
-      t('routeForm.deleteConfirm', { title: title || 'this route' }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            if (!routeId) return;
-            try {
-              setSaving(true);
-              await routesApi.delete(routeId);
-              Alert.alert(t('routeForm.deleted'), t('routeForm.routeDeleted'));
-              navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-            } catch (err) {
-              console.error('Error deleting route:', err);
-              Alert.alert(t('common.error'), t('routeForm.errorDelete'));
-            } finally {
-              setSaving(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async () => {
+    if (!routeId) return;
+    const confirmed = await confirm({
+      title: t('routeForm.deleteRoute'),
+      message: t('routeForm.deleteConfirm', { title: title || 'this route' }),
+      confirmText: t('common.delete'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      setSaving(true);
+      await routesApi.delete(routeId);
+      Alert.alert(t('routeForm.deleted'), t('routeForm.routeDeleted'));
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+    } catch (err) {
+      console.error('Error deleting route:', err);
+      Alert.alert(t('common.error'), t('routeForm.errorDelete'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {

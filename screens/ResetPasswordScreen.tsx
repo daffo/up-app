@@ -10,6 +10,7 @@ import { useAuth } from '../lib/auth-context';
 import PasswordInput from '../components/auth/PasswordInput';
 import AuthLayout from '../components/auth/AuthLayout';
 import { useAuthStyles } from '../components/auth/authStyles';
+import { useNotify } from '../lib/confirm-context';
 import { ScreenProps } from '../navigation/types';
 
 export default function ResetPasswordScreen({ navigation }: ScreenProps<'ResetPassword'>) {
@@ -19,6 +20,7 @@ export default function ResetPasswordScreen({ navigation }: ScreenProps<'ResetPa
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { styles, colors } = useAuthStyles();
+  const notify = useNotify();
 
   const handleReset = async () => {
     if (!newPassword || !confirmPassword) {
@@ -47,14 +49,8 @@ export default function ResetPasswordScreen({ navigation }: ScreenProps<'ResetPa
     } else {
       clearPasswordRecovery();
       await supabase.auth.signOut({ scope: 'global' });
-      Alert.alert(t('common.success'), t('resetPassword.success'), [
-        {
-          text: 'OK',
-          onPress: () => {
-            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-          },
-        },
-      ]);
+      await notify({ title: t('common.success'), message: t('resetPassword.success') });
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
     }
   };
 

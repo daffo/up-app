@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './lib/auth-context';
 import { ThemeProvider, initTheme, useTheme } from './lib/theme-context';
+import { ConfirmProvider } from './lib/confirm-context';
 import { initI18n } from './lib/i18n';
 import { initImageDimensionsCache } from './lib/cache/image-cache';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -53,7 +54,9 @@ export default function App() {
         <ErrorBoundary>
           <ThemeProvider>
             <AuthProvider>
-              <AppContent />
+              <ConfirmProvider>
+                <AppContent />
+              </ConfirmProvider>
             </AuthProvider>
           </ThemeProvider>
         </ErrorBoundary>

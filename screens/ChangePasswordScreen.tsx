@@ -13,11 +13,13 @@ import { supabase } from '../lib/supabase';
 import PasswordInput from '../components/auth/PasswordInput';
 import SafeScreen from '../components/SafeScreen';
 import { useThemeColors } from '../lib/theme-context';
+import { useNotify } from '../lib/confirm-context';
 import { ScreenProps } from '../navigation/types';
 
 export default function ChangePasswordScreen({ navigation }: ScreenProps<'ChangePassword'>) {
   const { t } = useTranslation();
   const colors = useThemeColors();
+  const notify = useNotify();
   const { user } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -65,14 +67,8 @@ export default function ChangePasswordScreen({ navigation }: ScreenProps<'Change
       Alert.alert(t('common.error'), updateError.message);
     } else {
       await supabase.auth.signOut({ scope: 'global' });
-      Alert.alert(t('common.success'), t('changePassword.success'), [
-        {
-          text: 'OK',
-          onPress: () => {
-            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-          },
-        },
-      ]);
+      await notify({ title: t('common.success'), message: t('changePassword.success') });
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
     }
   };
 

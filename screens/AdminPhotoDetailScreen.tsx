@@ -21,6 +21,7 @@ import { detectHolds } from '../lib/holdDetection';
 import SafeScreen from '../components/SafeScreen';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRequireAdmin } from '../hooks/useRequireAdmin';
+import { useConfirm } from '../lib/confirm-context';
 import { ScreenProps } from '../navigation/types';
 
 type Photo = Database['public']['Tables']['photos']['Row'];
@@ -73,6 +74,7 @@ export default function AdminPhotoDetailScreen({ route }: ScreenProps<'AdminPhot
   const { isAdmin, loading: adminLoading } = useRequireAdmin();
   const { t } = useTranslation();
   const colors = useThemeColors();
+  const confirm = useConfirm();
   const { photoId } = route.params;
 
   const { data: initData, loading } = useApiQuery(
@@ -137,19 +139,11 @@ export default function AdminPhotoDetailScreen({ route }: ScreenProps<'AdminPhot
     if (!photo) return;
 
     if (regenerate) {
-      const confirmed = await new Promise<boolean>((resolve) => {
-        if (Platform.OS === 'web') {
-          resolve(window.confirm(t('admin.regenerateConfirm', { count: detectedHolds.length })));
-        } else {
-          Alert.alert(
-            t('admin.regenerateHolds'),
-            t('admin.regenerateConfirm', { count: detectedHolds.length }),
-            [
-              { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
-              { text: t('common.delete'), style: 'destructive', onPress: () => resolve(true) },
-            ],
-          );
-        }
+      const confirmed = await confirm({
+        title: t('admin.regenerateHolds'),
+        message: t('admin.regenerateConfirm', { count: detectedHolds.length }),
+        confirmText: t('common.delete'),
+        destructive: true,
       });
       if (!confirmed) return;
 

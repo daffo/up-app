@@ -22,6 +22,7 @@ import {
   LanguageCode,
 } from "../lib/i18n";
 import { useTheme, ThemePreference } from "../lib/theme-context";
+import { useConfirm } from "../lib/confirm-context";
 import SafeScreen from "../components/SafeScreen";
 import { useApiQuery } from "../hooks/useApiQuery";
 import { useNavigation } from "@react-navigation/native";
@@ -42,6 +43,7 @@ export default function SettingsScreen() {
   const navigation = useNavigation<AppNavigationProp>();
   const { user, deleteAccount } = useAuth();
   const { themePreference, setThemePreference, colors } = useTheme();
+  const confirm = useConfirm();
   const { data: profile, loading: isLoading } = useApiQuery(
     () => userProfilesApi.get(user!.id),
     [user?.id],
@@ -82,42 +84,29 @@ export default function SettingsScreen() {
     setCurrentLang(langCode);
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      t("account.deleteAccountTitle"),
-      t("account.deleteAccountMessage"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("common.delete"),
-          style: "destructive",
-          onPress: () => {
-            Alert.alert(
-              t("account.deleteAccountConfirmTitle"),
-              t("account.deleteAccountConfirmMessage"),
-              [
-                { text: t("common.cancel"), style: "cancel" },
-                {
-                  text: t("account.deleteAccountButton"),
-                  style: "destructive",
-                  onPress: async () => {
-                    setIsDeleting(true);
-                    const { error } = await deleteAccount();
-                    if (error) {
-                      setIsDeleting(false);
-                      Alert.alert(
-                        t("common.error"),
-                        t("account.deleteAccountError"),
-                      );
-                    }
-                  },
-                },
-              ],
-            );
-          },
-        },
-      ],
-    );
+  const handleDeleteAccount = async () => {
+    const firstConfirm = await confirm({
+      title: t("account.deleteAccountTitle"),
+      message: t("account.deleteAccountMessage"),
+      confirmText: t("common.delete"),
+      destructive: true,
+    });
+    if (!firstConfirm) return;
+
+    const finalConfirm = await confirm({
+      title: t("account.deleteAccountConfirmTitle"),
+      message: t("account.deleteAccountConfirmMessage"),
+      confirmText: t("account.deleteAccountButton"),
+      destructive: true,
+    });
+    if (!finalConfirm) return;
+
+    setIsDeleting(true);
+    const { error } = await deleteAccount();
+    if (error) {
+      setIsDeleting(false);
+      Alert.alert(t("common.error"), t("account.deleteAccountError"));
+    }
   };
 
   const handleBuyMeABeer = () => {

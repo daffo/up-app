@@ -44,6 +44,12 @@ jest.mock('../../lib/auth-context', () => ({
   }),
 }));
 
+const mockNotify = jest.fn(() => Promise.resolve());
+jest.mock('../../lib/confirm-context', () => ({
+  useNotify: () => mockNotify,
+  useConfirm: () => jest.fn(() => Promise.resolve(true)),
+}));
+
 jest.mock('../../components/SafeScreen', () => {
   const { View } = require('react-native');
   return ({ children }: any) => <View>{children}</View>;
@@ -195,21 +201,13 @@ describe('ChangePasswordScreen', () => {
       fillPasswordFields(tree, 'oldpass', 'newpass123', 'newpass123');
       await act(async () => { pressSubmitButton(tree); });
 
-      // Alert.alert is called with an OK button that triggers navigation reset
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'common.success',
-        'changePassword.success',
-        expect.arrayContaining([
-          expect.objectContaining({ text: 'OK' }),
-        ]),
+      // On success a notify() dialog is shown, then navigation resets to Login.
+      expect(mockNotify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'common.success',
+          message: 'changePassword.success',
+        }),
       );
-
-      // Simulate pressing OK on the alert
-      const alertCall = (Alert.alert as jest.Mock).mock.calls.find(
-        (call) => call[0] === 'common.success',
-      );
-      const okButton = alertCall[2][0];
-      okButton.onPress();
 
       expect(mockNavigation.reset).toHaveBeenCalledWith({
         index: 0,

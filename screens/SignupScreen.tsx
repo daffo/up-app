@@ -12,6 +12,7 @@ import AuthLayout from '../components/auth/AuthLayout';
 import { useAuthStyles } from '../components/auth/authStyles';
 import { ScreenProps } from '../navigation/types';
 import { useAuthHandler } from '../hooks/useAuthHandler';
+import { useNotify } from '../lib/confirm-context';
 
 export default function SignupScreen({ navigation }: ScreenProps<'Signup'>) {
   const { t } = useTranslation();
@@ -21,6 +22,7 @@ export default function SignupScreen({ navigation }: ScreenProps<'Signup'>) {
   const { signUp } = useAuth();
   const { styles, colors } = useAuthStyles();
   const { loading, handleAuth } = useAuthHandler();
+  const notify = useNotify();
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword) {
@@ -41,11 +43,10 @@ export default function SignupScreen({ navigation }: ScreenProps<'Signup'>) {
     handleAuth(
       () => signUp(email, password),
       t('auth.signupFailed'),
-      () => Alert.alert(
-        t('common.success'),
-        t('auth.signupSuccess'),
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }],
-      ),
+      async () => {
+        await notify({ title: t('common.success'), message: t('auth.signupSuccess') });
+        navigation.navigate('Login');
+      },
     );
   };
 
