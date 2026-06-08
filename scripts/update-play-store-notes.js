@@ -12,6 +12,9 @@ const crypto = require('crypto');
 const https = require('https');
 
 const PACKAGE_NAME = 'com.daffo.upapp';
+// Google Play androidpublisher hard limit on release notes, per language.
+// Exceeding it makes the edit :commit fail with 403 PERMISSION_DENIED.
+const MAX_NOTE_LENGTH = 500;
 const TRACK = 'production';
 const SCOPES = 'https://www.googleapis.com/auth/androidpublisher';
 
@@ -80,6 +83,17 @@ function loadChangelogs() {
       notes.push({ language: lang, text: fs.readFileSync(file, 'utf-8').trim() });
     }
   }
+
+  // Fail fast: validate length BEFORE creating an edit / building. Otherwise the
+  // overflow only surfaces as a 403 at :commit, after build + submit already ran.
+  const tooLong = notes.filter((n) => n.text.length > MAX_NOTE_LENGTH);
+  if (tooLong.length > 0) {
+    const details = tooLong
+      .map((n) => `  ${n.language}: ${n.text.length} chars (max ${MAX_NOTE_LENGTH})`)
+      .join('\n');
+    throw new Error(`Release notes exceed Play Store limit:\n${details}`);
+  }
+
   return notes;
 }
 

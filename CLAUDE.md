@@ -108,13 +108,28 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 
 **Production Release (to Play Store internal testing):**
 1. Run `npx expo-doctor@latest` and fix any dependency mismatches with `npx expo install --fix`
-2. Bump version in `app.json` (e.g., `0.1.2-alpha` → `0.1.3-alpha`)
-3. Commit dependency updates + version bump + changelogs together and push to `main`
-4. Push a release tag:
+2. Bump version in `app.json` (e.g., `1.1.1` → `1.1.2`)
+3. **Update changelogs — MANDATORY, easy to forget.** Edit BOTH `changelogs/en-US.txt`
+   and `changelogs/it-IT.txt` to describe THIS version's changes. These files are
+   hand-written (nothing generates them) and shipped verbatim as Play Store release
+   notes by `scripts/update-play-store-notes.js` (last CI step). If you skip this, CI
+   ships the previous version's notes.
+   - **Hard limit: 500 characters per language** (Google Play `androidpublisher` rule).
+     Over 500 → the release-notes commit fails with `403 PERMISSION_DENIED ... too long
+     (max: 500)` and the CI job exits non-zero. Italian runs ~20% longer than English —
+     check it first. Verify before committing:
+     ```bash
+     for f in en-US it-IT; do node -e "console.log('$f', require('fs').readFileSync('changelogs/$f.txt','utf-8').trim().length)"; done
+     ```
+   - Bump the version header inside the file (`What's new in X.Y.Z:` /
+     `Novità nella versione X.Y.Z:`) to match `app.json`.
+4. Commit dependency updates + version bump + changelogs together and push to `main`
+5. Push a release tag:
    ```bash
-   git tag release-v0.1.3-alpha && git push origin release-v0.1.3-alpha
+   git tag release-v1.1.2 && git push origin release-v1.1.2
    ```
-5. GitHub Actions builds **production AAB** and submits to Play Store production track
+6. GitHub Actions builds **production AAB** and submits to Play Store production track,
+   then pushes the changelogs as release notes
 
 **Required GitHub Secrets** (Settings → Secrets → Actions):
 - `EXPO_TOKEN` - Expo access token for EAS CLI
