@@ -1,5 +1,5 @@
 appId: com.daffo.upapp
-name: Open menu and tap Settings
+name: Open menu and tap My Badges
 ---
 - tapOn: "Open menu"
 - waitForAnimationToEnd
@@ -7,10 +7,10 @@ name: Open menu and tap Settings
     when:
       platform: Android
     commands:
-      - tapOn: "Settings"
+      - tapOn: "My Badges"
 - runFlow:
     when:
       platform: iOS
     commands:
       - tapOn:
-          point: "75%,31%"
+          point: "75%,26%"

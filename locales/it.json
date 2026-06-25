@@ -215,7 +215,51 @@
     "locked": "Bloccato",
     "earnedOn": "Ottenuto il {{date}}",
     "unlocked": "Sbloccato: {{name}}!",
-    "unlockedLabel": "Badge sbloccato"
+    "unlockedLabel": "Badge sbloccato",
+    "first_send": {
+      "name": "Prima Volta",
+      "desc": "Registra la tua prima chiusura"
+    },
+    "sends_10": {
+      "name": "Arenaria",
+      "desc": "Chiudi 10 vie — tenera, ma ci provi"
+    },
+    "sends_25": {
+      "name": "Calcare",
+      "desc": "Chiudi 25 vie — ti stai indurendo"
+    },
+    "sends_50": {
+      "name": "Granito",
+      "desc": "Chiudi 50 vie — ora sei duro"
+    },
+    "sends_100": {
+      "name": "Quarzite",
+      "desc": "Chiudi 100 vie — infrangibile"
+    },
+    "first_attempt": {
+      "name": "Buon Tentativo",
+      "desc": "Registra il tuo primo tentativo"
+    },
+    "comeback": {
+      "name": "Mai Mollare",
+      "desc": "Chiudi una via che avevi già tentato"
+    },
+    "first_route": {
+      "name": "Tracciatore da Divano",
+      "desc": "Crea la tua prima via"
+    },
+    "routes_10": {
+      "name": "Sadico",
+      "desc": "Crea 10 vie per far soffrire gli altri"
+    },
+    "first_comment": {
+      "name": "Zitto e Arrampica",
+      "desc": "Pubblica il tuo primo commento"
+    },
+    "route_sent_by_other": {
+      "name": "Applausi",
+      "desc": "Qualcun altro ha chiuso una tua via"
+    }
   },
   "date": {
     "justNow": "Adesso",

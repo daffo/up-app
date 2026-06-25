@@ -13,4 +13,4 @@ name: Open menu and tap Logout
       platform: iOS
     commands:
       - tapOn:
-          point: "75%,33%"
+          point: "75%,38%"

@@ -215,7 +215,51 @@
     "locked": "Locked",
     "earnedOn": "Earned {{date}}",
     "unlocked": "Unlocked: {{name}}!",
-    "unlockedLabel": "Badge unlocked"
+    "unlockedLabel": "Badge unlocked",
+    "first_send": {
+      "name": "Cherry Popped",
+      "desc": "Log your first send"
+    },
+    "sends_10": {
+      "name": "Sandstone",
+      "desc": "Send 10 routes — soft, but you're trying"
+    },
+    "sends_25": {
+      "name": "Limestone",
+      "desc": "Send 25 routes — getting solid"
+    },
+    "sends_50": {
+      "name": "Granite",
+      "desc": "Send 50 routes — properly hard now"
+    },
+    "sends_100": {
+      "name": "Quartzite",
+      "desc": "Send 100 routes — unbreakable"
+    },
+    "first_attempt": {
+      "name": "Nice Try",
+      "desc": "Log your first attempt"
+    },
+    "comeback": {
+      "name": "Comeback Kid",
+      "desc": "Send a route you'd attempted before"
+    },
+    "first_route": {
+      "name": "Armchair Setter",
+      "desc": "Create your first route"
+    },
+    "routes_10": {
+      "name": "Sadist",
+      "desc": "Create 10 routes for others to suffer"
+    },
+    "first_comment": {
+      "name": "Shut Up and Climb",
+      "desc": "Post your first comment"
+    },
+    "route_sent_by_other": {
+      "name": "Crowd Pleaser",
+      "desc": "Someone else sent a route you created"
+    }
   },
   "date": {
     "justNow": "Just now",

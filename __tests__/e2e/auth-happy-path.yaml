@@ -608,6 +608,32 @@ name: Auth User - Login Flow
 - assertVisible: "Upp"
 
 # ============================================
+# CHECK MY BADGES
+# ============================================
+
+# We logged a send above, so the "Cherry Popped" (first_send) badge is
+# earned. The full catalog renders with locked placeholders for the rest.
+- runFlow: shared/menu-tap-my-badges.yaml
+- extendedWaitUntil:
+    visible: "Cherry Popped"
+    timeout: 5000
+
+# A later milestone we have not reached shows as a locked placeholder
+- assertVisible: "Quartzite"
+
+# Open a badge detail sheet, then dismiss it
+- tapOn: "Cherry Popped"
+- extendedWaitUntil:
+    visible: ".*Earned.*"
+    timeout: 5000
+- tapOn: "Done"
+- waitForAnimationToEnd
+
+# Back to home
+- runFlow: shared/press-back.yaml
+- assertVisible: "Upp"
+
+# ============================================
 # TEST MINE PILLS (Saved / Sent / Tried via filter modal)
 # ============================================
 
