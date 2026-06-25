@@ -151,7 +151,7 @@ DECLARE
 BEGIN
   SELECT COUNT(*) INTO route_total
   FROM routes
-  WHERE user_id = NEW.user_id;
+  WHERE user_id = NEW.user_id AND is_draft = false;
 
   PERFORM award_badge(NEW.user_id, b.key)
   FROM badges b
@@ -162,7 +162,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER routes_award_badges
-AFTER INSERT ON routes
+AFTER INSERT OR UPDATE ON routes
 FOR EACH ROW EXECUTE FUNCTION award_badges_from_route();
 
 -- ============================================================================
@@ -211,6 +211,7 @@ SELECT r.user_id, b.key, true
 FROM (
   SELECT user_id, COUNT(*) AS route_total
   FROM routes
+  WHERE is_draft = false
   GROUP BY user_id
 ) r
 JOIN badges b ON b.category = 'creator' AND b.threshold <= r.route_total
