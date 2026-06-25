@@ -19,28 +19,28 @@ export interface BadgePresentation {
 
 export const BADGE_PRESENTATION: Record<BadgeKey, BadgePresentation> = {
   first_send: {
-    iconSet: "ionicons",
-    icon: "checkmark-circle",
+    iconSet: "material-community",
+    icon: "seed",
     color: "#28a745",
   },
   sends_10: {
     iconSet: "material-community",
-    icon: "numeric-10-circle",
+    icon: "sprout",
     color: "#2e9e5b",
   },
   sends_25: {
     iconSet: "material-community",
-    icon: "numeric-9-plus-circle",
+    icon: "hiking",
     color: "#1f8a4c",
   },
   sends_50: {
     iconSet: "material-community",
-    icon: "medal",
+    icon: "summit",
     color: "#c9a227",
   },
   sends_100: {
     iconSet: "material-community",
-    icon: "trophy",
+    icon: "diamond-stone",
     color: "#d4af37",
   },
   first_attempt: {
@@ -60,8 +60,8 @@ export const BADGE_PRESENTATION: Record<BadgeKey, BadgePresentation> = {
   },
   routes_10: {
     iconSet: "material-community",
-    icon: "map-legend",
-    color: "#0353a4",
+    icon: "emoticon-devil",
+    color: "#c0392b",
   },
   first_comment: {
     iconSet: "ionicons",
