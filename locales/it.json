@@ -27,6 +27,7 @@
     "settings": "Impostazioni",
     "myLogs": "I Miei Log",
     "myComments": "I Miei Commenti",
+    "myBadges": "I Miei Badge",
     "sends": "Chiusure",
     "profile": "Profilo",
     "changePassword": "Cambia Password"
@@ -204,8 +205,16 @@
     "settings": "Impostazioni",
     "myLogs": "I Miei Log",
     "myComments": "I Miei Commenti",
+    "myBadges": "I Miei Badge",
     "admin": "Admin",
     "logout": "Esci"
+  },
+  "badges": {
+    "title": "Badge",
+    "empty": "Ancora nessun badge",
+    "locked": "Bloccato",
+    "earnedOn": "Ottenuto il {{date}}",
+    "unlocked": "Sbloccato: {{name}}!"
   },
   "date": {
     "justNow": "Adesso",

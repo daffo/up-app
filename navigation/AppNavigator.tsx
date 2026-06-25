@@ -22,6 +22,7 @@ import AdminPhotoDetailScreen from "../screens/AdminPhotoDetailScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import MyLogsScreen from "../screens/MyLogsScreen";
 import MyCommentsScreen from "../screens/MyCommentsScreen";
+import MyBadgesScreen from "../screens/MyBadgesScreen";
 import RouteSendsScreen from "../screens/RouteSendsScreen";
 import FallHoldPickerScreen from "../screens/FallHoldPickerScreen";
 import UserProfileScreen from "../screens/UserProfileScreen";
@@ -52,6 +53,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       Settings: "settings",
       MyLogs: "logs",
       MyComments: "comments",
+      MyBadges: "badges",
       RouteSends: "route/:routeId/sends",
       UserProfile: "user/:userId",
       ChangePassword: "settings/change-password",
@@ -182,6 +184,15 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: t("nav.myComments"),
+            headerBackTitle: t("common.back"),
+          }}
+        />
+        <Stack.Screen
+          name="MyBadges"
+          component={MyBadgesScreen}
+          options={{
+            headerShown: true,
+            title: t("nav.myBadges"),
             headerBackTitle: t("common.back"),
           }}
         />

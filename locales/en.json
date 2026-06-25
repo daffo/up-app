@@ -27,6 +27,7 @@
     "settings": "Settings",
     "myLogs": "My Logs",
     "myComments": "My Comments",
+    "myBadges": "My Badges",
     "sends": "Sends",
     "profile": "Profile",
     "changePassword": "Change Password"
@@ -204,8 +205,16 @@
     "settings": "Settings",
     "myLogs": "My Logs",
     "myComments": "My Comments",
+    "myBadges": "My Badges",
     "admin": "Admin",
     "logout": "Logout"
+  },
+  "badges": {
+    "title": "Badges",
+    "empty": "No badges yet",
+    "locked": "Locked",
+    "earnedOn": "Earned {{date}}",
+    "unlocked": "Unlocked: {{name}}!"
   },
   "date": {
     "justNow": "Just now",

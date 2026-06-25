@@ -15,6 +15,7 @@ interface ProfileDropdownProps {
   onSettings: () => void;
   onMyLogs: () => void;
   onMyComments: () => void;
+  onMyBadges: () => void;
   onAdmin?: () => void;
   onLogout: () => void;
 }
@@ -23,6 +24,7 @@ export default function ProfileDropdown({
   onSettings,
   onMyLogs,
   onMyComments,
+  onMyBadges,
   onAdmin,
   onLogout,
 }: ProfileDropdownProps) {
@@ -64,6 +66,11 @@ export default function ProfileDropdown({
   const handleMyComments = () => {
     handleClose();
     onMyComments();
+  };
+
+  const handleMyBadges = () => {
+    handleClose();
+    onMyBadges();
   };
 
   const handleAdmin = () => {
@@ -138,6 +145,14 @@ export default function ProfileDropdown({
                 style={[styles.menuItemText, { color: colors.textPrimary }]}
               >
                 {t("menu.myComments")}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={handleMyBadges}>
+              <Text
+                style={[styles.menuItemText, { color: colors.textPrimary }]}
+              >
+                {t("menu.myBadges")}
               </Text>
             </TouchableOpacity>
 

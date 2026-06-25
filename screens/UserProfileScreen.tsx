@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { userProfilesApi } from "../lib/api";
 import { useThemeColors } from "../lib/theme-context";
 import UserLogsList from "../components/UserLogsList";
+import BadgeGrid from "../components/BadgeGrid";
 import SafeScreen from "../components/SafeScreen";
 import { useApiQuery } from "../hooks/useApiQuery";
 import { ScreenProps } from "../navigation/types";
@@ -40,15 +41,25 @@ export default function UserProfileScreen({
     );
   }
 
-  return (
-    <SafeScreen>
+  const header = (
+    <View>
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+        {t("badges.title")}
+      </Text>
+      <BadgeGrid userId={userId} showLocked={false} />
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
         {t("log.title")}
       </Text>
+    </View>
+  );
+
+  return (
+    <SafeScreen>
       <UserLogsList
         userId={userId}
         statuses={["sent"]}
         emptyMessage={t("log.noSendsYet")}
+        header={header}
       />
     </SafeScreen>
   );

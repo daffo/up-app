@@ -22,12 +22,15 @@ interface UserLogsListProps {
   /** Filter logs by status. Empty/undefined = no filter (all statuses). */
   statuses?: LogStatus[];
   emptyMessage?: string;
+  /** Optional content rendered above the list (scrolls with it). */
+  header?: React.ReactElement;
 }
 
 export default function UserLogsList({
   userId,
   statuses,
   emptyMessage,
+  header,
 }: UserLogsListProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
@@ -110,6 +113,7 @@ export default function UserLogsList({
       renderItem={renderLog}
       refreshing={refreshing}
       onRefresh={refresh}
+      ListHeaderComponent={header}
     />
   );
 }

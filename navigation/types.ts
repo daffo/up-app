@@ -16,6 +16,7 @@ export type RootStackParamList = {
   Settings: undefined;
   MyLogs: undefined;
   MyComments: undefined;
+  MyBadges: undefined;
   RouteSends: { routeId: string };
   FallHoldPicker: { routeId: string; currentFallHoldId: string | null };
   UserProfile: { userId: string };

@@ -212,6 +212,7 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
             onSettings={() => navigation.navigate("Settings")}
             onMyLogs={() => navigation.navigate("MyLogs")}
             onMyComments={() => navigation.navigate("MyComments")}
+            onMyBadges={() => navigation.navigate("MyBadges")}
             onAdmin={() => navigation.navigate("AdminPhotos")}
             onLogout={handleLogout}
           />
