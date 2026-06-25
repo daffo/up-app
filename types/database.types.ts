@@ -98,6 +98,7 @@ export type BadgeKey =
   | "comeback"
   | "first_route"
   | "routes_10"
+  | "sadist"
   | "first_comment"
   | "route_sent_by_other";
 
@@ -105,6 +106,7 @@ export type BadgeCategory =
   | "send"
   | "attempt"
   | "creator"
+  | "challenge"
   | "community"
   | "social";
 

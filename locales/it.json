@@ -249,8 +249,12 @@
       "desc": "Crea la tua prima via"
     },
     "routes_10": {
+      "name": "Architetto",
+      "desc": "Crea 10 vie"
+    },
+    "sadist": {
       "name": "Sadico",
-      "desc": "Crea 10 vie per far soffrire gli altri"
+      "desc": "10 delle tue vie tentate ma mai chiuse"
     },
     "first_comment": {
       "name": "Zitto e Arrampica",

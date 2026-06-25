@@ -60,6 +60,11 @@ export const BADGE_PRESENTATION: Record<BadgeKey, BadgePresentation> = {
   },
   routes_10: {
     iconSet: "material-community",
+    icon: "ruler-square-compass",
+    color: "#0353a4",
+  },
+  sadist: {
+    iconSet: "material-community",
     icon: "emoticon-devil",
     color: "#c0392b",
   },

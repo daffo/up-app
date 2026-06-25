@@ -249,8 +249,12 @@
       "desc": "Create your first route"
     },
     "routes_10": {
+      "name": "Architect",
+      "desc": "Create 10 routes"
+    },
+    "sadist": {
       "name": "Sadist",
-      "desc": "Create 10 routes for others to suffer"
+      "desc": "10 of your routes were tried but never sent"
     },
     "first_comment": {
       "name": "Shut Up and Climb",

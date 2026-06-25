@@ -115,6 +115,7 @@ export const BadgeKeySchema = z.enum([
   "comeback",
   "first_route",
   "routes_10",
+  "sadist",
   "first_comment",
   "route_sent_by_other",
 ]);
@@ -123,6 +124,7 @@ export const BadgeCategorySchema = z.enum([
   "send",
   "attempt",
   "creator",
+  "challenge",
   "community",
   "social",
 ]);

@@ -456,6 +456,7 @@ INSERT INTO badges (key, category, threshold, sort_order) VALUES
   ('comeback',            'attempt',   NULL, 70),
   ('first_route',         'creator',   1,    80),
   ('routes_10',           'creator',   10,   90),
+  ('sadist',              'challenge', 10,   95),
   ('first_comment',       'community', 1,    100),
   ('route_sent_by_other', 'social',    NULL, 110);
 
@@ -467,7 +468,24 @@ RETURNS VOID AS $$
   ON CONFLICT (user_id, badge_key) DO NOTHING;
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- Trigger: logs (send milestones, first attempt, comeback, crowd pleaser)
+-- Count a user's "sandbagged" published routes (>= 1 attempt, 0 sends).
+CREATE OR REPLACE FUNCTION sandbagged_route_count(p_owner UUID)
+RETURNS INT AS $$
+  SELECT COUNT(*)::INT
+  FROM routes r
+  WHERE r.user_id = p_owner
+    AND r.is_draft = false
+    AND EXISTS (
+      SELECT 1 FROM logs l
+      WHERE l.route_id = r.id AND l.status = 'attempted'
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM logs l
+      WHERE l.route_id = r.id AND l.status = 'sent'
+    );
+$$ LANGUAGE sql STABLE;
+
+-- Trigger: logs (send milestones, first attempt, comeback, crowd pleaser, sadist)
 CREATE OR REPLACE FUNCTION award_badges_from_log()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -495,6 +513,12 @@ BEGIN
 
   IF NEW.status = 'attempted' THEN
     PERFORM award_badge(NEW.user_id, 'first_attempt');
+  END IF;
+
+  -- Sadist: evaluate for the owner of the affected route.
+  SELECT user_id INTO route_owner FROM routes WHERE id = NEW.route_id;
+  IF route_owner IS NOT NULL AND sandbagged_route_count(route_owner) >= 10 THEN
+    PERFORM award_badge(route_owner, 'sadist');
   END IF;
 
   RETURN NEW;

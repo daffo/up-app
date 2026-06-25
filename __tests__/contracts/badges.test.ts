@@ -25,7 +25,7 @@ describe("Badges Contract Tests", () => {
       }
     });
 
-    it("seeds the full v1 catalog of 11 badges", async () => {
+    it("seeds the full v1 catalog of 12 badges", async () => {
       const { data, error } = await supabase.from("badges").select("key");
       expect(error).toBeNull();
       const keys = (data ?? []).map((r) => r.key).sort();
@@ -38,6 +38,7 @@ describe("Badges Contract Tests", () => {
           "first_send",
           "route_sent_by_other",
           "routes_10",
+          "sadist",
           "sends_10",
           "sends_100",
           "sends_25",

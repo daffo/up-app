@@ -41,6 +41,7 @@ const ALL_KEYS: BadgeKey[] = [
   "comeback",
   "first_route",
   "routes_10",
+  "sadist",
   "first_comment",
   "route_sent_by_other",
 ];
