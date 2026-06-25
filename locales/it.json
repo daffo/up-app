@@ -214,7 +214,8 @@
     "empty": "Ancora nessun badge",
     "locked": "Bloccato",
     "earnedOn": "Ottenuto il {{date}}",
-    "unlocked": "Sbloccato: {{name}}!"
+    "unlocked": "Sbloccato: {{name}}!",
+    "unlockedLabel": "Badge sbloccato"
   },
   "date": {
     "justNow": "Adesso",

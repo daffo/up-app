@@ -214,7 +214,8 @@
     "empty": "No badges yet",
     "locked": "Locked",
     "earnedOn": "Earned {{date}}",
-    "unlocked": "Unlocked: {{name}}!"
+    "unlocked": "Unlocked: {{name}}!",
+    "unlockedLabel": "Badge unlocked"
   },
   "date": {
     "justNow": "Just now",

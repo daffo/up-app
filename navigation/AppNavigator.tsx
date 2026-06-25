@@ -29,6 +29,7 @@ import UserProfileScreen from "../screens/UserProfileScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
+import BadgeUnlockToast from "../components/BadgeUnlockToast";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -229,6 +230,7 @@ export default function AppNavigator() {
           }}
         />
       </Stack.Navigator>
+      <BadgeUnlockToast />
     </NavigationContainer>
   );
 }
