@@ -402,6 +402,145 @@ CREATE TRIGGER update_user_profiles_updated_at
   EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================================
+-- BADGES (FEAT-3) — DB-authoritative gamification
+-- ============================================================================
+
+-- Catalog: one row per badge definition
+CREATE TABLE badges (
+  key        TEXT PRIMARY KEY,        -- 'first_send', 'sends_10', ...
+  category   TEXT NOT NULL,           -- 'send' | 'attempt' | 'creator' | 'community' | 'social'
+  threshold  INT,                     -- count needed (NULL for boolean badges)
+  sort_order INT NOT NULL DEFAULT 0   -- display ordering
+);
+
+-- Earned rows: one per (user, badge)
+CREATE TABLE user_badges (
+  user_id   UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  badge_key TEXT NOT NULL REFERENCES badges(key),
+  earned_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  seen      BOOLEAN NOT NULL DEFAULT false,  -- false until the unlock toast is shown
+  PRIMARY KEY (user_id, badge_key)
+);
+
+CREATE INDEX idx_user_badges_user ON user_badges(user_id);
+
+ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Badges are viewable by everyone"
+  ON badges FOR SELECT
+  USING (true);
+
+CREATE POLICY "User badges are viewable by everyone"
+  ON user_badges FOR SELECT
+  USING (true);
+
+-- No client INSERT: awarding happens only via the SECURITY DEFINER helper.
+CREATE POLICY "Users can mark their own badges seen"
+  ON user_badges FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own badges"
+  ON user_badges FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Seed catalog (11 badges)
+INSERT INTO badges (key, category, threshold, sort_order) VALUES
+  ('first_send',          'send',      1,    10),
+  ('sends_10',            'send',      10,   20),
+  ('sends_25',            'send',      25,   30),
+  ('sends_50',            'send',      50,   40),
+  ('sends_100',           'send',      100,  50),
+  ('first_attempt',       'attempt',   1,    60),
+  ('comeback',            'attempt',   NULL, 70),
+  ('first_route',         'creator',   1,    80),
+  ('routes_10',           'creator',   10,   90),
+  ('first_comment',       'community', 1,    100),
+  ('route_sent_by_other', 'social',    NULL, 110);
+
+-- Idempotent awarding helper (bypasses RLS via SECURITY DEFINER)
+CREATE OR REPLACE FUNCTION award_badge(p_user_id UUID, p_key TEXT)
+RETURNS VOID AS $$
+  INSERT INTO user_badges (user_id, badge_key)
+  VALUES (p_user_id, p_key)
+  ON CONFLICT (user_id, badge_key) DO NOTHING;
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Trigger: logs (send milestones, first attempt, comeback, crowd pleaser)
+CREATE OR REPLACE FUNCTION award_badges_from_log()
+RETURNS TRIGGER AS $$
+DECLARE
+  sent_total INT;
+  route_owner UUID;
+BEGIN
+  IF NEW.status = 'sent' THEN
+    SELECT COUNT(*) INTO sent_total
+    FROM logs
+    WHERE user_id = NEW.user_id AND status = 'sent';
+
+    PERFORM award_badge(NEW.user_id, b.key)
+    FROM badges b
+    WHERE b.category = 'send' AND b.threshold <= sent_total;
+
+    IF TG_OP = 'UPDATE' AND OLD.status = 'attempted' THEN
+      PERFORM award_badge(NEW.user_id, 'comeback');
+    END IF;
+
+    SELECT user_id INTO route_owner FROM routes WHERE id = NEW.route_id;
+    IF route_owner IS NOT NULL AND route_owner <> NEW.user_id THEN
+      PERFORM award_badge(route_owner, 'route_sent_by_other');
+    END IF;
+  END IF;
+
+  IF NEW.status = 'attempted' THEN
+    PERFORM award_badge(NEW.user_id, 'first_attempt');
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER logs_award_badges
+AFTER INSERT OR UPDATE ON logs
+FOR EACH ROW EXECUTE FUNCTION award_badges_from_log();
+
+-- Trigger: routes (creator milestones)
+CREATE OR REPLACE FUNCTION award_badges_from_route()
+RETURNS TRIGGER AS $$
+DECLARE
+  route_total INT;
+BEGIN
+  SELECT COUNT(*) INTO route_total
+  FROM routes
+  WHERE user_id = NEW.user_id;
+
+  PERFORM award_badge(NEW.user_id, b.key)
+  FROM badges b
+  WHERE b.category = 'creator' AND b.threshold <= route_total;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER routes_award_badges
+AFTER INSERT ON routes
+FOR EACH ROW EXECUTE FUNCTION award_badges_from_route();
+
+-- Trigger: comments (first comment)
+CREATE OR REPLACE FUNCTION award_badges_from_comment()
+RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM award_badge(NEW.user_id, 'first_comment');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER comments_award_badges
+AFTER INSERT ON comments
+FOR EACH ROW EXECUTE FUNCTION award_badges_from_comment();
+
+-- ============================================================================
 -- POST-SETUP: Add yourself as admin
 -- ============================================================================
 --

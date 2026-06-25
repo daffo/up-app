@@ -88,6 +88,40 @@ export interface Comment {
   created_at: string;
 }
 
+export type BadgeKey =
+  | "first_send"
+  | "sends_10"
+  | "sends_25"
+  | "sends_50"
+  | "sends_100"
+  | "first_attempt"
+  | "comeback"
+  | "first_route"
+  | "routes_10"
+  | "first_comment"
+  | "route_sent_by_other";
+
+export type BadgeCategory =
+  | "send"
+  | "attempt"
+  | "creator"
+  | "community"
+  | "social";
+
+export interface Badge {
+  key: BadgeKey;
+  category: BadgeCategory;
+  threshold: number | null;
+  sort_order: number;
+}
+
+export interface UserBadge {
+  user_id: string;
+  badge_key: BadgeKey;
+  earned_at: string;
+  seen: boolean;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -336,6 +370,46 @@ export interface Database {
           created_at?: string;
         };
       };
+      badges: {
+        Row: {
+          key: BadgeKey;
+          category: BadgeCategory;
+          threshold: number | null;
+          sort_order: number;
+        };
+        Insert: {
+          key: BadgeKey;
+          category: BadgeCategory;
+          threshold?: number | null;
+          sort_order?: number;
+        };
+        Update: {
+          key?: BadgeKey;
+          category?: BadgeCategory;
+          threshold?: number | null;
+          sort_order?: number;
+        };
+      };
+      user_badges: {
+        Row: {
+          user_id: string;
+          badge_key: BadgeKey;
+          earned_at: string;
+          seen: boolean;
+        };
+        Insert: {
+          user_id: string;
+          badge_key: BadgeKey;
+          earned_at?: string;
+          seen?: boolean;
+        };
+        Update: {
+          user_id?: string;
+          badge_key?: BadgeKey;
+          earned_at?: string;
+          seen?: boolean;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -352,6 +426,10 @@ export interface Database {
       attempt_count: {
         Args: { "": unknown };
         Returns: number;
+      };
+      award_badge: {
+        Args: { p_user_id: string; p_key: string };
+        Returns: undefined;
       };
     };
     Enums: {
