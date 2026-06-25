@@ -8,6 +8,9 @@ import {
   Log,
   LogStatus,
   Bookmark,
+  Badge,
+  UserBadge,
+  BadgeKey,
 } from "../types/database.types";
 import {
   getCachedHolds,
@@ -64,6 +67,7 @@ export const CACHE_EVENTS = {
   LOGS: "logs",
   BOOKMARKS: "bookmarks",
   COMMENTS: "comments",
+  BADGES: "badges",
 } as const;
 
 type InvalidationEvent = (typeof CACHE_EVENTS)[keyof typeof CACHE_EVENTS];
@@ -99,6 +103,7 @@ const invalidateLogs = () => cacheEvents.invalidate(CACHE_EVENTS.LOGS);
 const invalidateBookmarks = () =>
   cacheEvents.invalidate(CACHE_EVENTS.BOOKMARKS);
 const invalidateComments = () => cacheEvents.invalidate(CACHE_EVENTS.COMMENTS);
+const invalidateBadges = () => cacheEvents.invalidate(CACHE_EVENTS.BADGES);
 
 // Route with computed stats
 export type RouteWithStats = Route & {
@@ -259,6 +264,7 @@ export const routesApi = {
     if (error) throw error;
 
     invalidateRoutes();
+    invalidateBadges(); // creator badges may have been awarded
 
     return data;
   },
@@ -283,6 +289,7 @@ export const routesApi = {
 
     invalidateRoutes();
     invalidateRoute();
+    invalidateBadges(); // publishing a draft may award creator badges
   },
 
   async delete(routeId: string) {
@@ -527,6 +534,13 @@ export const accountApi = {
       .eq("user_id", userId);
     if (routesError) throw routesError;
 
+    // Cascades via user FK, but delete explicitly per the existing pattern.
+    const { error: badgesError } = await supabase
+      .from("user_badges")
+      .delete()
+      .eq("user_id", userId);
+    if (badgesError) throw badgesError;
+
     const { error: profileError } = await supabase
       .from("user_profiles")
       .delete()
@@ -537,6 +551,7 @@ export const accountApi = {
     invalidateLogs();
     invalidateComments();
     invalidateRoutes();
+    invalidateBadges();
   },
 };
 
@@ -719,6 +734,7 @@ export const logsApi = {
     if (error) throw error;
     invalidateLogs();
     invalidateRoutes();
+    invalidateBadges(); // send/attempt/comeback/crowd-pleaser badges may fire
     return data as Log;
   },
 
@@ -828,6 +844,7 @@ export const commentsApi = {
 
     if (error) throw error;
     invalidateComments();
+    invalidateBadges(); // first_comment may have been awarded
     return data as Comment;
   },
 
@@ -852,6 +869,58 @@ export const appConfigApi = {
 
     if (error) throw error;
     return data.min_version;
+  },
+};
+
+// Badges API
+//
+// Awarding is server-authoritative (Postgres triggers). The client only reads
+// the catalog + earned rows and marks the unlock toast seen.
+let catalogCache: Badge[] | null = null;
+
+export const badgesApi = {
+  // All badge definitions. Cached for the session (catalog rarely changes).
+  async catalog(): Promise<Badge[]> {
+    if (catalogCache) return catalogCache;
+    const { data, error } = await supabase
+      .from("badges")
+      .select("*")
+      .order("sort_order", { ascending: true });
+    if (error) throw error;
+    catalogCache = data as Badge[];
+    return catalogCache;
+  },
+
+  // Earned badges for any user (public read). Drives own + others' profiles.
+  async listForUser(userId: string): Promise<UserBadge[]> {
+    const { data, error } = await supabase
+      .from("user_badges")
+      .select("*")
+      .eq("user_id", userId);
+    if (error) throw error;
+    return data as UserBadge[];
+  },
+
+  // Earned-but-unseen badges for the current user. Drives the unlock toast.
+  async listUnseen(userId: string): Promise<UserBadge[]> {
+    const { data, error } = await supabase
+      .from("user_badges")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("seen", false);
+    if (error) throw error;
+    return data as UserBadge[];
+  },
+
+  // Mark badges seen after the toast is shown.
+  async markSeen(userId: string, keys: BadgeKey[]): Promise<void> {
+    if (keys.length === 0) return;
+    const { error } = await supabase
+      .from("user_badges")
+      .update({ seen: true })
+      .eq("user_id", userId)
+      .in("badge_key", keys);
+    if (error) throw error;
   },
 };
 

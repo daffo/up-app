@@ -105,6 +105,42 @@ export const CommentSchema = z.object({
   created_at: z.string(),
 });
 
+export const BadgeKeySchema = z.enum([
+  "first_send",
+  "sends_10",
+  "sends_25",
+  "sends_50",
+  "sends_100",
+  "first_attempt",
+  "comeback",
+  "first_route",
+  "routes_10",
+  "first_comment",
+  "route_sent_by_other",
+]);
+
+export const BadgeCategorySchema = z.enum([
+  "send",
+  "attempt",
+  "creator",
+  "community",
+  "social",
+]);
+
+export const BadgeSchema = z.object({
+  key: BadgeKeySchema,
+  category: BadgeCategorySchema,
+  threshold: z.number().int().nullable(),
+  sort_order: z.number().int(),
+});
+
+export const UserBadgeSchema = z.object({
+  user_id: z.string().uuid(),
+  badge_key: BadgeKeySchema,
+  earned_at: z.string(),
+  seen: z.boolean(),
+});
+
 // Export all schemas as a map for dynamic access
 export const schemas = {
   admins: AdminSchema,
@@ -115,6 +151,8 @@ export const schemas = {
   logs: LogSchema,
   bookmarks: BookmarkSchema,
   comments: CommentSchema,
+  badges: BadgeSchema,
+  user_badges: UserBadgeSchema,
 } as const;
 
 export type TableName = keyof typeof schemas;
