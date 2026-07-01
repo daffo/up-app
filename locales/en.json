@@ -216,6 +216,8 @@
     "earnedOn": "Earned {{date}}",
     "unlocked": "Unlocked: {{name}}!",
     "unlockedLabel": "Badge unlocked",
+    "setAsShowcase": "Set as showcase",
+    "removeAsShowcase": "Remove as showcase",
     "first_send": {
       "name": "Cherry Popped",
       "desc": "Log your first send"

@@ -62,13 +62,6 @@ export const RouteSchema = z.object({
   is_draft: z.boolean(),
 });
 
-export const UserProfileSchema = z.object({
-  user_id: z.string().uuid(),
-  display_name: z.string().nullable(),
-  created_at: z.string(),
-  updated_at: z.string(),
-});
-
 export const LogStatusSchema = z.enum(["sent", "attempted"]);
 
 export const LogSchema = z
@@ -123,6 +116,14 @@ export const BadgeKeySchema = z.enum([
   "grade_7",
   "grade_8",
 ]);
+
+export const UserProfileSchema = z.object({
+  user_id: z.string().uuid(),
+  display_name: z.string().nullable(),
+  showcase_badge_key: BadgeKeySchema.nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
 
 export const BadgeCategorySchema = z.enum([
   "send",

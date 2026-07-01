@@ -582,6 +582,27 @@ CREATE TRIGGER comments_award_badges
 AFTER INSERT ON comments
 FOR EACH ROW EXECUTE FUNCTION award_badges_from_comment();
 
+-- Showcase badge: one earned badge a user displays next to their name.
+ALTER TABLE user_profiles
+  ADD COLUMN showcase_badge_key TEXT REFERENCES badges(key);
+
+CREATE OR REPLACE FUNCTION enforce_showcase_badge_earned()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.showcase_badge_key IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM user_badges
+    WHERE user_id = NEW.user_id AND badge_key = NEW.showcase_badge_key
+  ) THEN
+    RAISE EXCEPTION 'showcase_badge_key must reference a badge earned by the user';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER user_profiles_showcase_badge_check
+BEFORE INSERT OR UPDATE ON user_profiles
+FOR EACH ROW EXECUTE FUNCTION enforce_showcase_badge_earned();
+
 -- ============================================================================
 -- POST-SETUP: Add yourself as admin
 -- ============================================================================

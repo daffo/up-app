@@ -6,10 +6,10 @@ import {
   Animated,
   TouchableOpacity,
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BADGE_PRESENTATION } from "../lib/badges";
+import BadgeGlyph from "./BadgeGlyph";
 import { useThemeColors } from "../lib/theme-context";
 import { useBadgeUnlock } from "../hooks/useBadgeUnlock";
 
@@ -77,17 +77,12 @@ export default function BadgeUnlockToast() {
         ]}
       >
         <View style={[styles.iconCircle, { borderColor: pres.color }]}>
-          {pres.iconSet === "emoji" ? (
-            <Text style={{ fontSize: 28 }}>{pres.icon}</Text>
-          ) : pres.iconSet === "ionicons" ? (
-            <Ionicons name={pres.icon as any} size={28} color={pres.color} />
-          ) : (
-            <MaterialCommunityIcons
-              name={pres.icon as any}
-              size={28}
-              color={pres.color}
-            />
-          )}
+          <BadgeGlyph
+            iconSet={pres.iconSet}
+            icon={pres.icon}
+            color={pres.color}
+            size={28}
+          />
         </View>
         <View style={styles.textBlock}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>

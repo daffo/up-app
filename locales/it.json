@@ -216,6 +216,8 @@
     "earnedOn": "Ottenuto il {{date}}",
     "unlocked": "Sbloccato: {{name}}!",
     "unlockedLabel": "Badge sbloccato",
+    "setAsShowcase": "Imposta come badge principale",
+    "removeAsShowcase": "Rimuovi come badge principale",
     "first_send": {
       "name": "Prima Volta",
       "desc": "Registra la tua prima chiusura"

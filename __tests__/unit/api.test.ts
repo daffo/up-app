@@ -1186,6 +1186,40 @@ describe("userProfilesApi", () => {
         userProfilesApi.upsert("u1", { display_name: "X" }),
       ).rejects.toEqual({ message: "fail" });
     });
+
+    it("upserts showcase_badge_key independently of display_name", async () => {
+      const builder = createBuilder({
+        data: { user_id: "u1", showcase_badge_key: "first_send" },
+        error: null,
+      });
+      mockFrom.mockReturnValue(builder);
+
+      const result = await userProfilesApi.upsert("u1", {
+        showcase_badge_key: "first_send",
+      });
+      expect(result).toEqual({ user_id: "u1", showcase_badge_key: "first_send" });
+      expect(builder.upsert).toHaveBeenCalledWith({
+        user_id: "u1",
+        showcase_badge_key: "first_send",
+      });
+    });
+
+    it("upserts showcase_badge_key: null to clear the showcase", async () => {
+      const builder = createBuilder({
+        data: { user_id: "u1", showcase_badge_key: null },
+        error: null,
+      });
+      mockFrom.mockReturnValue(builder);
+
+      const result = await userProfilesApi.upsert("u1", {
+        showcase_badge_key: null,
+      });
+      expect(result).toEqual({ user_id: "u1", showcase_badge_key: null });
+      expect(builder.upsert).toHaveBeenCalledWith({
+        user_id: "u1",
+        showcase_badge_key: null,
+      });
+    });
   });
 
   describe("getMany", () => {

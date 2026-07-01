@@ -6,10 +6,10 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { badgesApi, CACHE_EVENTS } from "../lib/api";
-import { BADGE_PRESENTATION, BadgeIconSet } from "../lib/badges";
+import { badgesApi, userProfilesApi, CACHE_EVENTS } from "../lib/api";
+import { BADGE_PRESENTATION } from "../lib/badges";
+import BadgeGlyph from "./BadgeGlyph";
 import { useThemeColors } from "../lib/theme-context";
 import { useApiQuery } from "../hooks/useApiQuery";
 import { formatDate } from "../utils/date";
@@ -21,28 +21,6 @@ interface BadgeGridProps {
   /** When true, show the full catalog with greyed-out placeholders for
    * unearned badges. When false, render earned badges only. */
   showLocked: boolean;
-}
-
-const ICON_SIZE = 40;
-
-function BadgeGlyph({
-  iconSet,
-  icon,
-  color,
-  size = ICON_SIZE,
-}: {
-  iconSet: BadgeIconSet;
-  icon: string;
-  color: string;
-  size?: number;
-}) {
-  if (iconSet === "emoji") {
-    return <Text style={{ fontSize: size }}>{icon}</Text>;
-  }
-  if (iconSet === "ionicons") {
-    return <Ionicons name={icon as any} size={size} color={color} />;
-  }
-  return <MaterialCommunityIcons name={icon as any} size={size} color={color} />;
 }
 
 export default function BadgeGrid({ userId, showLocked }: BadgeGridProps) {
@@ -62,6 +40,13 @@ export default function BadgeGrid({ userId, showLocked }: BadgeGridProps) {
     { cacheKey: CACHE_EVENTS.BADGES, initialData: [] },
   );
 
+  const {
+    data: profile,
+    refetch: refetchProfile,
+  } = useApiQuery(() => userProfilesApi.get(userId), [userId]);
+  const showcaseBadgeKey = profile?.showcase_badge_key ?? null;
+  const [showcaseSaving, setShowcaseSaving] = useState(false);
+
   const earnedMap = useMemo(() => {
     const map = new Map<BadgeKey, string>();
     earned.forEach((b) => map.set(b.badge_key, b.earned_at));
@@ -72,6 +57,20 @@ export default function BadgeGrid({ userId, showLocked }: BadgeGridProps) {
     if (showLocked) return catalog;
     return catalog.filter((b) => earnedMap.has(b.key));
   }, [catalog, earnedMap, showLocked]);
+
+  const handleToggleShowcase = async () => {
+    if (!selected) return;
+    setShowcaseSaving(true);
+    try {
+      const nextKey = showcaseBadgeKey === selected ? null : selected;
+      await userProfilesApi.upsert(userId, { showcase_badge_key: nextKey });
+      refetchProfile();
+    } catch (err) {
+      console.error("Failed to update showcase badge:", err);
+    } finally {
+      setShowcaseSaving(false);
+    }
+  };
 
   if (catalogLoading || earnedLoading) {
     return (
@@ -122,6 +121,7 @@ export default function BadgeGrid({ userId, showLocked }: BadgeGridProps) {
                   iconSet={pres.iconSet}
                   icon={pres.icon}
                   color={tint}
+                  size={40}
                 />
               </View>
               <Text
@@ -143,6 +143,25 @@ export default function BadgeGrid({ userId, showLocked }: BadgeGridProps) {
         onClose={() => setSelected(null)}
         title={selected ? t(`badges.${selected}.name`) : ""}
         closeLabel={t("common.done")}
+        footer={
+          showLocked && selectedIsEarned ? (
+            <TouchableOpacity
+              style={[
+                styles.showcaseButton,
+                { backgroundColor: colors.primary },
+                showcaseSaving && styles.showcaseButtonDisabled,
+              ]}
+              onPress={handleToggleShowcase}
+              disabled={showcaseSaving}
+            >
+              <Text style={[styles.showcaseButtonText, { color: colors.textOnPrimary }]}>
+                {showcaseBadgeKey === selected
+                  ? t("badges.removeAsShowcase")
+                  : t("badges.setAsShowcase")}
+              </Text>
+            </TouchableOpacity>
+          ) : undefined
+        }
       >
         {selected && (
           <View>
@@ -220,5 +239,17 @@ const styles = StyleSheet.create({
   sheetStatus: {
     fontSize: 13,
     textAlign: "center",
+  },
+  showcaseButton: {
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  showcaseButtonDisabled: {
+    opacity: 0.6,
+  },
+  showcaseButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

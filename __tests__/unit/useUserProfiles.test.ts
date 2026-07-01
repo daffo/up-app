@@ -42,11 +42,11 @@ describe("useUserProfiles", () => {
     jest.clearAllMocks();
   });
 
-  it("fetches display names for given user IDs", async () => {
+  it("fetches display names and showcase badges for given user IDs", async () => {
     mockGetMany.mockResolvedValue(
       new Map([
-        ["user-1", { user_id: "user-1", display_name: "Alice" }],
-        ["user-2", { user_id: "user-2", display_name: "Bob" }],
+        ["user-1", { user_id: "user-1", display_name: "Alice", showcase_badge_key: "first_send" }],
+        ["user-2", { user_id: "user-2", display_name: "Bob", showcase_badge_key: null }],
       ]),
     );
 
@@ -55,8 +55,8 @@ describe("useUserProfiles", () => {
     await flushPromises();
 
     expect(result.current.profileMap).toEqual({
-      "user-1": "Alice",
-      "user-2": "Bob",
+      "user-1": { displayName: "Alice", showcaseBadgeKey: "first_send" },
+      "user-2": { displayName: "Bob", showcaseBadgeKey: null },
     });
     expect(result.current.loading).toBe(false);
     expect(mockGetMany).toHaveBeenCalledTimes(1);
@@ -67,7 +67,7 @@ describe("useUserProfiles", () => {
 
   it("deduplicates user IDs — only fetches unique IDs once", async () => {
     mockGetMany.mockResolvedValue(
-      new Map([["user-1", { user_id: "user-1", display_name: "Alice" }]]),
+      new Map([["user-1", { user_id: "user-1", display_name: "Alice", showcase_badge_key: null }]]),
     );
 
     const { result } = renderHook(() =>
@@ -78,7 +78,9 @@ describe("useUserProfiles", () => {
 
     expect(mockGetMany).toHaveBeenCalledTimes(1);
     expect(mockGetMany).toHaveBeenCalledWith(["user-1"]);
-    expect(result.current.profileMap).toEqual({ "user-1": "Alice" });
+    expect(result.current.profileMap).toEqual({
+      "user-1": { displayName: "Alice", showcaseBadgeKey: null },
+    });
   });
 
   it("returns empty map and does not fetch when given empty array", async () => {
@@ -93,7 +95,7 @@ describe("useUserProfiles", () => {
 
   it("handles null and undefined user IDs gracefully", async () => {
     mockGetMany.mockResolvedValue(
-      new Map([["user-1", { user_id: "user-1", display_name: "Alice" }]]),
+      new Map([["user-1", { user_id: "user-1", display_name: "Alice", showcase_badge_key: null }]]),
     );
 
     const { result } = renderHook(() =>
@@ -103,19 +105,23 @@ describe("useUserProfiles", () => {
     await flushPromises();
 
     expect(mockGetMany).toHaveBeenCalledWith(["user-1"]);
-    expect(result.current.profileMap).toEqual({ "user-1": "Alice" });
+    expect(result.current.profileMap).toEqual({
+      "user-1": { displayName: "Alice", showcaseBadgeKey: null },
+    });
   });
 
   it("re-renders with same IDs still call getMany (api layer handles caching)", async () => {
     mockGetMany.mockResolvedValue(
-      new Map([["user-1", { user_id: "user-1", display_name: "Alice" }]]),
+      new Map([["user-1", { user_id: "user-1", display_name: "Alice", showcase_badge_key: null }]]),
     );
 
     const { result, rerender } = renderHook(() => useUserProfiles(["user-1"]));
     await flushPromises();
 
     expect(mockGetMany).toHaveBeenCalledTimes(1);
-    expect(result.current.profileMap).toEqual({ "user-1": "Alice" });
+    expect(result.current.profileMap).toEqual({
+      "user-1": { displayName: "Alice", showcaseBadgeKey: null },
+    });
 
     mockGetMany.mockClear();
     rerender();
@@ -123,7 +129,9 @@ describe("useUserProfiles", () => {
 
     // Same idsKey — effect does not re-run, so no refetch happens
     expect(mockGetMany).not.toHaveBeenCalled();
-    expect(result.current.profileMap).toEqual({ "user-1": "Alice" });
+    expect(result.current.profileMap).toEqual({
+      "user-1": { displayName: "Alice", showcaseBadgeKey: null },
+    });
   });
 
   it("handles users with no profile", async () => {

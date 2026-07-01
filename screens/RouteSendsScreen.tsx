@@ -39,7 +39,8 @@ export default function RouteSendsScreen({ route }: ScreenProps<"RouteSends">) {
         <View style={styles.sendHeader}>
           <UserNameLink
             userId={log.user_id}
-            displayName={profileMap[log.user_id]}
+            displayName={profileMap[log.user_id]?.displayName}
+            showcaseBadgeKey={profileMap[log.user_id]?.showcaseBadgeKey}
             style={[styles.sendUser, { color: colors.textPrimary }]}
           />
           <Text style={[styles.sendDate, { color: colors.textTertiary }]}>

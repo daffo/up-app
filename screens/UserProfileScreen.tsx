@@ -5,9 +5,12 @@ import { userProfilesApi } from "../lib/api";
 import { useThemeColors } from "../lib/theme-context";
 import UserLogsList from "../components/UserLogsList";
 import BadgeGrid from "../components/BadgeGrid";
+import BadgeGlyph from "../components/BadgeGlyph";
 import SafeScreen from "../components/SafeScreen";
 import { useApiQuery } from "../hooks/useApiQuery";
 import { ScreenProps } from "../navigation/types";
+import { BADGE_PRESENTATION } from "../lib/badges";
+import { BadgeKey } from "../types/database.types";
 
 export default function UserProfileScreen({
   route,
@@ -17,16 +20,32 @@ export default function UserProfileScreen({
   const colors = useThemeColors();
   const { userId } = route.params;
 
-  const { data: displayName, loading } = useApiQuery(async () => {
-    const profile = await userProfilesApi.get(userId);
-    return profile?.display_name || null;
-  }, [userId]);
+  const { data: profile, loading } = useApiQuery(
+    () => userProfilesApi.get(userId),
+    [userId],
+  );
+  const displayName = profile?.display_name || null;
+  const showcaseBadgeKey: BadgeKey | null = profile?.showcase_badge_key ?? null;
 
   useEffect(() => {
-    if (!loading) {
-      navigation.setOptions({ title: displayName || t("common.anonymous") });
+    if (loading) return;
+    const name = displayName || t("common.anonymous");
+    if (!showcaseBadgeKey) {
+      navigation.setOptions({ title: name, headerTitle: undefined });
+      return;
     }
-  }, [displayName, loading, navigation, t]);
+    const pres = BADGE_PRESENTATION[showcaseBadgeKey];
+    navigation.setOptions({
+      headerTitle: () => (
+        <View style={styles.headerRow}>
+          <BadgeGlyph iconSet={pres.iconSet} icon={pres.icon} color={pres.color} size={18} />
+          <Text style={[styles.headerName, { color: colors.textPrimary }]} numberOfLines={1}>
+            {name}
+          </Text>
+        </View>
+      ),
+    });
+  }, [displayName, showcaseBadgeKey, loading, navigation, t, colors]);
 
   if (loading) {
     return (
@@ -77,5 +96,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerName: {
+    fontSize: 17,
+    fontWeight: "600",
+    marginLeft: 6,
   },
 });

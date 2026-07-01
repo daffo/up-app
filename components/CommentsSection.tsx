@@ -86,7 +86,8 @@ export default function CommentsSection({ routeId, userId, onLoginRequired, onIn
                   <View style={styles.commentHeader}>
                     <UserNameLink
                       userId={comment.user_id}
-                      displayName={profileMap[comment.user_id]}
+                      displayName={profileMap[comment.user_id]?.displayName}
+                      showcaseBadgeKey={profileMap[comment.user_id]?.showcaseBadgeKey}
                       style={[styles.commentAuthor, { color: colors.textPrimary }]}
                     />
                     <Text style={[styles.commentDate, { color: colors.textTertiary }]}>

@@ -580,7 +580,10 @@ export const userProfilesApi = {
     return data;
   },
 
-  async upsert(userId: string, updates: { display_name: string | null }) {
+  async upsert(
+    userId: string,
+    updates: { display_name?: string | null; showcase_badge_key?: BadgeKey | null },
+  ) {
     const { data, error } = await supabase
       .from("user_profiles")
       .upsert({

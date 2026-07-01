@@ -257,7 +257,8 @@ export default function RouteDetailScreen({
             </Text>
             <UserNameLink
               userId={routeData.user_id}
-              displayName={profileMap[routeData.user_id]}
+              displayName={profileMap[routeData.user_id]?.displayName}
+              showcaseBadgeKey={profileMap[routeData.user_id]?.showcaseBadgeKey}
               style={[styles.detailValue, { color: colors.textSecondary }]}
             />
           </View>

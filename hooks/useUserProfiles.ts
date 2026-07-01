@@ -1,17 +1,25 @@
 import { useState, useEffect, useRef } from "react";
 import { userProfilesApi } from "../lib/api";
+import type { BadgeKey } from "../types/database.types";
 
-type ProfileMap = Record<string, string>;
+interface ProfileInfo {
+  displayName: string;
+  showcaseBadgeKey: BadgeKey | null;
+}
+
+type ProfileMap = Record<string, ProfileInfo>;
 
 /**
- * Hook that returns a userId → displayName map for the given IDs.
+ * Hook that returns a userId → { displayName, showcaseBadgeKey } map for the
+ * given IDs.
  *
  * Caching lives in the API layer (`userProfilesApi.getMany` uses an internal
  * TTL'd cache and batches network misses). This hook is a thin React wrapper
  * that forwards to it whenever the ID set changes.
  *
- * Invalidation: whoever mutates profiles (SettingsScreen upsert, auth sign-out)
- * goes through the API layer, so no duplicate cache needs separate clearing.
+ * Invalidation: whoever mutates profiles (SettingsScreen upsert, showcase
+ * badge selection, auth sign-out) goes through the API layer, so no
+ * duplicate cache needs separate clearing.
  */
 export function useUserProfiles(userIds: (string | null | undefined)[]) {
   const [profileMap, setProfileMap] = useState<ProfileMap>({});
@@ -45,7 +53,12 @@ export function useUserProfiles(userIds: (string | null | undefined)[]) {
         const result: ProfileMap = {};
         for (const id of validIds) {
           const profile = fetchedMap.get(id);
-          if (profile?.display_name) result[id] = profile.display_name;
+          if (profile?.display_name) {
+            result[id] = {
+              displayName: profile.display_name,
+              showcaseBadgeKey: profile.showcase_badge_key ?? null,
+            };
+          }
         }
         setProfileMap(result);
         setLoading(false);
