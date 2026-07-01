@@ -1,4 +1,4 @@
-What's new in 1.1.2:
-- New: Badges! Earn achievements for sends, attempts, routes created, comments and more
-- New: Grade badges — unlock milestones based on the hardest route you've sent
+What's new in 1.1.3:
+- New: Showcase a badge next to your name everywhere it appears
+- Fix: badges now display correctly for accounts without a display name
 Plus minor under-the-hood fixes.

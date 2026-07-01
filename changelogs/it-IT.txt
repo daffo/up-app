@@ -1,4 +1,4 @@
-Novità nella versione 1.1.2:
-- Novità: Badge! Guadagna traguardi per chiusure, tentativi, vie create, commenti e altro
-- Novità: Badge di grado — sblocca traguardi in base alla via più dura che hai chiuso
+Novità nella versione 1.1.3:
+- Novità: mostra un badge accanto al tuo nome ovunque appaia
+- Fix: i badge ora vengono mostrati correttamente per gli account senza nome visualizzato
 Più piccole correzioni interne.
