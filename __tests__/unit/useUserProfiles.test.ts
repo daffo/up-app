@@ -134,6 +134,22 @@ describe("useUserProfiles", () => {
     });
   });
 
+  it("still exposes showcaseBadgeKey when display_name is null", async () => {
+    mockGetMany.mockResolvedValue(
+      new Map([
+        ["user-1", { user_id: "user-1", display_name: null, showcase_badge_key: "first_send" }],
+      ]),
+    );
+
+    const { result } = renderHook(() => useUserProfiles(["user-1"]));
+
+    await flushPromises();
+
+    expect(result.current.profileMap).toEqual({
+      "user-1": { displayName: "", showcaseBadgeKey: "first_send" },
+    });
+  });
+
   it("handles users with no profile", async () => {
     mockGetMany.mockResolvedValue(new Map());
 

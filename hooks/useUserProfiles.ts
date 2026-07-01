@@ -53,9 +53,9 @@ export function useUserProfiles(userIds: (string | null | undefined)[]) {
         const result: ProfileMap = {};
         for (const id of validIds) {
           const profile = fetchedMap.get(id);
-          if (profile?.display_name) {
+          if (profile) {
             result[id] = {
-              displayName: profile.display_name,
+              displayName: profile.display_name || "",
               showcaseBadgeKey: profile.showcase_badge_key ?? null,
             };
           }

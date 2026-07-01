@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { badgesApi, userProfilesApi, CACHE_EVENTS } from "../lib/api";
 import { BADGE_PRESENTATION } from "../lib/badges";
@@ -107,22 +108,34 @@ export default function BadgeGrid({ userId, showLocked }: BadgeGridProps) {
               onPress={() => setSelected(badge.key)}
               accessibilityLabel={t(`badges.${badge.key}.name`)}
             >
-              <View
-                style={[
-                  styles.iconCircle,
-                  {
-                    backgroundColor: colors.cardBackground,
-                    borderColor: isEarned ? pres.color : colors.border,
-                    opacity: isEarned ? 1 : 0.5,
-                  },
-                ]}
-              >
-                <BadgeGlyph
-                  iconSet={pres.iconSet}
-                  icon={pres.icon}
-                  color={tint}
-                  size={40}
-                />
+              <View style={styles.iconCircleWrapper}>
+                <View
+                  style={[
+                    styles.iconCircle,
+                    {
+                      backgroundColor: colors.cardBackground,
+                      borderColor: isEarned ? pres.color : colors.border,
+                      opacity: isEarned ? 1 : 0.5,
+                    },
+                  ]}
+                >
+                  <BadgeGlyph
+                    iconSet={pres.iconSet}
+                    icon={pres.icon}
+                    color={tint}
+                    size={40}
+                  />
+                </View>
+                {showLocked && badge.key === showcaseBadgeKey && (
+                  <View
+                    style={[
+                      styles.showcaseCheckmark,
+                      { backgroundColor: colors.primary, borderColor: colors.cardBackground },
+                    ]}
+                  >
+                    <Ionicons name="checkmark" size={12} color={colors.textOnPrimary} />
+                  </View>
+                )}
               </View>
               <Text
                 numberOfLines={2}
@@ -213,6 +226,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 4,
   },
+  iconCircleWrapper: {
+    marginBottom: 8,
+  },
   iconCircle: {
     width: 72,
     height: 72,
@@ -220,7 +236,17 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
+  },
+  showcaseCheckmark: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
   name: {
     fontSize: 12,
