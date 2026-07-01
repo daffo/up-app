@@ -44,6 +44,10 @@ const ALL_KEYS: BadgeKey[] = [
   "sadist",
   "first_comment",
   "route_sent_by_other",
+  "grade_5",
+  "grade_6",
+  "grade_7",
+  "grade_8",
 ];
 
 afterEach(() => {

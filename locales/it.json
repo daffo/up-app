@@ -221,20 +221,36 @@
       "desc": "Registra la tua prima chiusura"
     },
     "sends_10": {
-      "name": "Arenaria",
-      "desc": "Chiudi 10 vie — tenera, ma ci provi"
+      "name": "Uistitì",
+      "desc": "Chiudi 10 vie — piccolo ma tenace"
     },
     "sends_25": {
-      "name": "Calcare",
-      "desc": "Chiudi 25 vie — ti stai indurendo"
+      "name": "Babbuino",
+      "desc": "Chiudi 25 vie — capo del branco"
     },
     "sends_50": {
-      "name": "Granito",
-      "desc": "Chiudi 50 vie — ora sei duro"
+      "name": "Orango",
+      "desc": "Chiudi 50 vie — grande e paziente"
     },
     "sends_100": {
+      "name": "Gorilla",
+      "desc": "Chiudi 100 vie — macchina da chiusure"
+    },
+    "grade_5": {
+      "name": "Arenaria",
+      "desc": "Chiudi un grado 5 — tenera, ma ci provi"
+    },
+    "grade_6": {
+      "name": "Calcare",
+      "desc": "Chiudi un grado 6 — inizia a farsi sul serio"
+    },
+    "grade_7": {
+      "name": "Granito",
+      "desc": "Chiudi un grado 7 — ora sei duro"
+    },
+    "grade_8": {
       "name": "Quarzite",
-      "desc": "Chiudi 100 vie — infrangibile"
+      "desc": "Chiudi un grado 8 — infrangibile"
     },
     "first_attempt": {
       "name": "Buon Tentativo",

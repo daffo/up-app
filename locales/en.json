@@ -221,20 +221,36 @@
       "desc": "Log your first send"
     },
     "sends_10": {
-      "name": "Sandstone",
-      "desc": "Send 10 routes — soft, but you're trying"
+      "name": "Marmoset",
+      "desc": "Send 10 routes — small but scrappy"
     },
     "sends_25": {
-      "name": "Limestone",
-      "desc": "Send 25 routes — getting solid"
+      "name": "Baboon",
+      "desc": "Send 25 routes — troop leader"
     },
     "sends_50": {
-      "name": "Granite",
-      "desc": "Send 50 routes — properly hard now"
+      "name": "Orangutan",
+      "desc": "Send 50 routes — big and patient"
     },
     "sends_100": {
+      "name": "Gorilla",
+      "desc": "Send 100 routes — apex send machine"
+    },
+    "grade_5": {
+      "name": "Sandstone",
+      "desc": "Send a grade 5 — soft, but you're trying"
+    },
+    "grade_6": {
+      "name": "Limestone",
+      "desc": "Send a grade 6 — getting solid"
+    },
+    "grade_7": {
+      "name": "Granite",
+      "desc": "Send a grade 7 — properly hard now"
+    },
+    "grade_8": {
       "name": "Quartzite",
-      "desc": "Send 100 routes — unbreakable"
+      "desc": "Send a grade 8 — unbreakable"
     },
     "first_attempt": {
       "name": "Nice Try",

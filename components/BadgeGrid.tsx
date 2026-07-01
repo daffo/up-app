@@ -36,6 +36,9 @@ function BadgeGlyph({
   color: string;
   size?: number;
 }) {
+  if (iconSet === "emoji") {
+    return <Text style={{ fontSize: size }}>{icon}</Text>;
+  }
   if (iconSet === "ionicons") {
     return <Ionicons name={icon as any} size={size} color={color} />;
   }

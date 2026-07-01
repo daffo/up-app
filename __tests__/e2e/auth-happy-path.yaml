@@ -618,7 +618,7 @@ name: Auth User - Login Flow
     visible: "Cherry Popped"
     timeout: 5000
 
-# A later milestone we have not reached shows as a locked placeholder
+# A later grade milestone we have not reached shows as a locked placeholder
 - assertVisible: "Quartzite"
 
 # Open a badge detail sheet, then dismiss it

@@ -77,7 +77,9 @@ export default function BadgeUnlockToast() {
         ]}
       >
         <View style={[styles.iconCircle, { borderColor: pres.color }]}>
-          {pres.iconSet === "ionicons" ? (
+          {pres.iconSet === "emoji" ? (
+            <Text style={{ fontSize: 28 }}>{pres.icon}</Text>
+          ) : pres.iconSet === "ionicons" ? (
             <Ionicons name={pres.icon as any} size={28} color={pres.color} />
           ) : (
             <MaterialCommunityIcons

@@ -445,7 +445,7 @@ CREATE POLICY "Users can delete their own badges"
   ON user_badges FOR DELETE
   USING (auth.uid() = user_id);
 
--- Seed catalog (11 badges)
+-- Seed catalog (16 badges)
 INSERT INTO badges (key, category, threshold, sort_order) VALUES
   ('first_send',          'send',      1,    10),
   ('sends_10',            'send',      10,   20),
@@ -458,7 +458,11 @@ INSERT INTO badges (key, category, threshold, sort_order) VALUES
   ('routes_10',           'creator',   10,   90),
   ('sadist',              'challenge', 10,   95),
   ('first_comment',       'community', 1,    100),
-  ('route_sent_by_other', 'social',    NULL, 110);
+  ('route_sent_by_other', 'social',    NULL, 110),
+  ('grade_5',             'grade',     5,    51),
+  ('grade_6',             'grade',     6,    52),
+  ('grade_7',             'grade',     7,    53),
+  ('grade_8',             'grade',     8,    54);
 
 -- Idempotent awarding helper (bypasses RLS via SECURITY DEFINER)
 CREATE OR REPLACE FUNCTION award_badge(p_user_id UUID, p_key TEXT)
@@ -491,6 +495,7 @@ RETURNS TRIGGER AS $$
 DECLARE
   sent_total INT;
   route_owner UUID;
+  max_grade INT;
 BEGIN
   IF NEW.status = 'sent' THEN
     SELECT COUNT(*) INTO sent_total
@@ -500,6 +505,19 @@ BEGIN
     PERFORM award_badge(NEW.user_id, b.key)
     FROM badges b
     WHERE b.category = 'send' AND b.threshold <= sent_total;
+
+    -- Grade ladder: highest French grade number among the user's sent routes.
+    SELECT MAX(NULLIF(substring(r.grade from '^\s*([0-9]+)'), '')::int)
+      INTO max_grade
+    FROM logs l
+    JOIN routes r ON r.id = l.route_id
+    WHERE l.user_id = NEW.user_id AND l.status = 'sent';
+
+    IF max_grade IS NOT NULL THEN
+      PERFORM award_badge(NEW.user_id, b.key)
+      FROM badges b
+      WHERE b.category = 'grade' AND b.threshold <= max_grade;
+    END IF;
 
     IF TG_OP = 'UPDATE' AND OLD.status = 'attempted' THEN
       PERFORM award_badge(NEW.user_id, 'comeback');

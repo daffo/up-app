@@ -9,7 +9,7 @@ import type { BadgeKey } from "../types/database.types";
 // Colors are fixed hex (badges read as colorful in both light and dark themes).
 // The locked/greyed state is applied by the renderer using a theme token.
 
-export type BadgeIconSet = "ionicons" | "material-community";
+export type BadgeIconSet = "ionicons" | "material-community" | "emoji";
 
 export interface BadgePresentation {
   iconSet: BadgeIconSet;
@@ -20,25 +20,45 @@ export interface BadgePresentation {
 export const BADGE_PRESENTATION: Record<BadgeKey, BadgePresentation> = {
   first_send: {
     iconSet: "material-community",
-    icon: "seed",
+    icon: "sprout",
     color: "#28a745",
   },
   sends_10: {
-    iconSet: "material-community",
-    icon: "sprout",
-    color: "#2e9e5b",
+    iconSet: "emoji",
+    icon: "🐒",
+    color: "#a0522d",
   },
   sends_25: {
+    iconSet: "emoji",
+    icon: "🐵",
+    color: "#8b5a2b",
+  },
+  sends_50: {
+    iconSet: "emoji",
+    icon: "🦧",
+    color: "#b8651b",
+  },
+  sends_100: {
+    iconSet: "emoji",
+    icon: "🦍",
+    color: "#4a4a4a",
+  },
+  grade_5: {
+    iconSet: "material-community",
+    icon: "grain",
+    color: "#c2a878",
+  },
+  grade_6: {
     iconSet: "material-community",
     icon: "hiking",
     color: "#1f8a4c",
   },
-  sends_50: {
+  grade_7: {
     iconSet: "material-community",
     icon: "summit",
     color: "#c9a227",
   },
-  sends_100: {
+  grade_8: {
     iconSet: "material-community",
     icon: "diamond-stone",
     color: "#d4af37",

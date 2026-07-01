@@ -100,10 +100,15 @@ export type BadgeKey =
   | "routes_10"
   | "sadist"
   | "first_comment"
-  | "route_sent_by_other";
+  | "route_sent_by_other"
+  | "grade_5"
+  | "grade_6"
+  | "grade_7"
+  | "grade_8";
 
 export type BadgeCategory =
   | "send"
+  | "grade"
   | "attempt"
   | "creator"
   | "challenge"
