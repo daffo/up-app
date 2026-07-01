@@ -1,3 +1,4 @@
-What's new in 1.1.1:
-- Web: confirmation dialogs now match the app's light/dark theme
+What's new in 1.1.2:
+- New: Badges! Earn achievements for sends, attempts, routes created, comments and more
+- New: Grade badges — unlock milestones based on the hardest route you've sent
 Plus minor under-the-hood fixes.
