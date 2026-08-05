@@ -1,5 +1,7 @@
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { Platform } from 'react-native';
 import { getImageDimensions } from '../../lib/cache/image-cache';
+import { getLocalImageUri } from '../../lib/cache/image-file-cache';
 import { detectHolds } from '../../lib/holdDetection';
 
 jest.mock('../../lib/cache/image-cache', () => ({
@@ -16,14 +18,18 @@ jest.mock('expo-image-manipulator', () => ({
 }));
 
 const mockGetDimensions = getImageDimensions as jest.Mock;
+const mockGetLocalImageUri = getLocalImageUri as jest.Mock;
 const mockManipulate = manipulateAsync as jest.Mock;
 const mockFetch = jest.fn();
+const nativePlatform = Platform.OS;
 
 beforeEach(() => {
   global.fetch = mockFetch as any;
   mockFetch.mockReset();
   mockGetDimensions.mockReset();
   mockManipulate.mockReset();
+  mockGetLocalImageUri.mockClear();
+  Platform.OS = nativePlatform;
 });
 
 /** Set up getImageDimensions to resolve with given dimensions */
@@ -171,6 +177,22 @@ describe('detectHolds', () => {
 
       expect(results).toHaveLength(1);
       expect(results[0].confidence).toBe(0.8);
+    });
+
+    it('uses the remote image URL on web', async () => {
+      Platform.OS = 'web';
+      mockImageSize(IMG_W, IMG_H);
+      mockAllTiles();
+      mockFetch.mockResolvedValue(mockFetchOk([]));
+
+      await detectHolds('https://example.com/img.jpg', 'key', 0.5);
+
+      expect(mockGetLocalImageUri).not.toHaveBeenCalled();
+      expect(mockManipulate).toHaveBeenCalledWith(
+        'https://example.com/img.jpg',
+        expect.any(Array),
+        expect.any(Object),
+      );
     });
 
     it('returns empty array when all tiles have no predictions', async () => {

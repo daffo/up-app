@@ -1,4 +1,5 @@
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { Platform } from 'react-native';
 import { getImageDimensions } from './cache/image-cache';
 import { getLocalImageUri } from './cache/image-file-cache';
 
@@ -117,7 +118,7 @@ export async function detectHolds(
   onProgress?: (tile: number, total: number) => void,
 ): Promise<DetectedHoldResult[]> {
   // Resolve to local file URI (avoids re-downloading)
-  const localUri = await getLocalImageUri(imageUrl);
+  const localUri = Platform.OS === 'web' ? imageUrl : await getLocalImageUri(imageUrl);
 
   // Get image dimensions
   const { width, height } = await getImageDimensions(imageUrl);
