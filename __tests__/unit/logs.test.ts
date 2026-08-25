@@ -1,4 +1,16 @@
-import { getDifficultyLabel } from "../../utils/logs";
+import { getDifficultyLabel, getSentRating } from "../../utils/logs";
+import { Log } from "../../types/database.types";
+
+describe("getSentRating", () => {
+  it("ignores attempted ratings", () => {
+    const logs = [
+      { status: "sent", quality_rating: 5 },
+      { status: "attempted", quality_rating: 1 },
+    ] as Log[];
+
+    expect(getSentRating(logs)).toBe(5);
+  });
+});
 
 describe("getDifficultyLabel", () => {
   it('returns "Soft" for -1', () => {

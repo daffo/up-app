@@ -24,6 +24,7 @@ import UserNameLink from "../components/UserNameLink";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { useThemeColors } from "../lib/theme-context";
 import { formatDate } from "../utils/date";
+import { getSentRating } from "../utils/logs";
 import SafeScreen from "../components/SafeScreen";
 import DraftBanner from "../components/DraftBanner";
 import { useApiQuery } from "../hooks/useApiQuery";
@@ -285,13 +286,7 @@ export default function RouteDetailScreen({
               </Text>
               <View style={styles.ratingValue}>
                 {(() => {
-                  const ratings = logs
-                    .map((l) => l.quality_rating)
-                    .filter((r): r is number => r !== null);
-                  const avg =
-                    ratings.length > 0
-                      ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
-                      : null;
+                  const avg = getSentRating(logs);
                   const sendCount = logs.filter(
                     (l) => l.status === "sent",
                   ).length;

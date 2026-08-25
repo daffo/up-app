@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-013-stats-on-logs
+-- Last updated: After migration-021-sent-ratings-only
 
 -- ============================================================================
 -- TABLES
@@ -339,12 +339,13 @@ CREATE POLICY "Admins can view all activity"
 -- COMPUTED COLUMN FUNCTIONS (PostgREST virtual columns)
 -- ============================================================================
 
--- Average quality rating for a route (any log status — attempts can rate too)
+-- Average quality rating from sends
 CREATE OR REPLACE FUNCTION avg_rating(route routes)
 RETURNS NUMERIC AS $$
   SELECT AVG(l.quality_rating)::NUMERIC
   FROM logs l
   WHERE l.route_id = route.id
+    AND l.status = 'sent'
     AND l.quality_rating IS NOT NULL;
 $$ LANGUAGE sql STABLE;
 
