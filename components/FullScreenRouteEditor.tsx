@@ -14,20 +14,9 @@ import { Hold, HandHold, FootHold, DetectedHold } from '../types/database.types'
 import FullScreenImageBase, { baseStyles, ImageDimensions } from './FullScreenImageBase';
 import DragModeButtons from './DragModeButtons';
 import { findSmallestPolygonAtPoint } from '../utils/polygon';
-import { getHoldLabel, canSetStart, canSetTop, isDualSideNote, findFreeLabelPosition, resolveAllLabelOverlaps } from '../utils/holds';
+import { getHoldLabel, canSetStart, canSetTop, isDualSideNote, findFreeLabelPosition, resolveAllLabelOverlaps, getRouteHoldBounds } from '../utils/holds';
 import { useDragDelta } from '../hooks/useDragDelta';
 import { useThemeColors } from '../lib/theme-context';
-
-/** Collect centers of all holds currently in the route. */
-function getRouteHoldCenters(
-  handHolds: HandHold[],
-  footHolds: FootHold[],
-  detectedHolds: DetectedHold[],
-): Array<{ x: number; y: number }> {
-  const byId = new Map(detectedHolds.map(dh => [dh.id, dh.center]));
-  const ids = [...handHolds, ...footHolds].map(h => h.detected_hold_id);
-  return ids.flatMap(id => { const c = byId.get(id); return c ? [c] : []; });
-}
 
 interface FullScreenRouteEditorProps {
   visible: boolean;
@@ -140,16 +129,32 @@ export default function FullScreenRouteEditor({
   };
 
   const addHoldToRoute = (detectedHoldId: string, labelCenterX: number, labelCenterY: number) => {
-    // Place new hold at its ideal (closest) position — don't dodge existing labels
-    const allRouteCenters = getRouteHoldCenters(handHolds, footHolds, detectedHolds);
-    const { labelX, labelY } = findFreeLabelPosition(labelCenterX, labelCenterY, [], allRouteCenters);
-
-    // Settle new hold first, then reflow existing labels around it
-    const newHoldCenter = detectedHolds.find(dh => dh.id === detectedHoldId)?.center ?? { x: labelCenterX, y: labelCenterY };
+    const nextHandCount = handHolds.length + (editMode === 'hands' ? 1 : 0);
+    const newLabelText = editMode === 'hands' ? getHoldLabel(handHolds.length, nextHandCount) : '';
+    const routeHoldBounds = getRouteHoldBounds([...handHolds, ...footHolds], detectedHolds);
+    const detected = detectedHolds.find((hold) => hold.id === detectedHoldId);
+    const newHoldBounds = detected
+      ? getRouteHoldBounds(
+          [{ detected_hold_id: detectedHoldId, labelX: labelCenterX, labelY: labelCenterY }],
+          detectedHolds,
+        )[0]
+      : { x: labelCenterX, y: labelCenterY };
+    const { labelX, labelY } = findFreeLabelPosition(
+      labelCenterX,
+      labelCenterY,
+      [],
+      routeHoldBounds,
+      newLabelText,
+    );
     const newLabel = { detected_hold_id: detectedHoldId, labelX, labelY };
-    const allCenters = [newHoldCenter, ...allRouteCenters];
     const allHolds = [newLabel, ...handHolds, ...footHolds];
-    const resolved = resolveAllLabelOverlaps(allHolds, allCenters);
+    const allBounds = [newHoldBounds, ...routeHoldBounds];
+    const labelTexts = [
+      newLabelText,
+      ...handHolds.map((hold, index) => getHoldLabel(index, nextHandCount, hold.note)),
+      ...footHolds.map((hold) => hold.note ?? ''),
+    ];
+    const resolved = resolveAllLabelOverlaps(allHolds, allBounds, labelTexts);
 
     const resolvedNew = resolved[0];
     const resolvedHands = resolved.slice(1, 1 + handHolds.length) as HandHold[];
@@ -310,15 +315,23 @@ export default function FullScreenRouteEditor({
 
   const handleSaveNote = () => {
     if (!selectedHoldRef) return;
-    if (selectedHoldRef.type === 'foot') {
-      setFootHolds(footHolds.map((hold, i) =>
-        i === selectedHoldRef.index ? { ...hold, note: noteText } : hold
-      ));
-    } else {
-      setHandHolds(handHolds.map((hold, i) =>
-        i === selectedHoldRef.index ? { ...hold, note: noteText } : hold
-      ));
-    }
+    const updatedHands = selectedHoldRef.type === 'hand'
+      ? handHolds.map((hold, i) => i === selectedHoldRef.index ? { ...hold, note: noteText } : hold)
+      : handHolds;
+    const updatedFeet = selectedHoldRef.type === 'foot'
+      ? footHolds.map((hold, i) => i === selectedHoldRef.index ? { ...hold, note: noteText } : hold)
+      : footHolds;
+    const resolved = resolveAllLabelOverlaps(
+      [...updatedHands, ...updatedFeet],
+      getRouteHoldBounds([...updatedHands, ...updatedFeet], detectedHolds),
+      [
+        ...updatedHands.map((hold, index) => getHoldLabel(index, updatedHands.length, hold.note)),
+        ...updatedFeet.map((hold) => hold.note ?? ''),
+      ],
+    );
+
+    setHandHolds(resolved.slice(0, updatedHands.length) as HandHold[]);
+    setFootHolds(resolved.slice(updatedHands.length) as FootHold[]);
     setNoteModalVisible(false);
     clearSelection();
   };

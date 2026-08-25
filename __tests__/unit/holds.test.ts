@@ -7,6 +7,7 @@ import {
   canSetTop,
   findFreeLabelPosition,
   resolveAllLabelOverlaps,
+  getRouteHoldBounds,
 } from '../../utils/holds';
 
 describe('isDualSideNote', () => {
@@ -213,6 +214,20 @@ describe('getFootHoldLabel', () => {
   });
 });
 
+describe('getRouteHoldBounds', () => {
+  it('derives collision bounds from detected polygons', () => {
+    const bounds = getRouteHoldBounds(
+      [{ detected_hold_id: 'h1', labelX: 0, labelY: 0 }],
+      [{ id: 'h1', center: { x: 50, y: 40 }, polygon: [
+        { x: 44, y: 37 },
+        { x: 57, y: 45 },
+      ] }],
+    );
+
+    expect(bounds).toEqual([{ x: 50, y: 40, halfW: 7, halfH: 5 }]);
+  });
+});
+
 describe('findFreeLabelPosition', () => {
   const noOverlapWith = (
     result: { labelX: number; labelY: number },
@@ -228,11 +243,11 @@ describe('findFreeLabelPosition', () => {
     expect(result.labelY).toBeLessThan(50);
   });
 
-  it('spirals past a blocked position', () => {
+  it('checks a full close ring before moving outward', () => {
     const first = findFreeLabelPosition(50, 50, []);
-    // Block the first result
-    const result = findFreeLabelPosition(50, 50, [first]);
-    expect(noOverlapWith(result, [{ x: first.labelX, y: first.labelY, halfW: 4, halfH: 1.5 }])).toBe(true);
+    const result = findFreeLabelPosition(50, 50, [{ ...first, halfW: 0, halfH: 0 }]);
+
+    expect(Math.hypot(result.labelX - 50, result.labelY - 50)).toBeCloseTo(3);
   });
 
   it('finds a free spot among many labels', () => {
@@ -246,10 +261,11 @@ describe('findFreeLabelPosition', () => {
     expect(noOverlapWith(result, labels.map(l => ({ x: l.labelX, y: l.labelY, halfW: 4, halfH: 1.5 })))).toBe(true);
   });
 
-  it('avoids hold centers', () => {
-    const holds = [{ x: 52, y: 48 }];
-    const result = findFreeLabelPosition(50, 50, [], holds);
-    expect(noOverlapWith(result, [{ x: 52, y: 48, halfW: 3, halfH: 3 }])).toBe(true);
+  it('avoids hold bounds', () => {
+    const hold = { x: 50, y: 50, halfW: 10, halfH: 8 };
+    const result = findFreeLabelPosition(50, 50, [], [hold]);
+
+    expect(noOverlapWith(result, [hold])).toBe(true);
   });
 
   it('avoids both labels and hold centers', () => {
@@ -262,28 +278,33 @@ describe('findFreeLabelPosition', () => {
     ])).toBe(true);
   });
 
-  it('clamps within 0-100 bounds', () => {
-    const resultLeft = findFreeLabelPosition(1, 50, []);
-    expect(resultLeft.labelX).toBeGreaterThanOrEqual(0);
-    const resultTop = findFreeLabelPosition(50, 1, []);
-    expect(resultTop.labelY).toBeGreaterThanOrEqual(0);
-    const resultRight = findFreeLabelPosition(99, 50, []);
-    expect(resultRight.labelX).toBeLessThanOrEqual(100);
+  it('keeps the full label inside image bounds', () => {
+    const resultLeft = findFreeLabelPosition(1, 50, [], [], 'START small crimp');
+    const resultTop = findFreeLabelPosition(50, 1, [], [], 'START small crimp');
+    const resultRight = findFreeLabelPosition(99, 50, [], [], 'START small crimp');
+
+    expect(resultLeft.labelX).toBeGreaterThanOrEqual(10.2);
+    expect(resultTop.labelY).toBeGreaterThanOrEqual(1.5);
+    expect(resultRight.labelX).toBeLessThanOrEqual(89.8);
   });
 
-  it('falls back to default when all spiral positions are blocked', () => {
-    // Generate blockers at every spiral position
-    const blockers: Array<{ labelX: number; labelY: number }> = [];
-    for (let i = 0; i < 36; i++) {
-      const angle = -Math.PI / 4 + i * (Math.PI / 4);
-      const radius = 3 + i * 0.5;
-      blockers.push({
-        labelX: 50 + radius * Math.cos(angle),
-        labelY: 50 + radius * Math.sin(angle),
-      });
-    }
-    const result = findFreeLabelPosition(50, 50, blockers);
-    // Falls back to default offset
+  it('uses label text width for collision checks', () => {
+    const first = findFreeLabelPosition(50, 50, [], [], 'TOP match');
+    const existing = [{
+      labelX: first.labelX + 8.5,
+      labelY: first.labelY,
+      labelText: 'START small crimp',
+    }];
+    const result = findFreeLabelPosition(50, 50, existing, [], 'TOP match');
+
+    expect(result).not.toEqual(first);
+  });
+
+  it('falls back to default when all candidates are blocked', () => {
+    const result = findFreeLabelPosition(50, 50, [
+      { labelX: 50, labelY: 50, halfW: 100, halfH: 100 },
+    ]);
+
     expect(result).toEqual({ labelX: 53, labelY: 47 });
   });
 });
@@ -342,17 +363,15 @@ describe('resolveAllLabelOverlaps', () => {
     expect(holds[1].labelX).toBe(origLabel);
   });
 
-  it('does not move pinned labels', () => {
+  it('reserves pinned labels before placing earlier labels', () => {
+    const pinnedPosition = findFreeLabelPosition(50, 50, []);
     const holds = [
-      { labelX: 50, labelY: 50 },
-      { labelX: 51, labelY: 50, labelPinned: true as const },
+      { labelX: 0, labelY: 0 },
+      { ...pinnedPosition, labelPinned: true as const },
     ];
-    const centers = [{ x: 47, y: 53 }, { x: 48, y: 53 }];
-    const result = resolveAllLabelOverlaps(holds, centers);
-    // Pinned label stays exactly where it is
-    expect(result[1].labelX).toBe(51);
-    expect(result[1].labelY).toBe(50);
-    // Unpinned label gets repositioned to avoid the pinned one
-    expect(result[0].labelX).not.toBe(50);
+    const result = resolveAllLabelOverlaps(holds, [{ x: 50, y: 50 }, { x: 80, y: 80 }]);
+
+    expect(result[1]).toEqual(holds[1]);
+    expect(noOverlaps(result)).toBe(true);
   });
 });

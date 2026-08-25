@@ -1,15 +1,57 @@
-// Estimated half-sizes in percentage coordinates (0-100 space)
-const LABEL_HALF_W = 4;
+const MIN_LABEL_HALF_W = 4;
 const LABEL_HALF_H = 1.5;
-const HOLD_HALF_W = 3;
-const HOLD_HALF_H = 3;
+const DEFAULT_HOLD_HALF_SIZE = 3;
+const START_RADIUS = 3;
+const RADIUS_GROWTH = 0.5;
+const ANGLES_PER_RING = 16;
+const ANGLE_STEP = (Math.PI * 2) / ANGLES_PER_RING;
+const START_ANGLE = -Math.PI / 4;
+const MAX_RINGS = 36;
 
-// Spiral parameters
-const START_RADIUS = 3;     // % distance for first ring
-const RADIUS_GROWTH = 0.5;  // % increase per step
-const ANGLE_STEP = Math.PI / 4;  // 45° — 8 positions per revolution
-const START_ANGLE = -Math.PI / 4; // upper-right, clockwise
-const MAX_TRIES = 36;
+type LabelBounds = {
+  labelX: number;
+  labelY: number;
+  labelText?: string;
+  halfW?: number;
+  halfH?: number;
+};
+
+export type HoldBounds = {
+  x: number;
+  y: number;
+  halfW?: number;
+  halfH?: number;
+};
+
+export function getRouteHoldBounds(
+  holds: Array<{ detected_hold_id: string; labelX: number; labelY: number }>,
+  detectedHolds: Array<{
+    id: string;
+    center: { x: number; y: number };
+    polygon: Array<{ x: number; y: number }>;
+  }>,
+): HoldBounds[] {
+  const byId = new Map(detectedHolds.map((hold) => [hold.id, hold]));
+  return holds.map((hold) => {
+    const detected = byId.get(hold.detected_hold_id);
+    if (!detected) return { x: hold.labelX, y: hold.labelY };
+
+    return {
+      x: detected.center.x,
+      y: detected.center.y,
+      halfW: Math.max(
+        ...detected.polygon.map((point) => Math.abs(point.x - detected.center.x)),
+      ),
+      halfH: Math.max(
+        ...detected.polygon.map((point) => Math.abs(point.y - detected.center.y)),
+      ),
+    };
+  });
+}
+
+function labelHalfWidth(labelText = ""): number {
+  return Math.max(MIN_LABEL_HALF_W, labelText.length * 0.6);
+}
 
 function rectsOverlap(
   ax: number, ay: number, aHalfW: number, aHalfH: number,
@@ -26,33 +68,52 @@ function rectsOverlap(
 export function findFreeLabelPosition(
   holdX: number,
   holdY: number,
-  existingLabels: Array<{ labelX: number; labelY: number }>,
-  holdCenters: Array<{ x: number; y: number }> = [],
+  existingLabels: LabelBounds[],
+  holdBounds: HoldBounds[] = [],
+  labelText = "",
 ): { labelX: number; labelY: number } {
-  for (let i = 0; i < MAX_TRIES; i++) {
-    const angle = START_ANGLE + i * ANGLE_STEP;
-    const radius = START_RADIUS + i * RADIUS_GROWTH;
-    const cx = Math.max(0, Math.min(100, holdX + radius * Math.cos(angle)));
-    const cy = Math.max(0, Math.min(100, holdY + radius * Math.sin(angle)));
+  const halfW = labelHalfWidth(labelText);
+  const clampX = (x: number) => Math.max(halfW, Math.min(100 - halfW, x));
+  const clampY = (y: number) => Math.max(LABEL_HALF_H, Math.min(100 - LABEL_HALF_H, y));
 
-    const hitsLabel = existingLabels.some(l =>
-      rectsOverlap(cx, cy, LABEL_HALF_W, LABEL_HALF_H, l.labelX, l.labelY, LABEL_HALF_W, LABEL_HALF_H)
-    );
-    if (hitsLabel) continue;
+  for (let ring = 0; ring < MAX_RINGS; ring++) {
+    const radius = START_RADIUS + ring * RADIUS_GROWTH;
+    for (let step = 0; step < ANGLES_PER_RING; step++) {
+      const angle = START_ANGLE + step * ANGLE_STEP;
+      const cx = clampX(holdX + radius * Math.cos(angle));
+      const cy = clampY(holdY + radius * Math.sin(angle));
 
-    const hitsHold = holdCenters.some(h =>
-      rectsOverlap(cx, cy, LABEL_HALF_W, LABEL_HALF_H, h.x, h.y, HOLD_HALF_W, HOLD_HALF_H)
-    );
-    if (hitsHold) continue;
+      const hitsLabel = existingLabels.some((label) =>
+        rectsOverlap(
+          cx,
+          cy,
+          halfW,
+          LABEL_HALF_H,
+          label.labelX,
+          label.labelY,
+          label.halfW ?? labelHalfWidth(label.labelText),
+          label.halfH ?? LABEL_HALF_H,
+        ),
+      );
+      if (hitsLabel) continue;
 
-    return { labelX: cx, labelY: cy };
+      const hitsHold = holdBounds.some((hold) =>
+        rectsOverlap(
+          cx,
+          cy,
+          halfW,
+          LABEL_HALF_H,
+          hold.x,
+          hold.y,
+          hold.halfW ?? DEFAULT_HOLD_HALF_SIZE,
+          hold.halfH ?? DEFAULT_HOLD_HALF_SIZE,
+        ),
+      );
+      if (!hitsHold) return { labelX: cx, labelY: cy };
+    }
   }
 
-  // All candidates blocked — fall back to default offset
-  return {
-    labelX: Math.max(0, Math.min(100, holdX + 3)),
-    labelY: Math.max(0, Math.min(100, holdY - 3)),
-  };
+  return { labelX: clampX(holdX + 3), labelY: clampY(holdY - 3) };
 }
 
 /**
@@ -62,18 +123,30 @@ export function findFreeLabelPosition(
  */
 export function resolveAllLabelOverlaps<H extends { labelX: number; labelY: number; labelPinned?: boolean }>(
   holds: H[],
-  holdCenters: Array<{ x: number; y: number }>,
+  holdBounds: HoldBounds[],
+  labelTexts: string[] = [],
 ): H[] {
-  const settled: Array<{ labelX: number; labelY: number }> = [];
-  return holds.map((hold, i) => {
-    if (hold.labelPinned) {
-      settled.push(hold);
-      return hold;
-    }
-    const center = holdCenters[i] ?? { x: hold.labelX, y: hold.labelY };
-    const pos = findFreeLabelPosition(center.x, center.y, settled, holdCenters);
-    const updated = pos.labelX === hold.labelX && pos.labelY === hold.labelY ? hold : { ...hold, ...pos };
-    settled.push(updated);
+  const settled: LabelBounds[] = holds.flatMap((hold, index) =>
+    hold.labelPinned ? [{ ...hold, labelText: labelTexts[index] }] : [],
+  );
+
+  return holds.map((hold, index) => {
+    if (hold.labelPinned) return hold;
+
+    const center = holdBounds[index] ?? { x: hold.labelX, y: hold.labelY };
+    const labelText = labelTexts[index] ?? "";
+    const position = findFreeLabelPosition(
+      center.x,
+      center.y,
+      settled,
+      holdBounds,
+      labelText,
+    );
+    const updated =
+      position.labelX === hold.labelX && position.labelY === hold.labelY
+        ? hold
+        : { ...hold, ...position };
+    settled.push({ ...updated, labelText });
     return updated;
   });
 }
