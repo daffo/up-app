@@ -78,9 +78,6 @@ export const LogSchema = z
   })
   .refine((l) => l.status === "sent" || l.difficulty_rating === null, {
     message: "difficulty_rating only allowed when status=sent",
-  })
-  .refine((l) => l.status === "attempted" || l.fall_hold_id === null, {
-    message: "fall_hold_id only allowed when status=attempted",
   });
 
 export const BookmarkSchema = z.object({

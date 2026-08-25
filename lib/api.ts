@@ -711,10 +711,6 @@ export const logsApi = {
     if (input.status === "attempted" && input.difficulty_rating != null) {
       throw new Error("difficulty_rating only allowed when status=sent");
     }
-    if (input.status === "sent" && input.fall_hold_id != null) {
-      throw new Error("fall_hold_id only allowed when status=attempted");
-    }
-
     const row = {
       user_id: input.user_id,
       route_id: input.route_id,
@@ -723,8 +719,7 @@ export const logsApi = {
       // Clear the field not applicable for this status, so re-log overrides work
       difficulty_rating:
         input.status === "sent" ? input.difficulty_rating ?? null : null,
-      fall_hold_id:
-        input.status === "attempted" ? input.fall_hold_id ?? null : null,
+      fall_hold_id: input.fall_hold_id ?? null,
       logged_at: new Date().toISOString(),
     };
 

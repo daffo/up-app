@@ -24,7 +24,7 @@ import UserNameLink from "../components/UserNameLink";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { useThemeColors } from "../lib/theme-context";
 import { formatDate } from "../utils/date";
-import { getSentRating } from "../utils/logs";
+import { getSentRating, getTriesByHoldId } from "../utils/logs";
 import SafeScreen from "../components/SafeScreen";
 import DraftBanner from "../components/DraftBanner";
 import { useApiQuery } from "../hooks/useApiQuery";
@@ -67,12 +67,7 @@ export default function RouteDetailScreen({
 
   const routeData = routeDetail?.route ?? null;
   const detectedHolds = routeDetail?.detectedHolds ?? [];
-  const triesByHoldId = logs.reduce<Record<string, number>>((acc, l) => {
-    if (l.status === "attempted" && l.fall_hold_id) {
-      acc[l.fall_hold_id] = (acc[l.fall_hold_id] ?? 0) + 1;
-    }
-    return acc;
-  }, {});
+  const triesByHoldId = getTriesByHoldId(logs);
 
   useEffect(() => {
     const showEvent =

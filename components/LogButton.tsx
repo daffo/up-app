@@ -65,9 +65,7 @@ export default function LogButton({
 
   const handleStatusChange = (next: LogStatus) => {
     setStatus(next);
-    // Clear the conflicting field when flipping status
-    if (next === "sent") setFallHoldId(null);
-    else setDifficultyRating(null);
+    if (next === "attempted") setDifficultyRating(null);
   };
 
   const handlePickFallHold = () => {
@@ -98,7 +96,7 @@ export default function LogButton({
         status,
         quality_rating: qualityRating,
         difficulty_rating: status === "sent" ? difficultyRating : null,
-        fall_hold_id: status === "attempted" ? fallHoldId : null,
+        fall_hold_id: fallHoldId,
       });
       setModalVisible(false);
     } catch (err) {

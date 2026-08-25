@@ -1,4 +1,4 @@
-import { getDifficultyLabel, getSentRating } from "../../utils/logs";
+import { getDifficultyLabel, getSentRating, getTriesByHoldId } from "../../utils/logs";
 import { Log } from "../../types/database.types";
 
 describe("getSentRating", () => {
@@ -9,6 +9,18 @@ describe("getSentRating", () => {
     ] as Log[];
 
     expect(getSentRating(logs)).toBe(5);
+  });
+});
+
+describe("getTriesByHoldId", () => {
+  it("includes failed holds retained on sent logs", () => {
+    const logs = [
+      { status: "attempted", fall_hold_id: "h1" },
+      { status: "sent", fall_hold_id: "h1" },
+      { status: "sent", fall_hold_id: null },
+    ] as Log[];
+
+    expect(getTriesByHoldId(logs)).toEqual({ h1: 2 });
   });
 });
 

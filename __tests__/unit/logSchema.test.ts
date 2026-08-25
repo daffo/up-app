@@ -68,13 +68,13 @@ describe("LogSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects fall_hold_id when status is sent", () => {
+  it("accepts a retained fall_hold_id when status is sent", () => {
     const result = LogSchema.safeParse({
       ...base,
       status: "sent",
       fall_hold_id: validFallHoldId,
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects unknown status", () => {

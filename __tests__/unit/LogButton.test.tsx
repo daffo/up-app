@@ -196,6 +196,31 @@ describe("LogButton", () => {
     expect(labels).not.toContain("log.difficultyForGrade");
   });
 
+  it("keeps failed hold when changing an attempt to sent", async () => {
+    mockQueryResult = {
+      data: makeLog({ status: "attempted", fall_hold_id: "hold-1" }),
+      loading: false,
+    };
+    (logsApi.upsert as jest.Mock).mockResolvedValue(makeLog({ status: "sent" }));
+    const renderer = renderLogButton();
+    pressOpenButton(renderer);
+
+    act(() => findStatusToggle(renderer, "sent").props.onPress());
+
+    const sheetOpen = renderer.root.findByProps({ testID: "bottom-sheet-open" });
+    const footerSave = sheetOpen.findAllByType(TouchableOpacity).find((button) =>
+      button.findAllByType(Text).some((text) => text.props.children === "common.update"),
+    );
+    await act(async () => {
+      footerSave!.props.onPress();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(logsApi.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "sent", fall_hold_id: "hold-1" }),
+    );
+  });
+
   it("saves a sent log via logsApi.upsert", async () => {
     (logsApi.upsert as jest.Mock).mockResolvedValue(makeLog());
     const renderer = renderLogButton();

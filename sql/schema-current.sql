@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-021-sent-ratings-only
+-- Last updated: After migration-022-retain-fall-hold-on-send
 
 -- ============================================================================
 -- TABLES
@@ -58,8 +58,8 @@ CREATE TABLE user_profiles (
 
 -- Logs table (FEAT-2 — replaces sends. A log represents any interaction:
 -- sent or attempted. Quality rating is optional and independent of status.
--- Difficulty rating only set when status='sent'. Fall hold only when
--- status='attempted'. One log per (user, route); re-log overrides.)
+-- Difficulty rating only set when status='sent'. Fall hold records the latest
+-- failed hold even after a send. One log per (user, route); re-log overrides.)
 CREATE TABLE logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -71,8 +71,7 @@ CREATE TABLE logs (
   logged_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   UNIQUE(user_id, route_id),
-  CHECK (status = 'sent' OR difficulty_rating IS NULL),
-  CHECK (status = 'attempted' OR fall_hold_id IS NULL)
+  CHECK (status = 'sent' OR difficulty_rating IS NULL)
 );
 
 -- Bookmarks table (FEAT-2 — per-user saved routes, independent from logs)

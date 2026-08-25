@@ -12,6 +12,15 @@ export function getSentRating(logs: Log[]): number | null {
     : null;
 }
 
+export function getTriesByHoldId(logs: Log[]): Record<string, number> {
+  return logs.reduce<Record<string, number>>((tries, log) => {
+    if (log.fall_hold_id) {
+      tries[log.fall_hold_id] = (tries[log.fall_hold_id] ?? 0) + 1;
+    }
+    return tries;
+  }, {});
+}
+
 export function getDifficultyLabel(rating: number | null): string | null {
   if (rating === -1) return i18n.t("log.soft");
   if (rating === 0) return i18n.t("log.accurate");

@@ -1606,18 +1606,7 @@ describe("logsApi", () => {
       ).rejects.toThrow(/difficulty_rating only allowed when status=sent/);
     });
 
-    it("rejects fall_hold_id on sent status", async () => {
-      await expect(
-        logsApi.upsert({
-          user_id: "u1",
-          route_id: "r1",
-          status: "sent",
-          fall_hold_id: "h1",
-        }),
-      ).rejects.toThrow(/fall_hold_id only allowed when status=attempted/);
-    });
-
-    it("clears fall_hold when re-logging as sent", async () => {
+    it("retains fall_hold_id when re-logging as sent", async () => {
       const builder = createBuilder({ data: { id: "l1" }, error: null });
       mockFrom.mockReturnValue(builder);
 
@@ -1626,10 +1615,11 @@ describe("logsApi", () => {
         route_id: "r1",
         status: "sent",
         difficulty_rating: 0,
+        fall_hold_id: "h1",
       });
 
       expect(builder.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ fall_hold_id: null }),
+        expect.objectContaining({ fall_hold_id: "h1" }),
         expect.any(Object),
       );
     });
