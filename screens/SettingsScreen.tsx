@@ -8,13 +8,14 @@ import {
   ActivityIndicator,
   ScrollView,
   Linking,
+  Switch,
 } from "react-native";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import TrimmedTextInput from "../components/TrimmedTextInput";
 import { useAuth } from "../lib/auth-context";
-import { userProfilesApi } from "../lib/api";
+import { notificationPreferencesApi, userProfilesApi } from "../lib/api";
 import {
   SUPPORTED_LANGUAGES,
   changeLanguage,
@@ -27,6 +28,20 @@ import SafeScreen from "../components/SafeScreen";
 import { useApiQuery } from "../hooks/useApiQuery";
 import { useNavigation } from "@react-navigation/native";
 import { AppNavigationProp } from "../navigation/types";
+import {
+  NotificationPreferenceKey,
+  NotificationPreferences,
+} from "../types/database.types";
+
+const NOTIFICATION_OPTIONS: {
+  key: NotificationPreferenceKey;
+  labelKey: string;
+}[] = [
+  { key: "route_logged", labelKey: "settings.notifRouteLogged" },
+  { key: "route_commented", labelKey: "settings.notifRouteCommented" },
+  { key: "thread_comment", labelKey: "settings.notifThreadComment" },
+  { key: "shared_log", labelKey: "settings.notifSharedLog" },
+];
 
 const THEME_OPTIONS: {
   value: ThemePreference;
@@ -49,6 +64,12 @@ export default function SettingsScreen() {
     [user?.id],
     { enabled: !!user },
   );
+  const { data: notificationPreferences } = useApiQuery(
+    () => notificationPreferencesApi.get(user!.id),
+    [user?.id],
+    { enabled: !!user },
+  );
+  const [preferences, setPreferences] = useState<NotificationPreferences>();
   const [displayName, setDisplayName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -61,6 +82,27 @@ export default function SettingsScreen() {
       setDisplayName(profile.display_name);
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (notificationPreferences) setPreferences(notificationPreferences);
+  }, [notificationPreferences]);
+
+  const handleNotificationChange = async (
+    key: NotificationPreferenceKey,
+    value: boolean,
+  ) => {
+    if (!user || !preferences) return;
+    setPreferences({ ...preferences, [key]: value });
+    try {
+      await notificationPreferencesApi.upsert(user.id, {
+        ...preferences,
+        [key]: value,
+      });
+    } catch (error) {
+      setPreferences(preferences);
+      Alert.alert(t("common.error"), t("settings.notificationsSaveError"));
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -281,6 +323,50 @@ export default function SettingsScreen() {
               )}
             </TouchableOpacity>
           ))}
+        </View>
+
+        <Text
+          style={[
+            styles.label,
+            { color: colors.textSecondary, marginTop: 24, marginBottom: 8 },
+          ]}
+        >
+          {t("settings.notifications")}
+        </Text>
+        <View
+          style={[
+            styles.optionGroup,
+            {
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          {preferences &&
+            NOTIFICATION_OPTIONS.map((option) => (
+              <View
+                key={option.key}
+                style={[
+                  styles.optionItem,
+                  { borderBottomColor: colors.separator },
+                ]}
+              >
+                <Text style={[styles.optionText, { color: colors.textPrimary }]}>
+                  {t(option.labelKey)}
+                </Text>
+                <Switch
+                  value={preferences[option.key]}
+                  onValueChange={(value) =>
+                    handleNotificationChange(option.key, value)
+                  }
+                  trackColor={{ false: colors.border, true: colors.primaryLight }}
+                  thumbColor={
+                    preferences[option.key] ? colors.primary : colors.textTertiary
+                  }
+                  accessibilityLabel={t(option.labelKey)}
+                />
+              </View>
+            ))}
         </View>
 
         <Text

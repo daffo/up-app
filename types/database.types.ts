@@ -88,6 +88,14 @@ export interface Comment {
   created_at: string;
 }
 
+export type NotificationPreferenceKey =
+  | "route_logged"
+  | "route_commented"
+  | "thread_comment"
+  | "shared_log";
+
+export type NotificationPreferences = Record<NotificationPreferenceKey, boolean>;
+
 export type BadgeKey =
   | "first_send"
   | "sends_10"
@@ -335,6 +343,58 @@ export interface Database {
           route_id?: string;
           text?: string;
           created_at?: string;
+        };
+      };
+      push_tokens: {
+        Row: {
+          id: string;
+          user_id: string;
+          token: string;
+          locale: "en" | "it";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          token: string;
+          locale?: "en" | "it";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          token?: string;
+          locale?: "en" | "it";
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      notification_preferences: {
+        Row: {
+          user_id: string;
+          route_logged: boolean;
+          route_commented: boolean;
+          thread_comment: boolean;
+          shared_log: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          route_logged?: boolean;
+          route_commented?: boolean;
+          thread_comment?: boolean;
+          shared_log?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          route_logged?: boolean;
+          route_commented?: boolean;
+          thread_comment?: boolean;
+          shared_log?: boolean;
+          updated_at?: string;
         };
       };
       app_config: {

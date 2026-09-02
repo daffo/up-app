@@ -9,6 +9,8 @@ import {
   UserProfileSchema,
   LogSchema,
   BookmarkSchema,
+  PushTokenSchema,
+  NotificationPreferencesSchema,
 } from "../../lib/schemas";
 
 // Contract tests verify the real database returns expected shapes
@@ -136,6 +138,18 @@ describe("Database Contract Tests", () => {
   describe("comments table", () => {
     it("returns data matching CommentSchema", async () => {
       await testTableContract("comments");
+    });
+  });
+
+  describe("push_tokens table", () => {
+    it("returns data matching PushTokenSchema", async () => {
+      await testTableContract("push_tokens");
+    });
+  });
+
+  describe("notification_preferences table", () => {
+    it("returns data matching NotificationPreferencesSchema", async () => {
+      await testTableContract("notification_preferences");
     });
   });
 

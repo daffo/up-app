@@ -191,6 +191,12 @@
   "settings": {
     "accountSection": "Account",
     "preferencesSection": "Preferences",
+    "notifications": "Notifications",
+    "notifRouteLogged": "Someone sends your route",
+    "notifRouteCommented": "Someone comments on your route",
+    "notifThreadComment": "New comments in a discussion",
+    "notifSharedLog": "Someone sends a route you sent",
+    "notificationsSaveError": "Failed to save notification preference",
     "supportSection": "Support",
     "buyMeABeer": "Buy me a beer \uD83C\uDF7A",
     "buyMeABeerSubtitle": "See you at the gym!",
@@ -199,6 +205,12 @@
     "changePassword": "Change Password",
     "forgotPassword": "Forgot Password",
     "resetPassword": "Reset Password"
+  },
+  "pushNotifications": {
+    "routeLogged": "{{displayName}} sent your route \"{{title}}\"",
+    "routeCommented": "{{displayName}} commented on your route \"{{title}}\"",
+    "threadComment": "{{displayName}} also commented on \"{{title}}\"",
+    "sharedLog": "{{displayName}} also sent \"{{title}}\""
   },
   "menu": {
     "openMenu": "Open menu",

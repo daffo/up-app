@@ -97,12 +97,22 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 - `detected_holds` - Hold polygons detected on photos
 - `routes` - Climbing routes with hold references
 - `user_profiles` - Display names and settings
-- `sends` - Route completions with ratings
+- `logs` - Route completions/attempts with ratings (`status IN ('sent','attempted')`; replaces the dropped legacy `sends` table, see `migration-012`/`migration-014`)
 - `comments` - User comments on routes
 
 ## Build & Deploy
 - **Dev**: `npx expo start`
 - **Version**: In `app.json` → `expo.version`
+
+### Edge Functions
+
+Deploy `send-notification` manually after changing anything under `supabase/functions/send-notification/`:
+
+```bash
+npx supabase functions deploy send-notification --project-ref teekzobtticdptpmuflz --use-api
+```
+
+The local Supabase CLI must be authenticated. Edge Functions are not deployed by GitHub Actions.
 
 ### CI/CD Workflow
 
@@ -174,7 +184,7 @@ To set up a new Supabase project, run `schema-current.sql` - it contains the com
 ### Contract Tests (Jest + Zod + Real Supabase)
 - Validates real DB responses match expected Zod schemas
 - Catches schema drift (renamed fields, type changes, etc.)
-- Tests all tables: routes, photos, detected_holds, sends, comments, user_profiles, admins
+- Tests all tables: routes, photos, detected_holds, logs, comments, user_profiles, admins
 - Tests API query patterns (joins, aggregations)
 
 ### E2E Tests (Maestro)

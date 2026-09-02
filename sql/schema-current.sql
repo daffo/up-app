@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-022-retain-fall-hold-on-send
+-- Last updated: After migration-023-push-notifications
 
 -- ============================================================================
 -- TABLES
@@ -92,6 +92,25 @@ CREATE TABLE comments (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+CREATE TABLE push_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL,
+  locale TEXT NOT NULL DEFAULT 'en' CHECK (locale IN ('en', 'it')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  UNIQUE(user_id, token)
+);
+
+CREATE TABLE notification_preferences (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  route_logged BOOLEAN NOT NULL DEFAULT true,
+  route_commented BOOLEAN NOT NULL DEFAULT true,
+  thread_comment BOOLEAN NOT NULL DEFAULT true,
+  shared_log BOOLEAN NOT NULL DEFAULT true,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
 -- App config table (singleton row for remote config like force-update)
 CREATE TABLE app_config (
   singleton_key BOOLEAN PRIMARY KEY DEFAULT true CHECK (singleton_key = true),
@@ -130,6 +149,7 @@ CREATE INDEX idx_bookmarks_user_id ON bookmarks(user_id);
 CREATE INDEX idx_bookmarks_route_id ON bookmarks(route_id);
 CREATE INDEX idx_comments_route_id ON comments(route_id);
 CREATE INDEX idx_comments_route_created ON comments(route_id, created_at DESC);
+CREATE INDEX idx_push_tokens_user_id ON push_tokens(user_id);
 CREATE INDEX idx_user_activity_last_seen ON user_activity(last_seen_at DESC);
 
 -- ============================================================================
@@ -144,6 +164,8 @@ ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE push_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_activity ENABLE ROW LEVEL SECURITY;
 
@@ -296,6 +318,44 @@ CREATE POLICY "Users can insert their own comments"
 
 CREATE POLICY "Users can delete their own comments"
   ON comments FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ============================================================================
+-- RLS POLICIES: push notifications
+-- ============================================================================
+
+CREATE POLICY "Users can view their own push tokens"
+  ON push_tokens FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own push tokens"
+  ON push_tokens FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own push tokens"
+  ON push_tokens FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own push tokens"
+  ON push_tokens FOR DELETE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view their own notification preferences"
+  ON notification_preferences FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own notification preferences"
+  ON notification_preferences FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own notification preferences"
+  ON notification_preferences FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own notification preferences"
+  ON notification_preferences FOR DELETE
   USING (auth.uid() = user_id);
 
 -- ============================================================================

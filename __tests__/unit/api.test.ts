@@ -8,6 +8,7 @@ import {
   logsApi,
   bookmarksApi,
   commentsApi,
+  notificationPreferencesApi,
   accountApi,
   validateCursor,
   sanitizeFilterValue,
@@ -1782,6 +1783,40 @@ describe("bookmarksApi", () => {
 });
 
 // ---------------------------------------------------------------------------
+// notificationPreferencesApi
+// ---------------------------------------------------------------------------
+describe("notificationPreferencesApi", () => {
+  it("returns enabled defaults when no row exists", async () => {
+    const builder = createBuilder({ data: null, error: null });
+    mockFrom.mockReturnValue(builder);
+
+    await expect(notificationPreferencesApi.get("u1")).resolves.toEqual({
+      route_logged: true,
+      route_commented: true,
+      thread_comment: true,
+      shared_log: true,
+    });
+  });
+
+  it("upserts all preferences", async () => {
+    const builder = createBuilder({ data: null, error: null });
+    mockFrom.mockReturnValue(builder);
+    const preferences = {
+      route_logged: false,
+      route_commented: true,
+      thread_comment: true,
+      shared_log: true,
+    };
+
+    await notificationPreferencesApi.upsert("u1", preferences);
+
+    expect(builder.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: "u1", ...preferences }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // accountApi
 // ---------------------------------------------------------------------------
 describe("accountApi", () => {
@@ -1807,29 +1842,29 @@ describe("accountApi", () => {
       expect(routesListener).toHaveBeenCalledTimes(1);
     });
 
-    it("throws on first deletion error (bookmarks) and stops", async () => {
+    it("stops when push token deletion fails", async () => {
       const errorBuilder = createBuilder({
         data: null,
-        error: { message: "bookmarks fail", code: "42501" },
+        error: { message: "tokens fail", code: "42501" },
       });
       mockFrom.mockReturnValue(errorBuilder);
 
       await expect(accountApi.deleteAllUserData("u1")).rejects.toEqual({
-        message: "bookmarks fail",
+        message: "tokens fail",
         code: "42501",
       });
     });
 
-    it("throws on logs deletion error after bookmarks succeed", async () => {
+    it("stops when preference deletion fails", async () => {
       const okBuilder = createBuilder({ data: null, error: null });
       const errorBuilder = createBuilder({
         data: null,
-        error: { message: "logs fail" },
+        error: { message: "preferences fail" },
       });
       mockFrom.mockReturnValueOnce(okBuilder).mockReturnValueOnce(errorBuilder);
 
       await expect(accountApi.deleteAllUserData("u1")).rejects.toEqual({
-        message: "logs fail",
+        message: "preferences fail",
       });
     });
   });

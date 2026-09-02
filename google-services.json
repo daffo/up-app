@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "746580194772",
+    "project_id": "up-app-daffo",
+    "storage_bucket": "up-app-daffo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:746580194772:android:37af795bc19252546ad241",
+        "android_client_info": {
+          "package_name": "com.daffo.upapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTCd-qJ4paj05Voxyz7eez6V5b1xuVvj0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

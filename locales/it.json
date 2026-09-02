@@ -191,6 +191,12 @@
   "settings": {
     "accountSection": "Account",
     "preferencesSection": "Preferenze",
+    "notifications": "Notifiche",
+    "notifRouteLogged": "Qualcuno chiude una tua via",
+    "notifRouteCommented": "Qualcuno commenta una tua via",
+    "notifThreadComment": "Nuovi commenti in una discussione",
+    "notifSharedLog": "Qualcuno chiude una via che hai chiuso",
+    "notificationsSaveError": "Salvataggio della preferenza di notifica non riuscito",
     "supportSection": "Supporto",
     "buyMeABeer": "Offrimi una birra \uD83C\uDF7A",
     "buyMeABeerSubtitle": "Ci vediamo in palestra!",
@@ -199,6 +205,12 @@
     "changePassword": "Cambia Password",
     "forgotPassword": "Password Dimenticata",
     "resetPassword": "Reimposta Password"
+  },
+  "pushNotifications": {
+    "routeLogged": "{{displayName}} ha chiuso la tua via \"{{title}}\"",
+    "routeCommented": "{{displayName}} ha commentato la tua via \"{{title}}\"",
+    "threadComment": "{{displayName}} ha commentato anche \"{{title}}\"",
+    "sharedLog": "{{displayName}} ha chiuso anche \"{{title}}\""
   },
   "menu": {
     "openMenu": "Apri menu",

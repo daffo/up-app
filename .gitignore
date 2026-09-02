@@ -33,6 +33,11 @@ yarn-error.*
 # local env files
 .env*.local
 .env
+*-firebase-adminsdk-*.json
+
+# Supabase
+supabase/.temp/
+supabase/functions/**/deno.lock
 
 # typescript
 *.tsbuildinfo

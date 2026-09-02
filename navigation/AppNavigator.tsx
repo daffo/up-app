@@ -30,6 +30,7 @@ import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import BadgeUnlockToast from "../components/BadgeUnlockToast";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -68,6 +69,7 @@ export default function AppNavigator() {
   const { isPasswordRecovery } = useAuth();
   const navigationRef =
     useRef<NavigationContainerRef<RootStackParamList>>(null);
+  usePushNotifications(navigationRef);
 
   useEffect(() => {
     if (isPasswordRecovery && navigationRef.current) {

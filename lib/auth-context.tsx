@@ -6,6 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { accountApi, userProfilesApi } from "./api";
+import { unregisterPushToken } from "./notifications";
 
 const PASSWORD_RECOVERY_KEY = "@password_recovery_pending";
 
@@ -208,11 +209,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    if (user) {
+      try {
+        await unregisterPushToken(user.id);
+      } catch {}
+    }
+
     try {
       await supabase.auth.signOut({ scope: "local" });
-    } catch {
-      // Ignore errors - just clear local state
-    }
+    } catch {}
 
     userProfilesApi.clearCache();
 

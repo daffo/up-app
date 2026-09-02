@@ -95,6 +95,24 @@ export const CommentSchema = z.object({
   created_at: z.string(),
 });
 
+export const PushTokenSchema = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  token: z.string(),
+  locale: z.enum(["en", "it"]),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const NotificationPreferencesSchema = z.object({
+  user_id: z.string().uuid(),
+  route_logged: z.boolean(),
+  route_commented: z.boolean(),
+  thread_comment: z.boolean(),
+  shared_log: z.boolean(),
+  updated_at: z.string(),
+});
+
 export const BadgeKeySchema = z.enum([
   "first_send",
   "sends_10",
@@ -156,6 +174,8 @@ export const schemas = {
   logs: LogSchema,
   bookmarks: BookmarkSchema,
   comments: CommentSchema,
+  push_tokens: PushTokenSchema,
+  notification_preferences: NotificationPreferencesSchema,
   badges: BadgeSchema,
   user_badges: UserBadgeSchema,
 } as const;

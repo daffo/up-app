@@ -11,6 +11,7 @@ import {
   Badge,
   UserBadge,
   BadgeKey,
+  NotificationPreferences,
 } from "../types/database.types";
 import {
   getCachedHolds,
@@ -507,9 +508,53 @@ export const detectedHoldsApi = {
   },
 };
 
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  route_logged: true,
+  route_commented: true,
+  thread_comment: true,
+  shared_log: true,
+};
+
+export const notificationPreferencesApi = {
+  async get(userId: string): Promise<NotificationPreferences> {
+    const { data, error } = await supabase
+      .from("notification_preferences")
+      .select("route_logged, route_commented, thread_comment, shared_log")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data ?? DEFAULT_NOTIFICATION_PREFERENCES;
+  },
+
+  async upsert(
+    userId: string,
+    preferences: NotificationPreferences,
+  ): Promise<void> {
+    const { error } = await supabase.from("notification_preferences").upsert({
+      user_id: userId,
+      ...preferences,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throw error;
+  },
+};
+
 // Account API
 export const accountApi = {
   async deleteAllUserData(userId: string): Promise<void> {
+    const { error: tokensError } = await supabase
+      .from("push_tokens")
+      .delete()
+      .eq("user_id", userId);
+    if (tokensError) throw tokensError;
+
+    const { error: preferencesError } = await supabase
+      .from("notification_preferences")
+      .delete()
+      .eq("user_id", userId);
+    if (preferencesError) throw preferencesError;
+
     const { error: bookmarksError } = await supabase
       .from("bookmarks")
       .delete()
