@@ -1,4 +1,4 @@
-What's new in 1.1.4:
-- Improved hold label placement
-- Route ratings now only include completed sends
-- Failed holds remain visible after completing a route
+What's new in 1.1.5:
+- Push notifications when someone sends or comments on your routes
+- Notifications when a route you sent or commented on gets new activity
+- Per-type notification toggles in Settings

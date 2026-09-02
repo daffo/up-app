@@ -1,4 +1,4 @@
-Novità nella versione 1.1.4:
-- Migliorato il posizionamento delle etichette delle prese
-- Le valutazioni includono solo le salite completate
-- Le prese dei tentativi restano visibili dopo aver chiuso un blocco
+Novità nella versione 1.1.5:
+- Notifiche push quando qualcuno chiude o commenta le tue vie
+- Notifiche sulle novità delle vie che hai chiuso o commentato
+- Preferenze per tipo di notifica nelle Impostazioni
