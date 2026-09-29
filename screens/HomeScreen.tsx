@@ -5,10 +5,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useRequireAuth } from "../hooks/useRequireAuth";
-import { RouteFilters, UserRelation } from "../types/database.types";
+import {
+  RouteFilters,
+  RouteSort,
+  UserRelation,
+} from "../types/database.types";
 import RouteList from "../components/RouteList";
 import ProfileDropdown from "../components/ProfileDropdown";
 import FilterModal from "../components/FilterModal";
+import BottomSheet from "../components/BottomSheet";
 import { bookmarksApi, logsApi, routesApi } from "../lib/api";
 import { useThemeColors } from "../lib/theme-context";
 import { ScreenProps } from "../navigation/types";
@@ -17,6 +22,15 @@ const FILTERS_STORAGE_KEY = "route_filters";
 
 const DEFAULT_FILTERS: RouteFilters = { wallActive: true };
 
+const SORT_STORAGE_KEY = "route_sort";
+
+const SORT_OPTIONS: Array<{ value: RouteSort; labelKey: string }> = [
+  { value: "newest", labelKey: "sort.newest" },
+  { value: "oldest", labelKey: "sort.oldest" },
+  { value: "holds_asc", labelKey: "sort.holdsAsc" },
+  { value: "holds_desc", labelKey: "sort.holdsDesc" },
+];
+
 export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
   const { t } = useTranslation();
   const colors = useThemeColors();
@@ -24,6 +38,8 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
   const [filters, setFilters] = useState<RouteFilters>(DEFAULT_FILTERS);
   const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [sort, setSort] = useState<RouteSort>("newest");
+  const [sortModalVisible, setSortModalVisible] = useState(false);
   const prevUserIdRef = useRef<string | undefined>(undefined);
 
   const wallActive = !!filters.wallActive;
@@ -37,9 +53,13 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
     !wallActive ||
     relations.length > 0;
 
-  // Load persisted filters on mount
+  // Load persisted filters and sort on mount
   useEffect(() => {
-    AsyncStorage.getItem(FILTERS_STORAGE_KEY).then((stored) => {
+    AsyncStorage.multiGet([FILTERS_STORAGE_KEY, SORT_STORAGE_KEY]).then(
+      ([[, stored], [, storedSort]]) => {
+      if (SORT_OPTIONS.some((o) => o.value === storedSort)) {
+        setSort(storedSort as RouteSort);
+      }
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
@@ -49,7 +69,8 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
         }
       }
       setFiltersLoaded(true);
-    });
+      },
+    );
   }, []);
 
   // Clear user-specific filters when user changes (login/logout)
@@ -117,6 +138,12 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
     setFilters(newFilters);
     const { routeIds, ...persistable } = newFilters;
     AsyncStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(persistable));
+  };
+
+  const handleSelectSort = (value: RouteSort) => {
+    setSort(value);
+    setSortModalVisible(false);
+    AsyncStorage.setItem(SORT_STORAGE_KEY, value);
   };
 
   const clearRelation = (relation: UserRelation) => {
@@ -237,6 +264,21 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
               style={[
                 styles.filterButton,
                 { backgroundColor: colors.borderLight },
+                sort !== "newest" && { backgroundColor: colors.primary },
+              ]}
+              onPress={() => setSortModalVisible(true)}
+              accessibilityLabel={t("sort.openSort")}
+            >
+              <Ionicons
+                name="swap-vertical"
+                size={20}
+                color={sort !== "newest" ? "#fff" : colors.textSecondary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                { backgroundColor: colors.borderLight },
                 hasActiveFilters && { backgroundColor: colors.primary },
               ]}
               onPress={() => setFilterModalVisible(true)}
@@ -285,8 +327,48 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
         )}
 
         {filtersLoaded && (
-          <RouteList onRoutePress={handleRoutePress} filters={filters} />
+          <RouteList
+            onRoutePress={handleRoutePress}
+            filters={filters}
+            sort={sort}
+          />
         )}
+
+        <BottomSheet
+          visible={sortModalVisible}
+          onClose={() => setSortModalVisible(false)}
+          title={t("sort.title")}
+          closeLabel={t("common.done")}
+        >
+          {SORT_OPTIONS.map((option) => {
+            const selected = option.value === sort;
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.sortOption,
+                  { borderBottomColor: colors.separator },
+                ]}
+                onPress={() => handleSelectSort(option.value)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+              >
+                <Text
+                  style={[
+                    styles.sortOptionText,
+                    { color: selected ? colors.primary : colors.textPrimary },
+                    selected && styles.sortOptionTextSelected,
+                  ]}
+                >
+                  {t(option.labelKey)}
+                </Text>
+                {selected && (
+                  <Ionicons name="checkmark" size={20} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </BottomSheet>
 
         <FilterModal
           visible={filterModalVisible}
@@ -373,6 +455,19 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 14,
+  },
+  sortOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  sortOptionText: {
+    fontSize: 16,
+  },
+  sortOptionTextSelected: {
+    fontWeight: "600",
   },
   addButton: {
     width: 40,

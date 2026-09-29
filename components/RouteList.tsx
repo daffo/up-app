@@ -8,8 +8,8 @@ import {
   RefreshControl,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import { RouteFilters } from "../types/database.types";
-import { routesApi, RouteWithStats } from "../lib/api";
+import { RouteFilters, RouteSort } from "../types/database.types";
+import { routesApi, RouteCursor, RouteWithStats } from "../lib/api";
 import { useThemeColors } from "../lib/theme-context";
 import RouteCard from "./RouteCard";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
@@ -17,11 +17,16 @@ import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
 interface RouteListProps {
   onRoutePress: (routeId: string) => void;
   filters?: RouteFilters;
+  sort?: RouteSort;
 }
 
 const keyExtractor = (item: RouteWithStats) => item.id;
 
-export default function RouteList({ onRoutePress, filters }: RouteListProps) {
+export default function RouteList({
+  onRoutePress,
+  filters,
+  sort,
+}: RouteListProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const handleRoutePress = useCallback(
@@ -40,14 +45,17 @@ export default function RouteList({ onRoutePress, filters }: RouteListProps) {
     refresh,
     loadMore,
   } = usePaginatedQuery(
-    (cursor?: { created_at: string; id: string }) =>
-      routesApi.list(filters, { cursor }),
-    [filters],
+    (cursor?: RouteCursor) => routesApi.list(filters, { cursor, sort }),
+    [filters, sort],
     {
       cacheKey: ["routes", "logs"],
       getCursor: (items) => {
         const last = items[items.length - 1];
-        return { created_at: last.created_at, id: last.id };
+        return {
+          created_at: last.created_at,
+          id: last.id,
+          hand_hold_count: last.hand_hold_count,
+        };
       },
     },
   );

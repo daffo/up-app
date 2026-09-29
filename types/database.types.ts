@@ -36,6 +36,8 @@ export interface RouteHolds {
 
 export type UserRelation = "created" | "saved" | "tried" | "sent";
 
+export type RouteSort = "newest" | "oldest" | "holds_asc" | "holds_desc";
+
 export interface RouteFilters {
   grade?: string;
   search?: string;

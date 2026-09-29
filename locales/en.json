@@ -325,6 +325,14 @@
     "attempted": "Tried",
     "sent": "Sent"
   },
+  "sort": {
+    "title": "Sort",
+    "openSort": "Sort routes",
+    "newest": "Newest first",
+    "oldest": "Oldest first",
+    "holdsAsc": "Fewest holds first",
+    "holdsDesc": "Most holds first"
+  },
   "auth": {
     "subtitle": "The app for Up",
     "email": "Email",

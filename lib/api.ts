@@ -4,6 +4,7 @@ import {
   RouteHolds,
   DetectedHold,
   RouteFilters,
+  RouteSort,
   Comment,
   Log,
   LogStatus,
@@ -113,10 +114,40 @@ export type RouteWithStats = Route & {
 };
 
 // Routes API
-export type PaginationOptions = {
-  cursor?: { created_at: string; id: string };
-  pageSize?: number;
+export type RouteCursor = {
+  created_at: string;
+  id: string;
+  hand_hold_count?: number;
 };
+
+export type PaginationOptions = {
+  cursor?: RouteCursor;
+  pageSize?: number;
+  sort?: RouteSort;
+};
+
+/**
+ * Keyset filter continuing after `cursor` in `sort` order. Mirrors the
+ * .order() chain in routesApi.list: optional hand_hold_count, then
+ * created_at + id tiebreaker (newest first on hold ties).
+ */
+export function routeCursorFilter(
+  sort: RouteSort,
+  cursor: RouteCursor,
+): string {
+  validateCursor(cursor);
+  const { created_at, id } = cursor;
+  const op = sort === "oldest" ? "gt" : "lt";
+  const byDate = `created_at.${op}.${created_at},and(created_at.eq.${created_at},id.${op}.${id})`;
+  if (sort !== "holds_asc" && sort !== "holds_desc") return byDate;
+
+  const n = cursor.hand_hold_count;
+  if (!Number.isInteger(n)) {
+    throw new Error("Invalid cursor: hand_hold_count must be an integer");
+  }
+  const holdOp = sort === "holds_asc" ? "gt" : "lt";
+  return `hand_hold_count.${holdOp}.${n},and(hand_hold_count.eq.${n},or(${byDate}))`;
+}
 
 export const routesApi = {
   async list(
@@ -124,14 +155,22 @@ export const routesApi = {
     pagination?: PaginationOptions,
   ): Promise<{ data: RouteWithStats[]; hasMore: boolean }> {
     const pageSize = pagination?.pageSize ?? 20;
+    const sort = pagination?.sort ?? "newest";
 
     let query = supabase
       .from("routes")
       .select(
         "*, avg_rating, send_count, photo:photos!inner(setup_date, teardown_date)",
-      )
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false });
+      );
+    if (sort === "holds_asc" || sort === "holds_desc") {
+      query = query.order("hand_hold_count", {
+        ascending: sort === "holds_asc",
+      });
+    }
+    const dateAscending = sort === "oldest";
+    query = query
+      .order("created_at", { ascending: dateAscending })
+      .order("id", { ascending: dateAscending });
 
     // Walls filter. Both off / both on = no wall status constraint (all walls
     // with a setup_date). Only active = current live walls. Only past = walls
@@ -172,11 +211,7 @@ export const routesApi = {
 
     // Cursor-based pagination with tiebreaker
     if (pagination?.cursor) {
-      validateCursor(pagination.cursor);
-      const { created_at, id } = pagination.cursor;
-      query = query.or(
-        `created_at.lt.${created_at},and(created_at.eq.${created_at},id.lt.${id})`,
-      );
+      query = query.or(routeCursorFilter(sort, pagination.cursor));
     }
 
     // Fetch one extra to detect if there are more results

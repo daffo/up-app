@@ -12,6 +12,7 @@ import {
   accountApi,
   validateCursor,
   sanitizeFilterValue,
+  routeCursorFilter,
 } from "../../lib/api";
 
 jest.mock("../../lib/supabase", () => ({
@@ -148,6 +149,58 @@ describe("validateCursor", () => {
 // ---------------------------------------------------------------------------
 // sanitizeFilterValue
 // ---------------------------------------------------------------------------
+describe("routeCursorFilter", () => {
+  const ts = "2024-06-15T12:00:00Z";
+  const id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+
+  it("newest continues to older rows", () => {
+    expect(routeCursorFilter("newest", { created_at: ts, id })).toBe(
+      `created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})`,
+    );
+  });
+
+  it("oldest continues to newer rows", () => {
+    expect(routeCursorFilter("oldest", { created_at: ts, id })).toBe(
+      `created_at.gt.${ts},and(created_at.eq.${ts},id.gt.${id})`,
+    );
+  });
+
+  it("holds_asc continues to more holds, then older rows on ties", () => {
+    expect(
+      routeCursorFilter("holds_asc", { created_at: ts, id, hand_hold_count: 7 }),
+    ).toBe(
+      `hand_hold_count.gt.7,and(hand_hold_count.eq.7,or(created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})))`,
+    );
+  });
+
+  it("holds_desc continues to fewer holds, then older rows on ties", () => {
+    expect(
+      routeCursorFilter("holds_desc", { created_at: ts, id, hand_hold_count: 7 }),
+    ).toBe(
+      `hand_hold_count.lt.7,and(hand_hold_count.eq.7,or(created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})))`,
+    );
+  });
+
+  it("rejects non-integer hand_hold_count on hold sorts", () => {
+    expect(() =>
+      routeCursorFilter("holds_asc", { created_at: ts, id }),
+    ).toThrow("hand_hold_count must be an integer");
+    expect(() =>
+      routeCursorFilter("holds_desc", {
+        created_at: ts,
+        id,
+        hand_hold_count: "1),or(1=1" as unknown as number,
+      }),
+    ).toThrow("hand_hold_count must be an integer");
+  });
+
+  it("validates id and timestamp", () => {
+    expect(() =>
+      routeCursorFilter("newest", { created_at: ts, id: "bad" }),
+    ).toThrow("Invalid cursor");
+  });
+});
+
 describe("sanitizeFilterValue", () => {
   it("returns normal text unchanged", () => {
     expect(sanitizeFilterValue("Cool Route")).toBe("Cool Route");
@@ -413,6 +466,40 @@ describe("routesApi", () => {
       expect(builder.or).toHaveBeenCalledWith(
         "created_at.lt.2024-06-15T12:00:00Z,and(created_at.eq.2024-06-15T12:00:00Z,id.lt.a1b2c3d4-e5f6-7890-abcd-ef1234567890)",
       );
+    });
+
+    it("orders newest first by default", async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list();
+      expect(builder.order.mock.calls).toEqual([
+        ["created_at", { ascending: false }],
+        ["id", { ascending: false }],
+      ]);
+    });
+
+    it("orders oldest first", async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list(undefined, { sort: "oldest" });
+      expect(builder.order.mock.calls).toEqual([
+        ["created_at", { ascending: true }],
+        ["id", { ascending: true }],
+      ]);
+    });
+
+    it("orders by hand hold count, newest first on ties", async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list(undefined, { sort: "holds_asc" });
+      expect(builder.order.mock.calls).toEqual([
+        ["hand_hold_count", { ascending: true }],
+        ["created_at", { ascending: false }],
+        ["id", { ascending: false }],
+      ]);
     });
 
     it("applies limit based on pageSize", async () => {

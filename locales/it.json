@@ -325,6 +325,14 @@
     "attempted": "Tentate",
     "sent": "Chiuse"
   },
+  "sort": {
+    "title": "Ordina",
+    "openSort": "Ordina le vie",
+    "newest": "Più recenti",
+    "oldest": "Meno recenti",
+    "holdsAsc": "Meno prese",
+    "holdsDesc": "Più prese"
+  },
   "auth": {
     "subtitle": "L'app per la Up",
     "email": "Email",
