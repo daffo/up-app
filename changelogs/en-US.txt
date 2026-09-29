@@ -1,4 +1,4 @@
-What's new in 1.1.5:
-- Push notifications when someone sends or comments on your routes
-- Notifications when a route you sent or commented on gets new activity
-- Per-type notification toggles in Settings
+What's new in 1.1.6:
+- Sort routes by creation date, movements or grade, up or down
+- Your sort choice is remembered
+- Fix: a hold used twice in a route no longer turns grey

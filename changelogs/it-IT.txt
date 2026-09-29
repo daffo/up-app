@@ -1,4 +1,4 @@
-Novità nella versione 1.1.5:
-- Notifiche push quando qualcuno chiude o commenta le tue vie
-- Notifiche sulle novità delle vie che hai chiuso o commentato
-- Preferenze per tipo di notifica nelle Impostazioni
+Novità nella versione 1.1.6:
+- Ordina le vie per data di creazione, movimenti o grado, in su o in giù
+- L'ordinamento scelto viene ricordato
+- Corretto: una presa usata due volte in una via non diventa più grigia
