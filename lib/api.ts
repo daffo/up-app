@@ -118,6 +118,20 @@ export type RouteCursor = {
   created_at: string;
   id: string;
   hand_hold_count?: number;
+  grade_rank?: number | null;
+};
+
+// Primary sort column per non-date sort. Date sorts use created_at + id only.
+const SORT_KEYS: Partial<
+  Record<
+    RouteSort,
+    { column: "hand_hold_count" | "grade_rank"; ascending: boolean }
+  >
+> = {
+  holds_asc: { column: "hand_hold_count", ascending: true },
+  holds_desc: { column: "hand_hold_count", ascending: false },
+  grade_asc: { column: "grade_rank", ascending: true },
+  grade_desc: { column: "grade_rank", ascending: false },
 };
 
 export type PaginationOptions = {
@@ -128,8 +142,8 @@ export type PaginationOptions = {
 
 /**
  * Keyset filter continuing after `cursor` in `sort` order. Mirrors the
- * .order() chain in routesApi.list: optional hand_hold_count, then
- * created_at + id tiebreaker (newest first on hold ties).
+ * .order() chain in routesApi.list: optional SORT_KEYS column (NULLs last
+ * both directions), then created_at + id tiebreaker (newest first on ties).
  */
 export function routeCursorFilter(
   sort: RouteSort,
@@ -139,14 +153,18 @@ export function routeCursorFilter(
   const { created_at, id } = cursor;
   const op = sort === "oldest" ? "gt" : "lt";
   const byDate = `created_at.${op}.${created_at},and(created_at.eq.${created_at},id.${op}.${id})`;
-  if (sort !== "holds_asc" && sort !== "holds_desc") return byDate;
+  const key = SORT_KEYS[sort];
+  if (!key) return byDate;
 
-  const n = cursor.hand_hold_count;
-  if (!Number.isInteger(n)) {
-    throw new Error("Invalid cursor: hand_hold_count must be an integer");
+  const { column } = key;
+  const value = cursor[column];
+  // Cursor already in NULL tail: only NULL rows remain, date order.
+  if (value === null) return `and(${column}.is.null,or(${byDate}))`;
+  if (!Number.isInteger(value)) {
+    throw new Error(`Invalid cursor: ${column} must be an integer`);
   }
-  const holdOp = sort === "holds_asc" ? "gt" : "lt";
-  return `hand_hold_count.${holdOp}.${n},and(hand_hold_count.eq.${n},or(${byDate}))`;
+  const keyOp = key.ascending ? "gt" : "lt";
+  return `${column}.${keyOp}.${value},${column}.is.null,and(${column}.eq.${value},or(${byDate}))`;
 }
 
 export const routesApi = {
@@ -162,9 +180,11 @@ export const routesApi = {
       .select(
         "*, avg_rating, send_count, photo:photos!inner(setup_date, teardown_date)",
       );
-    if (sort === "holds_asc" || sort === "holds_desc") {
-      query = query.order("hand_hold_count", {
-        ascending: sort === "holds_asc",
+    const key = SORT_KEYS[sort];
+    if (key) {
+      query = query.order(key.column, {
+        ascending: key.ascending,
+        nullsFirst: false,
       });
     }
     const dateAscending = sort === "oldest";

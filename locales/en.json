@@ -329,11 +329,14 @@
     "title": "Sort",
     "creationDate": "Creation date",
     "movements": "Movements",
+    "grade": "Grade",
     "openSort": "Sort routes",
     "newest": "Newest first",
     "oldest": "Oldest first",
     "holdsAsc": "Fewest movements first",
-    "holdsDesc": "Most movements first"
+    "holdsDesc": "Most movements first",
+    "gradeAsc": "Easiest first",
+    "gradeDesc": "Hardest first"
   },
   "auth": {
     "subtitle": "The app for Up",

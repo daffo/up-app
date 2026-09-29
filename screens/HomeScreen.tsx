@@ -44,6 +44,12 @@ const SORT_FIELDS: Array<{
     down: "holds_desc",
     initial: "holds_asc",
   },
+  {
+    labelKey: "sort.grade",
+    up: "grade_asc",
+    down: "grade_desc",
+    initial: "grade_asc",
+  },
 ];
 
 const SORT_A11Y_KEYS: Record<RouteSort, string> = {
@@ -51,6 +57,8 @@ const SORT_A11Y_KEYS: Record<RouteSort, string> = {
   oldest: "sort.oldest",
   holds_asc: "sort.holdsAsc",
   holds_desc: "sort.holdsDesc",
+  grade_asc: "sort.gradeAsc",
+  grade_desc: "sort.gradeDesc",
 };
 
 export default function HomeScreen({ navigation }: ScreenProps<"Home">) {

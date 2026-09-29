@@ -329,11 +329,14 @@
     "title": "Ordina",
     "creationDate": "Data di creazione",
     "movements": "Movimenti",
+    "grade": "Grado",
     "openSort": "Ordina le vie",
     "newest": "Più recenti",
     "oldest": "Meno recenti",
     "holdsAsc": "Meno movimenti",
-    "holdsDesc": "Più movimenti"
+    "holdsDesc": "Più movimenti",
+    "gradeAsc": "Più facili",
+    "gradeDesc": "Più difficili"
   },
   "auth": {
     "subtitle": "L'app per la Up",

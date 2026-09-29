@@ -36,7 +36,13 @@ export interface RouteHolds {
 
 export type UserRelation = "created" | "saved" | "tried" | "sent";
 
-export type RouteSort = "newest" | "oldest" | "holds_asc" | "holds_desc";
+export type RouteSort =
+  | "newest"
+  | "oldest"
+  | "holds_asc"
+  | "holds_desc"
+  | "grade_asc"
+  | "grade_desc";
 
 export interface RouteFilters {
   grade?: string;
@@ -223,6 +229,7 @@ export interface Database {
           user_id: string;
           is_draft: boolean;
           hand_hold_count: number;
+          grade_rank: number | null;
         };
         Insert: {
           id?: string;
@@ -488,6 +495,10 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
+      parse_grade_rank: {
+        Args: { grade: string };
+        Returns: number | null;
+      };
       avg_rating: {
         Args: { "": unknown };
         Returns: number | null;

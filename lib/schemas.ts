@@ -61,6 +61,7 @@ export const RouteSchema = z.object({
   user_id: z.string().uuid(),
   is_draft: z.boolean(),
   hand_hold_count: z.number().int(),
+  grade_rank: z.number().int().nullable(),
 });
 
 export const LogStatusSchema = z.enum(["sent", "attempted"]);

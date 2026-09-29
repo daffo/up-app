@@ -169,7 +169,7 @@ describe("routeCursorFilter", () => {
     expect(
       routeCursorFilter("holds_asc", { created_at: ts, id, hand_hold_count: 7 }),
     ).toBe(
-      `hand_hold_count.gt.7,and(hand_hold_count.eq.7,or(created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})))`,
+      `hand_hold_count.gt.7,hand_hold_count.is.null,and(hand_hold_count.eq.7,or(created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})))`,
     );
   });
 
@@ -177,7 +177,37 @@ describe("routeCursorFilter", () => {
     expect(
       routeCursorFilter("holds_desc", { created_at: ts, id, hand_hold_count: 7 }),
     ).toBe(
-      `hand_hold_count.lt.7,and(hand_hold_count.eq.7,or(created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})))`,
+      `hand_hold_count.lt.7,hand_hold_count.is.null,and(hand_hold_count.eq.7,or(created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})))`,
+    );
+  });
+
+  it("grade_asc continues to harder, then unranked, then older on ties", () => {
+    expect(
+      routeCursorFilter("grade_asc", { created_at: ts, id, grade_rank: 62 }),
+    ).toBe(
+      `grade_rank.gt.62,grade_rank.is.null,and(grade_rank.eq.62,or(created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})))`,
+    );
+  });
+
+  it("grade_desc continues to easier, then unranked", () => {
+    expect(
+      routeCursorFilter("grade_desc", { created_at: ts, id, grade_rank: 62 }),
+    ).toBe(
+      `grade_rank.lt.62,grade_rank.is.null,and(grade_rank.eq.62,or(created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})))`,
+    );
+  });
+
+  it("cursor in unranked tail stays in tail, date order", () => {
+    expect(
+      routeCursorFilter("grade_desc", { created_at: ts, id, grade_rank: null }),
+    ).toBe(
+      `and(grade_rank.is.null,or(created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})))`,
+    );
+  });
+
+  it("rejects missing grade_rank on grade sorts", () => {
+    expect(() => routeCursorFilter("grade_asc", { created_at: ts, id })).toThrow(
+      "grade_rank must be an integer",
     );
   });
 
@@ -496,7 +526,19 @@ describe("routesApi", () => {
 
       await routesApi.list(undefined, { sort: "holds_asc" });
       expect(builder.order.mock.calls).toEqual([
-        ["hand_hold_count", { ascending: true }],
+        ["hand_hold_count", { ascending: true, nullsFirst: false }],
+        ["created_at", { ascending: false }],
+        ["id", { ascending: false }],
+      ]);
+    });
+
+    it("orders by grade rank, unranked last, newest first on ties", async () => {
+      const builder = createBuilder({ data: [], error: null });
+      mockFrom.mockReturnValue(builder);
+
+      await routesApi.list(undefined, { sort: "grade_desc" });
+      expect(builder.order.mock.calls).toEqual([
+        ["grade_rank", { ascending: false, nullsFirst: false }],
         ["created_at", { ascending: false }],
         ["id", { ascending: false }],
       ]);

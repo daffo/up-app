@@ -2,7 +2,7 @@
 -- Run this on a fresh Supabase project to set up the complete database
 -- This is equivalent to running all migrations (000-004) in sequence
 --
--- Last updated: After migration-023-push-notifications
+-- Last updated: After migration-025-route-grade-rank
 
 -- ============================================================================
 -- TABLES
@@ -35,6 +35,19 @@ CREATE TABLE detected_holds (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Sortable rank from free-text grade, used by routes.grade_rank. See
+-- migration-025 for rules. Defined before routes: generated column needs it.
+CREATE OR REPLACE FUNCTION parse_grade_rank(grade TEXT)
+RETURNS INT
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT m[1]::int * 10
+    + COALESCE(CASE lower(m[2]) WHEN 'a' THEN 2 WHEN 'b' THEN 4 WHEN 'c' THEN 6 END, 0)
+    + CASE WHEN m[3] IS NOT NULL THEN 1 ELSE 0 END
+  FROM (SELECT regexp_match(grade, '^\s*([0-9]+)([abcABC])?(\+)?')) AS r(m);
+$$;
+
 -- Routes table (climbing routes with hold references)
 CREATE TABLE routes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -46,7 +59,8 @@ CREATE TABLE routes (
   holds JSONB NOT NULL DEFAULT '{"hand_holds":[],"foot_holds":[]}'::jsonb,  -- {hand_holds: [...], foot_holds: [...]}
   user_id UUID REFERENCES auth.users NOT NULL,
   is_draft BOOLEAN NOT NULL DEFAULT true,
-  hand_hold_count INT GENERATED ALWAYS AS (jsonb_array_length(holds->'hand_holds')) STORED
+  hand_hold_count INT GENERATED ALWAYS AS (jsonb_array_length(holds->'hand_holds')) STORED,
+  grade_rank INT GENERATED ALWAYS AS (parse_grade_rank(grade)) STORED
 );
 
 -- User profiles table (display names and account settings)
@@ -142,6 +156,7 @@ CREATE INDEX idx_detected_holds_photo_id ON detected_holds(photo_id);
 CREATE INDEX idx_routes_photo_id ON routes(photo_id);
 CREATE INDEX idx_routes_user_id ON routes(user_id);
 CREATE INDEX idx_routes_hand_hold_count ON routes(hand_hold_count, created_at, id);
+CREATE INDEX idx_routes_grade_rank ON routes(grade_rank, created_at, id);
 CREATE INDEX idx_user_profiles_user_id ON user_profiles(user_id);
 CREATE INDEX idx_logs_route_id ON logs(route_id);
 CREATE INDEX idx_logs_user_id ON logs(user_id);

@@ -73,6 +73,31 @@ describe("Database Contract Tests", () => {
         }
       }
     });
+
+    it("parse_grade_rank ranks leading French grade, soft to hard", async () => {
+      const cases: Array<[string, number | null]> = [
+        ["5c", 56],
+        ["5c+", 57],
+        ["5c+/6a", 57],
+        ["6", 60],
+        ["6?", 60],
+        ["6a", 62],
+        ["6A+", 63],
+        ["6b?", 64],
+        ["6b*", 64],
+        ["  7a", 72],
+        ["?", null],
+        ["V5", null],
+        ["", null],
+      ];
+      for (const [grade, rank] of cases) {
+        const { data, error } = await supabase.rpc("parse_grade_rank", {
+          grade,
+        });
+        expect(error).toBeNull();
+        expect([grade, data]).toEqual([grade, rank]);
+      }
+    });
   });
 
   describe("detected_holds table", () => {

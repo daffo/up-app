@@ -55,6 +55,7 @@ export default function RouteList({
           created_at: last.created_at,
           id: last.id,
           hand_hold_count: last.hand_hold_count,
+          grade_rank: last.grade_rank,
         };
       },
     },
