@@ -277,7 +277,7 @@ export default function RouteOverlay({
     footHoldDetectedIds,
     expandedPolygonsMap,
     smoothedPolygonsMap,
-    allHolds,
+    allDetectedHoldIds,
   } = useMemo(() => {
     // Adjust smoothing based on zoom - more iterations for higher zoom
     const chaikinIterations = Math.min(5, 3 + Math.floor(zoomScale / 2));
@@ -321,19 +321,6 @@ export default function RouteOverlay({
       }
     });
 
-    // Combined list for mask holes (deduplicated by detected_hold_id)
-    const allHolds: Array<{ hold: Hold; key: string }> = [];
-    const seenIds = new Set<string>();
-    handHolds.forEach((hold, i) => {
-      seenIds.add(hold.detected_hold_id);
-      allHolds.push({ hold, key: `hand-${i}` });
-    });
-    footHolds.forEach((hold, i) => {
-      if (!seenIds.has(hold.detected_hold_id)) {
-        allHolds.push({ hold, key: `foot-${i}` });
-      }
-    });
-
     return {
       chaikinIterations,
       simplifyTolerance,
@@ -341,7 +328,7 @@ export default function RouteOverlay({
       footHoldDetectedIds,
       expandedPolygonsMap,
       smoothedPolygonsMap,
-      allHolds,
+      allDetectedHoldIds,
     };
   }, [detectedHolds, handHolds, footHolds, width, height, zoomScale]);
 
@@ -380,12 +367,13 @@ export default function RouteOverlay({
 
       {/* Dark overlay with holes for holds using evenodd compound path */}
       {/* Outer rectangle drawn clockwise, hold holes drawn as sub-paths — evenodd cuts them out */}
+      {/* One sub-path per unique hold: evenodd refills a hole drawn twice */}
       <Path
-        d={`M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z ${allHolds
-          .map(({ hold }) => {
-            const smoothedPixels = smoothedPolygonsMap.get(
-              hold.detected_hold_id,
-            );
+        d={`M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z ${[
+          ...allDetectedHoldIds,
+        ]
+          .map((detectedHoldId) => {
+            const smoothedPixels = smoothedPolygonsMap.get(detectedHoldId);
             if (!smoothedPixels || smoothedPixels.length < 3) return "";
             return polygonToPath(smoothedPixels);
           })
