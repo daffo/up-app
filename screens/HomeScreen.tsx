@@ -24,12 +24,34 @@ const DEFAULT_FILTERS: RouteFilters = { wallActive: true };
 
 const SORT_STORAGE_KEY = "route_sort";
 
-const SORT_OPTIONS: Array<{ value: RouteSort; labelKey: string }> = [
-  { value: "newest", labelKey: "sort.newest" },
-  { value: "oldest", labelKey: "sort.oldest" },
-  { value: "holds_asc", labelKey: "sort.holdsAsc" },
-  { value: "holds_desc", labelKey: "sort.holdsDesc" },
+// One row per field. Tap unselected row = its default direction, tap
+// selected row = flip.
+const SORT_FIELDS: Array<{
+  labelKey: string;
+  up: RouteSort;
+  down: RouteSort;
+  initial: RouteSort;
+}> = [
+  {
+    labelKey: "sort.creationDate",
+    up: "oldest",
+    down: "newest",
+    initial: "newest",
+  },
+  {
+    labelKey: "sort.movements",
+    up: "holds_asc",
+    down: "holds_desc",
+    initial: "holds_asc",
+  },
 ];
+
+const SORT_A11Y_KEYS: Record<RouteSort, string> = {
+  newest: "sort.newest",
+  oldest: "sort.oldest",
+  holds_asc: "sort.holdsAsc",
+  holds_desc: "sort.holdsDesc",
+};
 
 export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
   const { t } = useTranslation();
@@ -57,7 +79,7 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
   useEffect(() => {
     AsyncStorage.multiGet([FILTERS_STORAGE_KEY, SORT_STORAGE_KEY]).then(
       ([[, stored], [, storedSort]]) => {
-      if (SORT_OPTIONS.some((o) => o.value === storedSort)) {
+      if (storedSort && storedSort in SORT_A11Y_KEYS) {
         setSort(storedSort as RouteSort);
       }
       if (stored) {
@@ -142,7 +164,6 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
 
   const handleSelectSort = (value: RouteSort) => {
     setSort(value);
-    setSortModalVisible(false);
     AsyncStorage.setItem(SORT_STORAGE_KEY, value);
   };
 
@@ -340,18 +361,28 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
           title={t("sort.title")}
           closeLabel={t("common.done")}
         >
-          {SORT_OPTIONS.map((option) => {
-            const selected = option.value === sort;
+          {SORT_FIELDS.map((field) => {
+            const selected = sort === field.up || sort === field.down;
+            const next = !selected
+              ? field.initial
+              : sort === field.up
+                ? field.down
+                : field.up;
             return (
               <TouchableOpacity
-                key={option.value}
+                key={field.labelKey}
                 style={[
                   styles.sortOption,
                   { borderBottomColor: colors.separator },
                 ]}
-                onPress={() => handleSelectSort(option.value)}
+                onPress={() => handleSelectSort(next)}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
+                accessibilityLabel={
+                  selected
+                    ? `${t(field.labelKey)}, ${t(SORT_A11Y_KEYS[sort])}`
+                    : t(field.labelKey)
+                }
               >
                 <Text
                   style={[
@@ -360,10 +391,14 @@ export default function HomeScreen({ navigation }: ScreenProps<"Home">) {
                     selected && styles.sortOptionTextSelected,
                   ]}
                 >
-                  {t(option.labelKey)}
+                  {t(field.labelKey)}
                 </Text>
                 {selected && (
-                  <Ionicons name="checkmark" size={20} color={colors.primary} />
+                  <Ionicons
+                    name={sort === field.down ? "arrow-down" : "arrow-up"}
+                    size={20}
+                    color={colors.primary}
+                  />
                 )}
               </TouchableOpacity>
             );

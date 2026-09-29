@@ -327,11 +327,13 @@
   },
   "sort": {
     "title": "Ordina",
+    "creationDate": "Data di creazione",
+    "movements": "Movimenti",
     "openSort": "Ordina le vie",
     "newest": "Più recenti",
     "oldest": "Meno recenti",
-    "holdsAsc": "Meno prese",
-    "holdsDesc": "Più prese"
+    "holdsAsc": "Meno movimenti",
+    "holdsDesc": "Più movimenti"
   },
   "auth": {
     "subtitle": "L'app per la Up",

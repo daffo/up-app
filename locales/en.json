@@ -327,11 +327,13 @@
   },
   "sort": {
     "title": "Sort",
+    "creationDate": "Creation date",
+    "movements": "Movements",
     "openSort": "Sort routes",
     "newest": "Newest first",
     "oldest": "Oldest first",
-    "holdsAsc": "Fewest holds first",
-    "holdsDesc": "Most holds first"
+    "holdsAsc": "Fewest movements first",
+    "holdsDesc": "Most movements first"
   },
   "auth": {
     "subtitle": "The app for Up",
