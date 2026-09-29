@@ -220,6 +220,7 @@ export interface Database {
           holds: RouteHolds;
           user_id: string;
           is_draft: boolean;
+          hand_hold_count: number;
         };
         Insert: {
           id?: string;

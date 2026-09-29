@@ -45,7 +45,8 @@ CREATE TABLE routes (
   photo_id UUID REFERENCES photos(id) ON DELETE CASCADE NOT NULL,
   holds JSONB NOT NULL DEFAULT '{"hand_holds":[],"foot_holds":[]}'::jsonb,  -- {hand_holds: [...], foot_holds: [...]}
   user_id UUID REFERENCES auth.users NOT NULL,
-  is_draft BOOLEAN NOT NULL DEFAULT true
+  is_draft BOOLEAN NOT NULL DEFAULT true,
+  hand_hold_count INT GENERATED ALWAYS AS (jsonb_array_length(holds->'hand_holds')) STORED
 );
 
 -- User profiles table (display names and account settings)
@@ -140,6 +141,7 @@ CREATE INDEX idx_photos_dates ON photos(setup_date, teardown_date);
 CREATE INDEX idx_detected_holds_photo_id ON detected_holds(photo_id);
 CREATE INDEX idx_routes_photo_id ON routes(photo_id);
 CREATE INDEX idx_routes_user_id ON routes(user_id);
+CREATE INDEX idx_routes_hand_hold_count ON routes(hand_hold_count, created_at, id);
 CREATE INDEX idx_user_profiles_user_id ON user_profiles(user_id);
 CREATE INDEX idx_logs_route_id ON logs(route_id);
 CREATE INDEX idx_logs_user_id ON logs(user_id);
